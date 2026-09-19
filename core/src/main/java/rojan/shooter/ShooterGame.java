@@ -31,6 +31,9 @@ public class ShooterGame extends ApplicationAdapter {
     private SpriteBatch batch;
     private Array<Rectangle> solidPlatforms;
 
+    private float gravity = -1200.f;
+    private float jetpackThrust= 2200.f;
+
     @Override
     public void create() {
         map = loadMap();
@@ -53,6 +56,7 @@ public class ShooterGame extends ApplicationAdapter {
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
         clampCameraToPlayer();
+        activateGravity(dt);
 
         Vector2 direction = new Vector2(0,0);
         if(Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))
@@ -61,15 +65,12 @@ public class ShooterGame extends ApplicationAdapter {
         if(Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) 
             direction.x++;
 
-        if(Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN))
-            direction.y--;
-
         if(Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))
-            direction.y++;
+            player.reactToJetpack(jetpackThrust,dt);
         
         player.move(direction,dt,getWorldSize(),solidPlatforms);
-
-
+        player.balanceIfPlayerOnVerticalExtreme(getWorldSize());
+        player.ensureGrounding(solidPlatforms);
 
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
             if(!player.getCrouchingState())
@@ -180,9 +181,7 @@ public class ShooterGame extends ApplicationAdapter {
         
         else if(cameraY > maxCameraY)
             cameraY = maxCameraY;
-        
-
-        
+    
         camera.position.set(cameraX,cameraY,0);
         camera.update();
         mapRenderer.setView(camera);
@@ -213,6 +212,14 @@ public class ShooterGame extends ApplicationAdapter {
         crouchMoveBox = crouchMoveBoxObject.getRectangle();
         return crouchMoveBox;
     }
+
+    private void activateGravity(float dt){
+        player.reactToGravity(gravity, dt);
+    }
+
+    
+
+
 
     
 

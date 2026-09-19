@@ -15,6 +15,7 @@ public class Player{
     private float height;
     private Texture texture;
     private Sprite sprite;
+
     private Vector2 velocity;
     private float moveSpeed;
 
@@ -23,7 +24,10 @@ public class Player{
 
     private boolean isCrouching;
     private boolean isGrounded;
-   
+
+    private float maxRiseSpeed = 550;
+    private float maxFallSpeed = -800;
+    
 
 
     
@@ -68,24 +72,12 @@ public class Player{
 
 
     public void move(Vector2 direction, float dt, Vector2 worldSize,Array<Rectangle> solidPlatforms){
-        float directionX,directionY;
-        float normalizer =(float)Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-        if(normalizer!=0){
-            directionX =  direction.x / normalizer;
-            directionY = direction.y / normalizer;
-        }
-        else{
-            directionX = 0;
-            directionY = 0;
-        }
-        
-        float velocityX = directionX * moveSpeed;
-        float velocityY = directionY * moveSpeed;
+        float velocityX = direction.x * moveSpeed;
 
         position.x = position.x + velocityX * dt;
         resolveHorizontalCollision(direction,solidPlatforms);
-        position.y = position.y + velocityY * dt;
-        resolveVerticalCollision(direction,solidPlatforms);
+        position.y = position.y + velocity.y * dt;
+        resolveVerticalCollision(solidPlatforms);
 
         if(position.x <= 0)
             position.x = 0;
@@ -98,7 +90,6 @@ public class Player{
             position.y = worldSize.y - height;
 
         sprite.setPosition(position.x , position.y);
-
     }
 
     public Vector2 getPlayerPosition(){
@@ -129,7 +120,7 @@ public class Player{
     }
         
 
-    private void resolveVerticalCollision(Vector2 direction,Array<Rectangle> solidPlatforms){
+    private void resolveVerticalCollision(Array<Rectangle> solidPlatforms){
         Rectangle activeCollider;
         if(isCrouching)
             activeCollider = crouchMovementOffset;
@@ -139,17 +130,21 @@ public class Player{
         for(Rectangle rectangle: solidPlatforms){
             if((position.y + activeCollider.y + activeCollider.height > rectangle.y && position.y + activeCollider.y < rectangle.y + rectangle.height)
             && (position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width )){
-                if(direction.y > 0)
+                if(velocity.y > 0){
                     position.y = rectangle.y - activeCollider.height - activeCollider.y;
-                else if(direction.y < 0)
+                    velocity.y = 0;
+                }
+                else if(velocity.y < 0){
                     position.y = rectangle.y + rectangle.height - activeCollider.y;
+                    velocity.y = 0;
+                }
             }
         }
     }
 
 
     public void crouch(){
-        {
+        if(isGrounded){
             isCrouching = true;
             System.out.println("CROUCHING");
         }
@@ -183,10 +178,47 @@ public class Player{
         return isCrouching;
     }
 
-    
+    public void ensureGrounding(Array<Rectangle> solidPlatforms){
+        isGrounded = false;
+        Rectangle activeCollider;
+        if(isCrouching)
+            activeCollider = crouchMovementOffset;
+        else
+            activeCollider = movementOffset;
 
+        float offset = 2.f;
+        for(Rectangle rectangle: solidPlatforms){
+            if((position.y + activeCollider.y >= rectangle.y + rectangle.height) && (position.y + activeCollider.y <= rectangle.y + rectangle.height + offset)
+            && (rectangle.x < position.x + activeCollider.x + activeCollider.width) && (rectangle.x+rectangle.width > position.x + activeCollider.x)){
+                isGrounded = true;
+                break;
+            }
+        }
+    }
 
+    public void reactToGravity(float gravity , float dt){
+        if(!isGrounded)
+            velocity.y+= gravity * dt;
+        else if(isGrounded)
+            velocity.y = 0;
 
+        if(velocity.y < maxFallSpeed)
+            velocity.y = maxFallSpeed;
+    }
+
+    public void reactToJetpack(float thrust, float dt){
+        velocity.y += thrust * dt;
+        if(velocity.y > maxRiseSpeed)
+              velocity.y = maxRiseSpeed;
+    }
+
+    public void balanceIfPlayerOnVerticalExtreme(Vector2 worldSize){
+        if(position.y + height  >= worldSize.y && velocity.y > 0) 
+                velocity.y = 0;
+
+        else if(position.y <= 0 && velocity.y < 0)
+                velocity.y = 0;
+    }
 
 
     public static void main(String[] args){
