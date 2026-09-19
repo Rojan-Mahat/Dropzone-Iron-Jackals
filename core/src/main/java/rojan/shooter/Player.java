@@ -5,6 +5,9 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
+
 
 public class Player{
     private Vector2 position;
@@ -14,10 +17,16 @@ public class Player{
     private Sprite sprite;
     private Vector2 velocity;
     private float moveSpeed;
-    
-    
+
+    private Rectangle movementOffset;
+    private Rectangle crouchMovementOffset;
+
+    private boolean isCrouching;
+    private boolean isGrounded;
    
 
+
+    
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
         position = new Vector2(spawnX,spawnY);
         width = widthfromMap;
@@ -29,6 +38,7 @@ public class Player{
         sprite.setSize(width,height);
         velocity = new Vector2(0,0);
         moveSpeed = 300f;
+        isCrouching = false;
     }
 
     public void drawPlayer(SpriteBatch batch){
@@ -39,7 +49,25 @@ public class Player{
         texture.dispose();
     }
 
-    public void move(Vector2 direction, float dt, Vector2 worldSize){
+    public void receivePlayerMoveBox(Rectangle moveBox){
+        movementOffset = new Rectangle();
+        movementOffset.x = moveBox.x - position.x;
+        movementOffset.y = moveBox.y - position.y;
+        movementOffset.width = moveBox.width;
+        movementOffset.height = moveBox.height;
+    }
+
+    public void receivePlayerCrouchMoveBox(Rectangle crouchMoveBox){
+        crouchMovementOffset = new Rectangle();
+        crouchMovementOffset.x = crouchMoveBox.x - position.x;
+        crouchMovementOffset.y = crouchMoveBox.y - position.y;
+        crouchMovementOffset.width = crouchMoveBox.width;
+        crouchMovementOffset.height = crouchMoveBox.height;
+    }
+
+
+
+    public void move(Vector2 direction, float dt, Vector2 worldSize,Array<Rectangle> solidPlatforms){
         float directionX,directionY;
         float normalizer =(float)Math.sqrt(direction.x * direction.x + direction.y * direction.y);
         if(normalizer!=0){
@@ -55,7 +83,9 @@ public class Player{
         float velocityY = directionY * moveSpeed;
 
         position.x = position.x + velocityX * dt;
+        resolveHorizontalCollision(direction,solidPlatforms);
         position.y = position.y + velocityY * dt;
+        resolveVerticalCollision(direction,solidPlatforms);
 
         if(position.x <= 0)
             position.x = 0;
@@ -79,6 +109,81 @@ public class Player{
         Vector2 centrePosition = new Vector2(position.x + width/2 , position.y + height/2);
         return centrePosition;
     }
+
+    private void resolveHorizontalCollision(Vector2 direction,Array<Rectangle> solidPlatforms){
+        Rectangle activeCollider;
+        if(isCrouching)
+            activeCollider = crouchMovementOffset;
+        else
+            activeCollider = movementOffset;
+
+        for(Rectangle rectangle: solidPlatforms){
+            if((position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width)
+            && position.y + activeCollider.y < rectangle.y+rectangle.height && position.y + activeCollider.y + activeCollider.height > rectangle.y){
+                if(direction.x < 0)
+                    position.x = rectangle.x + rectangle.width - activeCollider.x;
+                else if(direction.x>0)
+                    position.x = rectangle.x - activeCollider.width - activeCollider.x; 
+            }
+        }         
+    }
+        
+
+    private void resolveVerticalCollision(Vector2 direction,Array<Rectangle> solidPlatforms){
+        Rectangle activeCollider;
+        if(isCrouching)
+            activeCollider = crouchMovementOffset;
+        else
+            activeCollider = movementOffset;
+
+        for(Rectangle rectangle: solidPlatforms){
+            if((position.y + activeCollider.y + activeCollider.height > rectangle.y && position.y + activeCollider.y < rectangle.y + rectangle.height)
+            && (position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width )){
+                if(direction.y > 0)
+                    position.y = rectangle.y - activeCollider.height - activeCollider.y;
+                else if(direction.y < 0)
+                    position.y = rectangle.y + rectangle.height - activeCollider.y;
+            }
+        }
+    }
+
+
+    public void crouch(){
+        {
+            isCrouching = true;
+            System.out.println("CROUCHING");
+        }
+
+    }
+
+    public void stand(Array<Rectangle> solidPlatforms){
+        if (isCrouching){
+            boolean canStand = true;
+            float playerLeft,playerRight, playerBottom, playerTop;
+            playerLeft = position.x + movementOffset.x;
+            playerRight = playerLeft + movementOffset.width;
+            playerBottom = position.y + movementOffset.y;
+            playerTop = playerBottom + movementOffset.height;
+
+            for (Rectangle rectangle : solidPlatforms) {
+                if((playerRight > rectangle.x && playerLeft < rectangle.x + rectangle.width)
+                &&(playerTop > rectangle.y && playerBottom < rectangle.y + rectangle.height)){
+                    canStand = false;
+                    break;
+                }
+            }
+            if (canStand){
+                isCrouching = false;
+                System.out.println("STANDING");
+            }
+        }
+    }
+
+    public boolean getCrouchingState(){
+        return isCrouching;
+    }
+
+    
 
 
 

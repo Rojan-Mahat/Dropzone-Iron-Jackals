@@ -16,7 +16,11 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
+import com.badlogic.gdx.utils.Array;
 
+//./gradlew lwjgl3:run
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class ShooterGame extends ApplicationAdapter {
@@ -25,6 +29,7 @@ public class ShooterGame extends ApplicationAdapter {
     private OrthographicCamera camera;
     private Player player;
     private SpriteBatch batch;
+    private Array<Rectangle> solidPlatforms;
 
     @Override
     public void create() {
@@ -35,8 +40,12 @@ public class ShooterGame extends ApplicationAdapter {
         mapRenderer.setView(camera);
 
         player = createPlayerFromMap(map);
+        player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
+        player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
+        solidPlatforms = extractSolidPlatformsFromMap(map);
+
 
     }
 
@@ -58,8 +67,17 @@ public class ShooterGame extends ApplicationAdapter {
         if(Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))
             direction.y++;
         
-        player.move(direction,dt,getWorldSize());
+        player.move(direction,dt,getWorldSize(),solidPlatforms);
 
+
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
+            if(!player.getCrouchingState())
+                player.crouch();
+            else
+                player.stand(solidPlatforms);   
+        }
+        
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
@@ -144,7 +162,6 @@ public class ShooterGame extends ApplicationAdapter {
         else if(playerPos.y < bottomThreshold)
             cameraY = cameraY + playerPos.y - bottomThreshold;
         
-
         float minCameraX = camera.viewportWidth / 2;
         float maxCameraX = worldSize.x - camera.viewportWidth / 2;
 
@@ -171,6 +188,35 @@ public class ShooterGame extends ApplicationAdapter {
         mapRenderer.setView(camera);
         batch.setProjectionMatrix(camera.combined);
     }
+
+    private Array<Rectangle> extractSolidPlatformsFromMap(TiledMap map){
+        Array<Rectangle> solidPlatforms = new Array<>();
+        MapLayer collisionLayer = map.getLayers().get("collision");
+        Array<RectangleMapObject> platforms = collisionLayer.getObjects().getByType(RectangleMapObject.class);
+        for(RectangleMapObject platform : platforms)
+            solidPlatforms.add(platform.getRectangle());
+        return solidPlatforms;
+    }
+
+    private Rectangle extractPlayerMovementColliderFromMap(TiledMap map){
+        Rectangle moveBox = new Rectangle();
+        MapLayer playerLayer = map.getLayers().get("Player");
+        RectangleMapObject moveBoxObject = (RectangleMapObject)playerLayer.getObjects().get("playerMovement");
+        moveBox = moveBoxObject.getRectangle();
+        return moveBox;
+    }
+
+    private Rectangle extractPlayerCrouchMovementColliderFromMap(TiledMap map){
+        Rectangle crouchMoveBox = new Rectangle();
+        MapLayer playerLayer = map.getLayers().get("Player");
+        RectangleMapObject crouchMoveBoxObject = (RectangleMapObject)playerLayer.getObjects().get("crouchMovement");
+        crouchMoveBox = crouchMoveBoxObject.getRectangle();
+        return crouchMoveBox;
+    }
+
+    
+
+
 
 
 }
