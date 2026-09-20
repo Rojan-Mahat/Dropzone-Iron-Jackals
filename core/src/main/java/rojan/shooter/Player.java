@@ -85,7 +85,7 @@ public class Player{
         width = widthfromMap;
         height = heightfromMap;
 
-        texture = new Texture("references/playerReference.png");
+        texture = new Texture(AssetPaths.References.PLAYER);
         sprite = new Sprite(texture);
         sprite.setPosition(position.x, position.y);
         sprite.setSize(width,height);
@@ -101,7 +101,7 @@ public class Player{
 
         stateTime = 0f;
 
-        idleTexture = new Texture("sprites/player/idle.png");
+        idleTexture = new Texture(AssetPaths.Player.Unarmed.IDLE);
         TextureRegion[][] idleRegions = TextureRegion.split(idleTexture,idleTexture.getWidth() / 4,idleTexture.getHeight()/2);
         idleFrames = new TextureRegion[8];
         int idleIndex = 0;
@@ -112,7 +112,7 @@ public class Player{
             }
         }
 
-        runningTexture = new Texture("sprites/player/running.png");
+        runningTexture = new Texture(AssetPaths.Player.Unarmed.RUNNING);
         TextureRegion[][] runningRegions = TextureRegion.split(runningTexture,runningTexture.getWidth() / 4,runningTexture.getHeight()/2);
         runningFrames = new TextureRegion[8];
         int runningIndex = 0;
@@ -123,27 +123,27 @@ public class Player{
             }
         }
 
-        crouchIdleTexture = new Texture("sprites/player/crouch_idle.png");
+        crouchIdleTexture = new Texture(AssetPaths.Player.Unarmed.CROUCH_IDLE);
         TextureRegion[][] crouchRegions = TextureRegion.split(crouchIdleTexture,crouchIdleTexture.getWidth() / 4,crouchIdleTexture.getHeight());
         crouchIdleFrames = new TextureRegion[4];
         crouchIdleFrames = crouchRegions[0];
 
-        crouchWalkingTexture = new Texture("sprites/player/crouch_walking.png");
+        crouchWalkingTexture = new Texture(AssetPaths.Player.Unarmed.CROUCH_WALKING);
         TextureRegion[][] crouchWalkingRegions = TextureRegion.split(crouchWalkingTexture,crouchWalkingTexture.getWidth() / 4,crouchWalkingTexture.getHeight());
         crouchWalkingFrames = new TextureRegion[4];
         crouchWalkingFrames = crouchWalkingRegions[0];
 
-        jetThrustTexture = new Texture("sprites/player/jet_thrust.png");
+        jetThrustTexture = new Texture(AssetPaths.Player.Unarmed.JET_THRUST);
         TextureRegion[][] jetThrustRegions = TextureRegion.split(jetThrustTexture,jetThrustTexture.getWidth() / 4,jetThrustTexture.getHeight());
         jetThrustFrames = new TextureRegion[4];
         jetThrustFrames = jetThrustRegions[0];
 
-        airborneTexture = new Texture("sprites/player/airborne.png");
+        airborneTexture = new Texture(AssetPaths.Player.Unarmed.AIRBORNE);
         TextureRegion[][] airborneRegions = TextureRegion.split(airborneTexture,airborneTexture.getWidth() / 4,airborneTexture.getHeight());
         airborneFrames = new TextureRegion[4];
         airborneFrames = airborneRegions[0];
 
-        flameTexture = new Texture("sprites/effects/flame.png");
+        flameTexture = new Texture(AssetPaths.Effects.FLAME);
         TextureRegion[][] flameRegions = TextureRegion.split(flameTexture,flameTexture.getWidth() / 4,flameTexture.getHeight());
         flameFrames = new TextureRegion[4];
         flameFrames = flameRegions[0];
@@ -165,40 +165,34 @@ public class Player{
 
             case JETPACK_THRUST:
                 int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
-                drawFrame(batch,jetThrustFrames[jetThrustIndex]);
-                batch.draw(jetThrustFrames[jetThrustIndex], position.x, position.y, width, height);
+                drawFrame(batch,jetThrustFrames[jetThrustIndex],1f,1f);
                 break;
 
             case AIRBORNE:
                 int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
-                drawFrame(batch,airborneFrames[airborneIndex]);
-                batch.draw(airborneFrames[airborneIndex], position.x, position.y, width, height);
+                drawFrame(batch,airborneFrames[airborneIndex],1f,0.95f);
                 break;
 
-
             case IDLE:
-                int idleIndex = (int)(stateTime / 90f) % idleFrames.length;
-                drawFrame(batch,idleFrames[idleIndex]);
-                batch.draw(idleFrames[idleIndex], position.x, position.y, width, height);
+                int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
+                drawFrame(batch,idleFrames[idleIndex],1f,1f);
                 break;
             
 
             case RUNNING:
                 int runningIndex = (int)(stateTime / 0.23f) % runningFrames.length;
-                batch.draw(runningFrames[runningIndex], position.x, position.y, width, height);
+                drawFrame(batch, runningFrames[runningIndex], 0.95f, 0.95f);
                 break;
             
 
             case CROUCH_IDLE:
                 int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
-                drawFrame(batch,crouchIdleFrames[crouchIdleIndex]);
-                batch.draw(crouchIdleFrames[crouchIdleIndex], position.x, position.y, width, height);
+                drawFrame(batch,crouchIdleFrames[crouchIdleIndex],0.9f,0.96f);
                 break;
 
             case CROUCH_WALKING:
                 int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
-                drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex]);
-                batch.draw(crouchWalkingFrames[crouchWalkingIndex], position.x, position.y, width, height);
+                drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex],0.9f,0.96f);
                 break;
         }
     }
@@ -271,11 +265,18 @@ public class Player{
 
     }
 
-    private void drawFrame(SpriteBatch batch, TextureRegion frame){
+    private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY){
         boolean faceLeft = currentDirection == FacingDirection.LEFT;
         if(frame.isFlipX() != faceLeft)
             frame.flip(true,false);
-        batch.draw(frame,position.x,position.y,width,height);
+
+        float drawWidth = width * scaleX;
+        float drawHeight = height * scaleY;
+
+        float drawX = position.x + (width - drawWidth) / 2f;
+        float drawY = position.y;
+
+         batch.draw(frame, drawX, drawY, drawWidth, drawHeight);
     }
 
     public void receivePlayerMoveBox(Rectangle moveBox){

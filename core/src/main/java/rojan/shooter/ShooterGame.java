@@ -115,7 +115,7 @@ public class ShooterGame extends ApplicationAdapter {
 
     private TiledMap loadMap(){
         TmxMapLoader loader = new TmxMapLoader();
-        TiledMap loadedMap = loader.load("map/world/AlienRuins.tmx");
+        TiledMap loadedMap = loader.load(AssetPaths.Map.ALIEN_RUINS);
         return loadedMap;
     }
 

@@ -31,12 +31,12 @@ public class Weapon{
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
         currentWeapon = type;
         position = new Vector2(spawnX,spawnY);
-        float weaponScale = 1.8f;
+        float weaponScale = 1.3f;
         this.width = width * weaponScale;
         this.height = height * weaponScale;
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
 
-        ARtexture = new Texture("sprites/weapons/guns/ar.png");
+        ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
         ARsprite = new Sprite(ARtexture);
     }
 
