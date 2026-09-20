@@ -65,11 +65,16 @@ public class ShooterGame extends ApplicationAdapter {
         if(Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) 
             direction.x++;
 
-        if(Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))
-            player.reactToJetpack(jetpackThrust,dt);
+        if(Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)){
+            if(player.getCrouchingState())
+                player.stand(solidPlatforms);
+            if(!player.getCrouchingState())
+                player.reactToJetpack(jetpackThrust,dt);
+        }
+        else
+             player.stopJetpack();
         
         player.move(direction,dt,getWorldSize(),solidPlatforms);
-        player.balanceIfPlayerOnVerticalExtreme(getWorldSize());
         player.ensureGrounding(solidPlatforms);
 
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
@@ -82,7 +87,7 @@ public class ShooterGame extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
-        player.drawPlayer(batch);
+        player.drawPlayer(batch,dt);
         batch.end();
     }
     
@@ -142,8 +147,8 @@ public class ShooterGame extends ApplicationAdapter {
         float cameraX = camera.position.x;
         float cameraY = camera.position.y;
 
-        float deadZoneHalfWidth = 0.4f * camera.viewportWidth/2;
-        float deadZoneHalfHeight = 0.4f * camera.viewportHeight/2;
+        float deadZoneHalfWidth = 0.33f * camera.viewportWidth/2;
+        float deadZoneHalfHeight = 0.33f * camera.viewportHeight/2;
 
         float rightThreshold = cameraX + deadZoneHalfWidth;
         float leftThreshold = cameraX - deadZoneHalfWidth;

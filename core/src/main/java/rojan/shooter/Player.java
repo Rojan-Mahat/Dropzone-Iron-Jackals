@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Vector2;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.Animation;
 
 
 public class Player{
@@ -24,10 +26,48 @@ public class Player{
 
     private boolean isCrouching;
     private boolean isGrounded;
+    private boolean isJetPackActive;
 
     private float maxRiseSpeed = 550;
     private float maxFallSpeed = -800;
-    
+
+    private enum PlayerState{
+        IDLE,
+        RUNNING,
+        CROUCH_IDLE,
+        CROUCH_WALKING,
+        HIT,
+        SHOOTING,
+        JETPACK_THRUST,
+        AIRBORNE,
+        DEAD
+    }
+    private PlayerState currentState;
+    private PlayerState previousState;
+
+
+    private Texture idleTexture;
+    private TextureRegion[] idleFrames;
+    private float stateTime;
+
+    private Texture crouchIdleTexture;
+    private TextureRegion[] crouchIdleFrames;
+
+    private Texture crouchWalkingTexture;
+    private TextureRegion[] crouchWalkingFrames;
+
+    private Texture runningTexture;
+    private TextureRegion[] runningFrames;
+
+    private Texture jetThrustTexture;
+    private TextureRegion[] jetThrustFrames;
+
+    private Texture airborneTexture;
+    private TextureRegion[] airborneFrames;
+
+    private Texture flameTexture;
+    private TextureRegion[] flameFrames;
+    private float flameStateTime;
 
 
     
@@ -35,22 +75,162 @@ public class Player{
         position = new Vector2(spawnX,spawnY);
         width = widthfromMap;
         height = heightfromMap;
+
         texture = new Texture("references/playerReference.png");
         sprite = new Sprite(texture);
-
         sprite.setPosition(position.x, position.y);
         sprite.setSize(width,height);
+
         velocity = new Vector2(0,0);
         moveSpeed = 300f;
         isCrouching = false;
+        currentState = PlayerState.IDLE;
+        previousState = PlayerState.IDLE;
+
+        stateTime = 0f;
+
+        idleTexture = new Texture("sprites/player/idle.png");
+        TextureRegion[][] idleRegions = TextureRegion.split(idleTexture,idleTexture.getWidth() / 4,idleTexture.getHeight()/2);
+        idleFrames = new TextureRegion[8];
+        int idleIndex = 0;
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 4; col++){
+                idleFrames[idleIndex] = idleRegions[row][col];
+                idleIndex++;
+            }
+        }
+
+        runningTexture = new Texture("sprites/player/running.png");
+        TextureRegion[][] runningRegions = TextureRegion.split(runningTexture,runningTexture.getWidth() / 4,runningTexture.getHeight()/2);
+        runningFrames = new TextureRegion[8];
+        int runningIndex = 0;
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 4; col++){
+                runningFrames[runningIndex] = runningRegions[row][col];
+                runningIndex++;
+            }
+        }
+
+        crouchIdleTexture = new Texture("sprites/player/crouch_idle.png");
+        TextureRegion[][] crouchRegions = TextureRegion.split(crouchIdleTexture,crouchIdleTexture.getWidth() / 4,crouchIdleTexture.getHeight());
+        crouchIdleFrames = new TextureRegion[4];
+        crouchIdleFrames = crouchRegions[0];
+
+        crouchWalkingTexture = new Texture("sprites/player/crouch_walking.png");
+        TextureRegion[][] crouchWalkingRegions = TextureRegion.split(crouchWalkingTexture,crouchWalkingTexture.getWidth() / 4,crouchWalkingTexture.getHeight());
+        crouchWalkingFrames = new TextureRegion[4];
+        crouchWalkingFrames = crouchWalkingRegions[0];
+
+        jetThrustTexture = new Texture("sprites/player/jet_thrust.png");
+        TextureRegion[][] jetThrustRegions = TextureRegion.split(jetThrustTexture,jetThrustTexture.getWidth() / 4,jetThrustTexture.getHeight());
+        jetThrustFrames = new TextureRegion[4];
+        jetThrustFrames = jetThrustRegions[0];
+
+        airborneTexture = new Texture("sprites/player/airborne.png");
+        TextureRegion[][] airborneRegions = TextureRegion.split(airborneTexture,airborneTexture.getWidth() / 4,airborneTexture.getHeight());
+        airborneFrames = new TextureRegion[4];
+        airborneFrames = airborneRegions[0];
+
+        flameTexture = new Texture("sprites/effects/flame.png");
+        TextureRegion[][] flameRegions = TextureRegion.split(flameTexture,flameTexture.getWidth() / 4,flameTexture.getHeight());
+        flameFrames = new TextureRegion[4];
+        flameFrames = flameRegions[0];
+        flameStateTime = 0f;
     }
 
-    public void drawPlayer(SpriteBatch batch){
-        sprite.draw(batch);
+    public void drawPlayer(SpriteBatch batch,float dt){
+        previousState = currentState;
+        updatePlayerState();
+        if(previousState!=currentState)
+                stateTime = 0;
+        else
+            stateTime+=dt;
+
+        if(isJetPackActive)
+            drawJetpackFlame(batch, dt);
+
+        switch(currentState){
+
+            case JETPACK_THRUST:
+                int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
+                batch.draw(jetThrustFrames[jetThrustIndex], position.x, position.y, width, height);
+                break;
+
+            case AIRBORNE:
+                int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
+                batch.draw(airborneFrames[airborneIndex], position.x, position.y, width, height);
+                break;
+
+
+            case IDLE:
+                int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
+                batch.draw(idleFrames[idleIndex], position.x, position.y, width, height);
+                break;
+            
+
+            case RUNNING:
+                int runningIndex = (int)(stateTime / 0.23f) % runningFrames.length;
+                batch.draw(runningFrames[runningIndex], position.x, position.y, width, height);
+                break;
+            
+
+            case CROUCH_IDLE:
+                int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
+                batch.draw(crouchIdleFrames[crouchIdleIndex], position.x, position.y, width, height);
+                break;
+
+            case CROUCH_WALKING:
+                int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
+                batch.draw(crouchWalkingFrames[crouchWalkingIndex], position.x, position.y, width, height);
+                break;
+        }
     }
+
+    private void updatePlayerState(){
+        if(isJetPackActive)
+            currentState = PlayerState.JETPACK_THRUST;
+
+        else if(!isGrounded)
+            currentState = PlayerState.AIRBORNE;
+
+        else if(isGrounded && !isCrouching && velocity.x == 0)
+            currentState = PlayerState.IDLE;
+        
+        else if(isGrounded && !isCrouching && velocity.x != 0)
+            currentState = PlayerState.RUNNING;
+        
+        else if(isGrounded && isCrouching && velocity.x == 0)
+            currentState = PlayerState.CROUCH_IDLE;
+        
+        else if(isGrounded && isCrouching && velocity.x != 0)
+            currentState = PlayerState.CROUCH_WALKING;    
+    }
+
+    private void drawJetpackFlame(SpriteBatch batch, float dt){
+        flameStateTime += dt;
+        int frameIndex = (int)(flameStateTime / 0.08f) % flameFrames.length;
+        float flameWidth = width * 0.50f;
+        float flameHeight = height * 0.35f;
+        float flameX = position.x + width * 0.03f;
+
+        float nozzleY = position.y + height * 0.62f;
+        float flameY = nozzleY - flameHeight;
+        batch.draw(flameFrames[frameIndex], flameX, flameY, flameWidth, flameHeight);
+    }
+
+
+
 
     public void disposePlayer(){
         texture.dispose();
+        idleTexture.dispose();
+        runningTexture.dispose(); 
+        crouchIdleTexture.dispose(); 
+        crouchWalkingTexture.dispose(); 
+        jetThrustTexture.dispose();
+        airborneTexture.dispose();
+        flameTexture.dispose();
+
     }
 
     public void receivePlayerMoveBox(Rectangle moveBox){
@@ -72,22 +252,28 @@ public class Player{
 
 
     public void move(Vector2 direction, float dt, Vector2 worldSize,Array<Rectangle> solidPlatforms){
-        float velocityX = direction.x * moveSpeed;
+        velocity.x= direction.x * moveSpeed;
 
-        position.x = position.x + velocityX * dt;
+        position.x = position.x + velocity.x * dt;
         resolveHorizontalCollision(direction,solidPlatforms);
         position.y = position.y + velocity.y * dt;
         resolveVerticalCollision(solidPlatforms);
 
         if(position.x <= 0)
             position.x = 0;
+        
         else if(position.x >= worldSize.x - width)
             position.x = worldSize.x - width;
-
-        if(position.y <= 0)
+        
+        if(position.y <= 0){
             position.y = 0;
-        else if(position.y >= worldSize.y - height)
+            velocity.y = 0;
+        }
+        else if(position.y >= worldSize.y - height){
             position.y = worldSize.y - height;
+            velocity.y = 0;
+
+        }
 
         sprite.setPosition(position.x , position.y);
     }
@@ -146,7 +332,6 @@ public class Player{
     public void crouch(){
         if(isGrounded){
             isCrouching = true;
-            System.out.println("CROUCHING");
         }
 
     }
@@ -178,6 +363,15 @@ public class Player{
         return isCrouching;
     }
 
+    public boolean getGroundedStatus(){
+        return isGrounded;
+    }
+
+    public void stopJetpack(){
+        isJetPackActive = false;
+        flameStateTime = 0;
+    }
+
     public void ensureGrounding(Array<Rectangle> solidPlatforms){
         isGrounded = false;
         Rectangle activeCollider;
@@ -207,17 +401,10 @@ public class Player{
     }
 
     public void reactToJetpack(float thrust, float dt){
+        isJetPackActive = true;
         velocity.y += thrust * dt;
         if(velocity.y > maxRiseSpeed)
               velocity.y = maxRiseSpeed;
-    }
-
-    public void balanceIfPlayerOnVerticalExtreme(Vector2 worldSize){
-        if(position.y + height  >= worldSize.y && velocity.y > 0) 
-                velocity.y = 0;
-
-        else if(position.y <= 0 && velocity.y < 0)
-                velocity.y = 0;
     }
 
 

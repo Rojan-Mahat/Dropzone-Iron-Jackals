@@ -19,6 +19,7 @@ references/air_stalker.png
 references/ground_gunner.png
 references/phase_miner.png
 references/playerReference.png
+sprites/effects/flame.png
 sprites/effects/gloo_wall_breaking.png
 sprites/effects/gloo_wall_forming.png
 sprites/effects/grenade_explosion.png
@@ -41,14 +42,16 @@ sprites/enemy/phase_miner/hit.png
 sprites/enemy/phase_miner/idle.png
 sprites/player/aim_down.png
 sprites/player/aim_up.png
+sprites/player/airborne.png
 sprites/player/crouch_idle.png
 sprites/player/crouch_recoil.png
 sprites/player/crouch_walking.png
 sprites/player/death.png
-sprites/player/fly.png
 sprites/player/hit.png
 sprites/player/idle.png
+sprites/player/jet_thrust.png
 sprites/player/recoil.png
+sprites/player/running.png
 sprites/powerups/ammo_crate.png
 sprites/powerups/damage_booster.png
 sprites/powerups/health_pickup.png
