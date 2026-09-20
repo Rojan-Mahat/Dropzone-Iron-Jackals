@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="48" height="27" tilewidth="64" tileheight="64" infinite="0" nextlayerid="11" nextobjectid="703">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="48" height="27" tilewidth="64" tileheight="64" infinite="0" nextlayerid="12" nextobjectid="716">
  <tileset firstgid="1" source="AlienRuins.tsx"/>
  <tileset firstgid="10" source="Player.tsx"/>
  <tileset firstgid="12" source="G_Gunner.tsx"/>
@@ -42,7 +42,7 @@
  <imagelayer id="8" name="baked_background" locked="1">
   <image source="../background/background_baked.png" width="3072" height="1728"/>
  </imagelayer>
- <objectgroup color="#ff0000" id="7" name="collision">
+ <objectgroup color="#ff0000" id="7" name="collision" visible="0" locked="1">
   <object id="69" x="105.386" y="54.6448" width="78.064" height="19.516"/>
   <object id="74" x="212.052" y="413.501" width="128.998" height="83.0535" opacity="0.78"/>
   <object id="84" x="449.815" y="377.503" width="76.0387" height="66.5045" opacity="0.78"/>
@@ -333,13 +333,20 @@
   <object id="652" gid="17" x="316.888" y="1076.25" width="120" height="120"/>
   <object id="653" gid="15" x="526.808" y="1083.54" width="120" height="120"/>
  </objectgroup>
- <objectgroup color="#ff0000" id="9" name="Player" locked="1">
+ <objectgroup color="#ff0000" id="9" name="Player">
   <object id="686" gid="11" x="516.673" y="951.143" width="80" height="120"/>
+  <object id="703" gid="11" x="516.673" y="951.143" width="80" height="120"/>
+  <object id="704" gid="11" x="516.673" y="951.143" width="80" height="120"/>
+  <object id="705" gid="11" x="516.673" y="951.143" width="80" height="120"/>
+  <object id="706" gid="11" x="516.673" y="951.143" width="80" height="120"/>
   <object id="690" name="HEAD" x="558.443" y="845.385"/>
   <object id="691" name="TORSO" x="556.942" y="865.436"/>
   <object id="692" name="LIMBS" x="539.437" y="875.478" width="36.2794" height="69.9769"/>
   <object id="695" name="PlayerSpawn" x="519.793" y="831.009" width="80" height="120"/>
   <object id="700" name="crouchMovement" x="537.71" y="888.091" width="38.9964" height="55.2762"/>
   <object id="701" name="playerMovement" x="540.11" y="835.638" width="34.5265" height="107.778"/>
+  <object id="707" name="forWeapon" gid="11" x="706.941" y="956.922" width="80" height="120"/>
+  <object id="708" name="weaponSocket" x="768.601" y="877.157" rotation="180.31"/>
+  <object id="715" name="AR_origin" x="750.137" y="878.171" width="44" height="17"/>
  </objectgroup>
 </map>

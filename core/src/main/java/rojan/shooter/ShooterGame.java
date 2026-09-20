@@ -3,6 +3,7 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.objects.PointMapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -18,7 +19,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
+import com.badlogic.gdx.maps.objects.PointMapObject;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 
 //./gradlew lwjgl3:run
 
@@ -31,8 +34,11 @@ public class ShooterGame extends ApplicationAdapter {
     private SpriteBatch batch;
     private Array<Rectangle> solidPlatforms;
 
+    private Weapon weapon;
+
     private float gravity = -1200.f;
     private float jetpackThrust= 2200.f;
+
 
     @Override
     public void create() {
@@ -43,8 +49,11 @@ public class ShooterGame extends ApplicationAdapter {
         mapRenderer.setView(camera);
 
         player = createPlayerFromMap(map);
+        weapon = createWeaponFromMap(map);
         player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
+        player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
+
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
@@ -57,6 +66,7 @@ public class ShooterGame extends ApplicationAdapter {
         float dt = Gdx.graphics.getDeltaTime();
         clampCameraToPlayer();
         activateGravity(dt);
+        weapon.setHandPosition(player.getHandPosition());
 
         Vector2 direction = new Vector2(0,0);
         if(Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))
@@ -88,6 +98,7 @@ public class ShooterGame extends ApplicationAdapter {
         mapRenderer.render();
         batch.begin();
         player.drawPlayer(batch,dt);
+        weapon.drawWeapon(batch);
         batch.end();
     }
     
@@ -98,6 +109,7 @@ public class ShooterGame extends ApplicationAdapter {
         map.dispose();
         batch.dispose();
         player.disposePlayer();
+        weapon.disposeWeapon();
     }
 
 
@@ -124,6 +136,14 @@ public class ShooterGame extends ApplicationAdapter {
         Player newPlayer = new Player(playerRect.x,playerRect.y,playerRect.width,playerRect.height);
 
         return newPlayer;
+    }
+
+    private Weapon createWeaponFromMap(TiledMap map){
+        MapLayer playerLayer = map.getLayers().get("Player");
+        RectangleMapObject Ar_GunObject = (RectangleMapObject)playerLayer.getObjects().get("AR_origin");
+        Rectangle AR_GunRect = Ar_GunObject.getRectangle();
+        Weapon newWeapon = new Weapon(Weapon.WeaponType.AR, AR_GunRect.x, AR_GunRect.y , AR_GunRect.width, AR_GunRect.height,extractARGripOffsetFromMap(map) );
+        return newWeapon;
     }
 
     private Vector2 getWorldSize(){
@@ -216,6 +236,31 @@ public class ShooterGame extends ApplicationAdapter {
         RectangleMapObject crouchMoveBoxObject = (RectangleMapObject)playerLayer.getObjects().get("crouchMovement");
         crouchMoveBox = crouchMoveBoxObject.getRectangle();
         return crouchMoveBox;
+    }
+
+    private Vector2 extractPlayerGunHoldingOffsetFromMap(TiledMap map){
+        MapLayer playerLayer = map.getLayers().get("Player");
+        TiledMapTileMapObject forWeaponObject = (TiledMapTileMapObject) playerLayer.getObjects().get("forWeapon");
+        RectangleMapObject weaponSocketObject = (RectangleMapObject) playerLayer.getObjects().get("weaponSocket");
+
+        Rectangle weaponSocketRect = weaponSocketObject.getRectangle();
+
+        float offsetX = weaponSocketRect.x - forWeaponObject.getX();
+        float offsetY = weaponSocketRect.y - forWeaponObject.getY();
+
+        return new Vector2(offsetX, offsetY);
+    }
+
+    private Vector2 extractARGripOffsetFromMap(TiledMap map){
+        MapLayer playerLayer = map.getLayers().get("Player");
+
+        RectangleMapObject weaponSocketObject = (RectangleMapObject)playerLayer.getObjects().get("weaponSocket");
+        RectangleMapObject arOriginObject= (RectangleMapObject)playerLayer.getObjects().get("AR_origin");
+
+        Rectangle weaponSocketRect = weaponSocketObject.getRectangle();
+        Rectangle arOriginRect = arOriginObject.getRectangle();
+        
+        return new Vector2(weaponSocketRect.x - arOriginRect.x , weaponSocketRect.y - arOriginRect.y);
     }
 
     private void activateGravity(float dt){

@@ -15,6 +15,8 @@ public class Player{
     private Vector2 position;
     private float width;
     private float height;
+    private Vector2 gunHoldingPositionOffset;
+
     private Texture texture;
     private Sprite sprite;
 
@@ -46,6 +48,12 @@ public class Player{
     private PlayerState previousState;
 
 
+    private enum FacingDirection{
+        LEFT,
+        RIGHT
+    }
+    private FacingDirection currentDirection;
+
     private Texture idleTexture;
     private TextureRegion[] idleFrames;
     private float stateTime;
@@ -69,6 +77,7 @@ public class Player{
     private TextureRegion[] flameFrames;
     private float flameStateTime;
 
+    private Weapon currentWeapon;
 
     
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
@@ -86,6 +95,9 @@ public class Player{
         isCrouching = false;
         currentState = PlayerState.IDLE;
         previousState = PlayerState.IDLE;
+
+        currentDirection = FacingDirection.RIGHT;
+
 
         stateTime = 0f;
 
@@ -153,17 +165,20 @@ public class Player{
 
             case JETPACK_THRUST:
                 int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
+                drawFrame(batch,jetThrustFrames[jetThrustIndex]);
                 batch.draw(jetThrustFrames[jetThrustIndex], position.x, position.y, width, height);
                 break;
 
             case AIRBORNE:
                 int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
+                drawFrame(batch,airborneFrames[airborneIndex]);
                 batch.draw(airborneFrames[airborneIndex], position.x, position.y, width, height);
                 break;
 
 
             case IDLE:
-                int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
+                int idleIndex = (int)(stateTime / 90f) % idleFrames.length;
+                drawFrame(batch,idleFrames[idleIndex]);
                 batch.draw(idleFrames[idleIndex], position.x, position.y, width, height);
                 break;
             
@@ -176,11 +191,13 @@ public class Player{
 
             case CROUCH_IDLE:
                 int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
+                drawFrame(batch,crouchIdleFrames[crouchIdleIndex]);
                 batch.draw(crouchIdleFrames[crouchIdleIndex], position.x, position.y, width, height);
                 break;
 
             case CROUCH_WALKING:
                 int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
+                drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex]);
                 batch.draw(crouchWalkingFrames[crouchWalkingIndex], position.x, position.y, width, height);
                 break;
         }
@@ -204,21 +221,42 @@ public class Player{
         
         else if(isGrounded && isCrouching && velocity.x != 0)
             currentState = PlayerState.CROUCH_WALKING;    
+
+        
+        if(velocity.x < 0)
+            currentDirection = FacingDirection.LEFT;
+        else if(velocity.x>0)
+            currentDirection = FacingDirection.RIGHT;
+
     }
 
     private void drawJetpackFlame(SpriteBatch batch, float dt){
         flameStateTime += dt;
+
+        float flameOffsetX = width * 0.08f;
         int frameIndex = (int)(flameStateTime / 0.08f) % flameFrames.length;
-        float flameWidth = width * 0.50f;
-        float flameHeight = height * 0.35f;
-        float flameX = position.x + width * 0.03f;
+        float flameWidth = width * 0.38f;
+        float flameHeight = height * 0.32f;
+        float flameX;
 
-        float nozzleY = position.y + height * 0.62f;
+        float nozzleY = position.y + height * 0.635f;
         float flameY = nozzleY - flameHeight;
-        batch.draw(flameFrames[frameIndex], flameX, flameY, flameWidth, flameHeight);
+
+        float originX = flameWidth / 2f;
+        float originY = flameHeight;
+        float rotation;
+        if(currentDirection == FacingDirection.RIGHT)
+            rotation = -8f;
+        else
+            rotation = 8f;
+
+        if(currentDirection == FacingDirection.RIGHT)
+            flameX = position.x + flameOffsetX;
+        else
+            flameX = position.x + width - flameOffsetX - flameWidth;
+    
+        batch.draw(flameFrames[frameIndex], flameX, flameY, originX, originY,flameWidth,flameHeight,1.1f,1.1f,rotation);
     }
-
-
 
 
     public void disposePlayer(){
@@ -231,6 +269,13 @@ public class Player{
         airborneTexture.dispose();
         flameTexture.dispose();
 
+    }
+
+    private void drawFrame(SpriteBatch batch, TextureRegion frame){
+        boolean faceLeft = currentDirection == FacingDirection.LEFT;
+        if(frame.isFlipX() != faceLeft)
+            frame.flip(true,false);
+        batch.draw(frame,position.x,position.y,width,height);
     }
 
     public void receivePlayerMoveBox(Rectangle moveBox){
@@ -248,8 +293,10 @@ public class Player{
         crouchMovementOffset.width = crouchMoveBox.width;
         crouchMovementOffset.height = crouchMoveBox.height;
     }
-
-
+    
+    public void receivePlayerGunHoldingOffset(Vector2 gunPosOffset){
+        gunHoldingPositionOffset = gunPosOffset;
+    }
 
     public void move(Vector2 direction, float dt, Vector2 worldSize,Array<Rectangle> solidPlatforms){
         velocity.x= direction.x * moveSpeed;
@@ -406,6 +453,17 @@ public class Player{
         if(velocity.y > maxRiseSpeed)
               velocity.y = maxRiseSpeed;
     }
+
+    public Vector2 getHandPosition(){
+        Vector2 handPos = new Vector2();
+        handPos.y = gunHoldingPositionOffset.y + position.y;
+        if(currentDirection == FacingDirection.RIGHT)
+            handPos.x = gunHoldingPositionOffset.x + position.x;
+        else
+            handPos.x = (width - gunHoldingPositionOffset.x) + position.x;
+        return handPos;
+    }
+
 
 
     public static void main(String[] args){

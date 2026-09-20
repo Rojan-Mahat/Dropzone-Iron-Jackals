@@ -72,6 +72,7 @@ sprites/weapons/guns/rocket_launcher.png
 sprites/weapons/guns/shotgun.png
 sprites/weapons/guns/smg.png
 sprites/weapons/guns/sniper.png
+sprites/weapons/guns/weapons.tsx
 sprites/weapons/melee/knife.png
 sprites/weapons/projectile/as_bullet.png
 sprites/weapons/projectile/emp.png
