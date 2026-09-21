@@ -42,7 +42,11 @@ sprites/enemy/phase_miner/hit.png
 sprites/enemy/phase_miner/idle.png
 sprites/player/aim_down.png
 sprites/player/aim_up.png
+sprites/player/armed/rifle/crouch_idle.png
+sprites/player/armed/rifle/crouch_walking.png
 sprites/player/armed/rifle/idle.png
+sprites/player/armed/rifle/running.png
+sprites/player/armed/rifle/thrust.png
 sprites/player/recoil.png
 sprites/player/unarmed/airborne.png
 sprites/player/unarmed/crouch_idle.png
@@ -72,6 +76,7 @@ sprites/weapons/projectile/gloo_wall.png
 sprites/weapons/projectile/grenade.png
 sprites/weapons/projectile/poison.png
 sprites/weapons/rifles/ar.png
+sprites/weapons/rifles/ar.tsx
 sprites/weapons/rifles/ar_bullet.png
 sprites/weapons/rifles/shotgun.png
 sprites/weapons/rifles/shotgun_bullet.png

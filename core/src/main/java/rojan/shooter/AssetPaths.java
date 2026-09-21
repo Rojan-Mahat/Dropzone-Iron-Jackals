@@ -21,6 +21,10 @@ public final class AssetPaths {
             public static final class Rifle {
                 private Rifle() {}
                 public static final String IDLE = "sprites/player/armed/rifle/idle.png";
+                public static final String RUNNING = "sprites/player/armed/rifle/running.png";
+                public static final String CROUCH_IDLE = "sprites/player/armed/rifle/crouch_idle.png";
+                public static final String CROUCH_WALKING = "sprites/player/armed/rifle/crouch_walking.png";
+                public static final String THRUST = "sprites/player/armed/rifle/thrust.png";
 
                 // Add later:
                 //

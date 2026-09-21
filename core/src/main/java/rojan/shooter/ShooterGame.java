@@ -13,6 +13,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.graphics.Texture;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -35,9 +37,13 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Rectangle> solidPlatforms;
 
     private Weapon weapon;
+    private Array<Bullet> bullets;
 
     private float gravity = -1200.f;
     private float jetpackThrust= 2200.f;
+
+    private Texture bulletTexture;
+
 
 
     @Override
@@ -57,16 +63,21 @@ public class ShooterGame extends ApplicationAdapter {
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
-
-
+        bullets = new Array<>();
+        bulletTexture = new Texture(AssetPaths.Weapons.Rifles.AR_BULLET);
     }
 
     @Override
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
         clampCameraToPlayer();
+        Vector2 mouseWorldPosition = getMouseWorldPosition();
+        Vector2 handPosition = player.getHandPosition();
+        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
+            createBulletWhenFired(handPosition, mouseWorldPosition);
+        }
+
         activateGravity(dt);
-        weapon.setHandPosition(player.getHandPosition());
 
         Vector2 direction = new Vector2(0,0);
         if(Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))
@@ -93,12 +104,29 @@ public class ShooterGame extends ApplicationAdapter {
             else
                 player.stand(solidPlatforms);   
         }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
+            if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
+                player.switchPlayerModeArmed();
+            else if(player.getCurrentMode() == Player.PlayerMode.ARMED)
+                player.switchPlayerModeUnarmed();
+        }
+
+        for(Bullet bullet : bullets)
+            bullet.update(dt);
         
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
         player.drawPlayer(batch,dt);
-        weapon.drawWeapon(batch);
+        weapon.setHandPosition(player.getHandPosition());
+        weapon.setFacingLeft(player.isFacingLeft());
+
+        if(player.getCurrentMode() == Player.PlayerMode.ARMED)
+            weapon.drawWeapon(batch);
+
+        for(Bullet bullet : bullets)
+            bullet.draw(batch);
         batch.end();
     }
     
@@ -110,6 +138,7 @@ public class ShooterGame extends ApplicationAdapter {
         batch.dispose();
         player.disposePlayer();
         weapon.disposeWeapon();
+        bulletTexture.dispose();
     }
 
 
@@ -145,6 +174,32 @@ public class ShooterGame extends ApplicationAdapter {
         Weapon newWeapon = new Weapon(Weapon.WeaponType.AR, AR_GunRect.x, AR_GunRect.y , AR_GunRect.width, AR_GunRect.height,extractARGripOffsetFromMap(map) );
         return newWeapon;
     }
+
+    private Vector2 getMouseWorldPosition(){
+        Vector3 mousePosition = new Vector3(Gdx.input.getX(),Gdx.input.getY(),0);
+        camera.unproject(mousePosition);
+        return new Vector2(mousePosition.x, mousePosition.y);
+    }
+
+    private Vector2 normalizeBulletDirection(Vector2 handPos, Vector2 mousePos){
+        float x = mousePos.x - handPos.x;
+        float y = mousePos.y - handPos.y;
+        float normalizer =(float) Math.sqrt(x*x + y*y);
+        if(normalizer==0)
+            return new Vector2(0,0);
+        return new Vector2(x/normalizer, y/normalizer);
+    }
+
+    private void createBulletWhenFired(Vector2 handPos, Vector2 mousePos){
+       Vector2 nozzleOffset = extractARNozzleOffsetFromMap(map);
+       float x = handPos.x + nozzleOffset.x;
+       float y = handPos.y + nozzleOffset.y;
+       Vector2 nozzlePosition = new Vector2(x,y);
+       Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
+       Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 500.f,bulletTexture);
+       bullets.add(bullet);
+    }
+
 
     private Vector2 getWorldSize(){
         Vector2 worldSize = new Vector2(0,0);
@@ -261,6 +316,16 @@ public class ShooterGame extends ApplicationAdapter {
         Rectangle arOriginRect = arOriginObject.getRectangle();
         
         return new Vector2(weaponSocketRect.x - arOriginRect.x , weaponSocketRect.y - arOriginRect.y);
+    }
+
+    private Vector2 extractARNozzleOffsetFromMap(TiledMap map){
+        MapLayer playerLayer = map.getLayers().get("Player");
+        RectangleMapObject AR_NozzleObject = (RectangleMapObject) playerLayer.getObjects().get("AR_Nozzle");
+        RectangleMapObject weaponSocketObject = (RectangleMapObject) playerLayer.getObjects().get("weaponSocket");
+        Rectangle AR_NozzleRect = AR_NozzleObject.getRectangle();
+        Rectangle weaponSocketRect = weaponSocketObject.getRectangle();
+
+        return new Vector2(AR_NozzleRect.x- weaponSocketRect.x , AR_NozzleRect.y - weaponSocketRect.y );
     }
 
     private void activateGravity(float dt){

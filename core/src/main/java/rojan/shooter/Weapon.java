@@ -1,8 +1,8 @@
 package rojan.shooter;
 
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 public class Weapon{
@@ -21,11 +21,12 @@ public class Weapon{
         SMG
     }
 
-
-
     private WeaponType currentWeapon;
     private Texture ARtexture;
-    private Sprite ARsprite;
+    private TextureRegion ARregion;
+
+    private boolean facingLeft;
+    
 
 
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
@@ -37,12 +38,14 @@ public class Weapon{
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
 
         ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
-        ARsprite = new Sprite(ARtexture);
+        ARregion = new TextureRegion(ARtexture);
     }
 
     public void drawWeapon(SpriteBatch batch){
+        if(ARregion.isFlipX() != facingLeft)
+            ARregion.flip(true, false);
         Vector2 drawPosition = determineWeaponDrawLocation();
-        batch.draw(ARtexture, drawPosition.x, drawPosition.y, width, height);
+        batch.draw(ARregion, drawPosition.x, drawPosition.y, width, height);
     }
 
     public void setHandPosition(Vector2 coordinates){
@@ -54,10 +57,27 @@ public class Weapon{
     }
 
     private Vector2 determineWeaponDrawLocation(){
-       float x = handPositionEveryFrame.x - offset.x;
+        float x;
+        if(!facingLeft)
+            x = handPositionEveryFrame.x - offset.x;
+        else
+            x = handPositionEveryFrame.x - (width - offset.x);
+
        float y = handPositionEveryFrame.y - offset.y;
        return new Vector2(x,y);
     }
+
+    public void setFacingLeft(boolean facingLeft){
+        this.facingLeft = facingLeft;
+    }
+
+    public Vector2 getHandPosition(){
+        return handPositionEveryFrame;
+    }
+
+
+
+
 
     public static void main(String[] args){
 

@@ -54,6 +54,13 @@ public class Player{
     }
     private FacingDirection currentDirection;
 
+    public enum PlayerMode{
+        ARMED,
+        UNARMED,
+        THROWING
+    }
+    private PlayerMode currentMode;
+
     private Texture idleTexture;
     private TextureRegion[] idleFrames;
     private float stateTime;
@@ -78,8 +85,21 @@ public class Player{
     private float flameStateTime;
 
     private Weapon currentWeapon;
+    private float weaponDrawAdjustmentY = 0f;
 
-    
+    private Texture armedIdleTexture;
+    private TextureRegion armedIdleRegion;
+    private Texture armedCrouchIdleTexture;
+    private TextureRegion armedCrouchIdleRegion;
+    private Texture armedJetTexture;
+    private TextureRegion armedJetRegion;
+
+
+    private Texture armedRunningTexture;
+    private Texture armedCrouchWalkingTexture;
+    private TextureRegion[] armedRunningFrames;
+    private TextureRegion[] armedCrouchWalkingFrames;
+
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
         position = new Vector2(spawnX,spawnY);
         width = widthfromMap;
@@ -97,7 +117,8 @@ public class Player{
         previousState = PlayerState.IDLE;
 
         currentDirection = FacingDirection.RIGHT;
-
+        
+        currentMode = PlayerMode.UNARMED;
 
         stateTime = 0f;
 
@@ -148,6 +169,23 @@ public class Player{
         flameFrames = new TextureRegion[4];
         flameFrames = flameRegions[0];
         flameStateTime = 0f;
+
+
+        armedIdleTexture = new Texture(AssetPaths.Player.Armed.Rifle.IDLE);
+        armedIdleRegion = new TextureRegion(armedIdleTexture);
+        armedCrouchIdleTexture = new Texture(AssetPaths.Player.Armed.Rifle.CROUCH_IDLE);
+        armedCrouchIdleRegion = new TextureRegion(armedCrouchIdleTexture);
+        armedJetTexture = new Texture(AssetPaths.Player.Armed.Rifle.THRUST);
+        armedJetRegion = new TextureRegion(armedJetTexture);
+
+        armedRunningTexture = new Texture(AssetPaths.Player.Armed.Rifle.RUNNING);
+        TextureRegion[][] armedRunningRegions = TextureRegion.split(armedRunningTexture,armedRunningTexture.getWidth() / 3,armedRunningTexture.getHeight());
+        armedRunningFrames = armedRunningRegions[0];
+
+        armedCrouchWalkingTexture = new Texture(AssetPaths.Player.Armed.Rifle.CROUCH_WALKING);
+        TextureRegion[][] armedCrouchWalkingRegions = TextureRegion.split(armedCrouchWalkingTexture,armedCrouchWalkingTexture.getWidth() / 3,armedCrouchWalkingTexture.getHeight());
+        armedCrouchWalkingFrames = armedCrouchWalkingRegions[0];
+
     }
 
     public void drawPlayer(SpriteBatch batch,float dt){
@@ -161,41 +199,83 @@ public class Player{
         if(isJetPackActive)
             drawJetpackFlame(batch, dt);
 
-        switch(currentState){
+        switch(currentMode){
 
-            case JETPACK_THRUST:
-                int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
-                drawFrame(batch,jetThrustFrames[jetThrustIndex],1f,1f);
-                break;
+            case UNARMED:
 
-            case AIRBORNE:
-                int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
-                drawFrame(batch,airborneFrames[airborneIndex],1f,0.95f);
-                break;
+            switch(currentState){
+                case JETPACK_THRUST:
+                    int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
+                    drawFrame(batch,jetThrustFrames[jetThrustIndex],1f,1f);
+                    break;
 
-            case IDLE:
-                int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
-                drawFrame(batch,idleFrames[idleIndex],1f,1f);
-                break;
-            
+                case AIRBORNE:
+                    int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
+                    drawFrame(batch,airborneFrames[airborneIndex],1f,0.95f);
+                    break;
 
-            case RUNNING:
-                int runningIndex = (int)(stateTime / 0.23f) % runningFrames.length;
-                drawFrame(batch, runningFrames[runningIndex], 0.95f, 0.95f);
-                break;
-            
+                case IDLE:
+                    int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
+                    drawFrame(batch,idleFrames[idleIndex],1f,1f);
+                    break;
+                
 
-            case CROUCH_IDLE:
-                int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
-                drawFrame(batch,crouchIdleFrames[crouchIdleIndex],0.9f,0.96f);
-                break;
+                case RUNNING:
+                    int runningIndex = (int)(stateTime / 0.23f) % runningFrames.length;
+                    drawFrame(batch, runningFrames[runningIndex], 0.95f, 0.95f);
+                    break;
+                
 
-            case CROUCH_WALKING:
-                int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
-                drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex],0.9f,0.96f);
-                break;
+                case CROUCH_IDLE:
+                    int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
+                    drawFrame(batch,crouchIdleFrames[crouchIdleIndex],0.9f,0.96f);
+                    break;
+
+                case CROUCH_WALKING:
+                    int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
+                    drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex],0.9f,0.96f);
+                    break;
+            }
+            break;
+
+        case ARMED:
+
+            switch(currentState){
+                case JETPACK_THRUST:
+                    drawFrame(batch, armedJetRegion, 1f, 1f);
+                    break;
+
+                case AIRBORNE:
+                    drawFrame(batch, armedJetRegion, 1f, 1f);
+                    break;
+
+                case IDLE:
+                    drawFrame(batch, armedIdleRegion, 1f, 1f);
+                    break;
+                
+
+                case RUNNING:
+                    int runningIndex = (int)(stateTime / 0.23f) % armedRunningFrames.length;
+                    drawFrame(batch, armedRunningFrames[runningIndex], 1f, 1f);
+                    break;
+                
+
+                case CROUCH_IDLE:
+                    drawFrame(batch, armedCrouchIdleRegion, 1f, 1f);
+                    break;
+
+                case CROUCH_WALKING:
+                    int crouchWalkingIndex = (int)(stateTime / 0.23f) % armedCrouchWalkingFrames.length;
+                    drawFrame(batch,armedCrouchWalkingFrames[crouchWalkingIndex],1f,1f);
+                    break;
+            }
+            break;
+        
+        case THROWING:
+            break;
         }
     }
+
 
     private void updatePlayerState(){
         if(isJetPackActive)
@@ -262,6 +342,11 @@ public class Player{
         jetThrustTexture.dispose();
         airborneTexture.dispose();
         flameTexture.dispose();
+        armedIdleTexture.dispose();
+        armedCrouchIdleTexture.dispose();
+        armedJetTexture.dispose();
+        armedRunningTexture.dispose();
+        armedCrouchWalkingTexture.dispose();
 
     }
 
@@ -307,6 +392,7 @@ public class Player{
         position.y = position.y + velocity.y * dt;
         resolveVerticalCollision(solidPlatforms);
 
+
         if(position.x <= 0)
             position.x = 0;
         
@@ -324,6 +410,7 @@ public class Player{
         }
 
         sprite.setPosition(position.x , position.y);
+        updateWeaponDrawAdjustment(velocity.x,velocity.y); 
     }
 
     public Vector2 getPlayerPosition(){
@@ -374,6 +461,9 @@ public class Player{
                 }
             }
         }
+    }
+    public boolean isFacingLeft(){
+        return currentDirection == FacingDirection.LEFT;
     }
 
 
@@ -457,12 +547,53 @@ public class Player{
 
     public Vector2 getHandPosition(){
         Vector2 handPos = new Vector2();
-        handPos.y = gunHoldingPositionOffset.y + position.y;
+        handPos.y = gunHoldingPositionOffset.y + position.y + weaponDrawAdjustmentY;
         if(currentDirection == FacingDirection.RIGHT)
             handPos.x = gunHoldingPositionOffset.x + position.x;
         else
             handPos.x = (width - gunHoldingPositionOffset.x) + position.x;
         return handPos;
+    }
+
+    public void switchPlayerModeArmed(){
+        currentMode = PlayerMode.ARMED;
+    }
+
+    public void switchPlayerModeUnarmed(){
+        currentMode = PlayerMode.UNARMED;
+    }
+
+    public void switchPlayerModeThrowing(){
+        currentMode = PlayerMode.THROWING;
+    }
+
+    public PlayerMode getCurrentMode(){
+        return currentMode;
+    }
+
+    private void updateWeaponDrawAdjustment(float velocity_x , float velocity_y){
+        if(!isCrouching){
+            if(velocity_y > -100 &&  velocity_y < 200)
+                weaponDrawAdjustmentY = 9f;
+
+            else if(velocity_y >= -400 &&  velocity_y < -100)
+                weaponDrawAdjustmentY = 2.5f;
+            
+            else if(velocity_y < -400)
+                weaponDrawAdjustmentY = -2;
+
+            else if(velocity_y > 200 && velocity_y < 450)
+                weaponDrawAdjustmentY = 12;
+
+            else if(velocity_y > 450)
+                weaponDrawAdjustmentY = 15;
+        }
+
+        else if(isCrouching && velocity_x == 0)
+            weaponDrawAdjustmentY = -22;
+
+        else if(isCrouching && velocity_x!=0)
+            weaponDrawAdjustmentY = -14.5f;
     }
 
 
