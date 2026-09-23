@@ -1,195 +1,137 @@
 package rojan.shooter;
-
 public final class AssetPaths {
     private AssetPaths() {}
-    public static final class Player {
-        private Player() {}
-        public static final class Unarmed {
-            private Unarmed() {}
-            public static final String IDLE = "sprites/player/unarmed/idle.png";
-            public static final String RUNNING = "sprites/player/unarmed/running.png";
-            public static final String CROUCH_IDLE = "sprites/player/unarmed/crouch_idle.png";
-            public static final String CROUCH_WALKING = "sprites/player/unarmed/crouch_walking.png";
-            public static final String AIRBORNE = "sprites/player/unarmed/airborne.png";
-            public static final String JET_THRUST = "sprites/player/unarmed/jet_thrust.png";
-            public static final String HIT = "sprites/player/unarmed/hit.png";
-            public static final String DEATH = "sprites/player/unarmed/death.png";
-        }
-
-        public static final class Armed {
-            private Armed() {}
-            public static final class Rifle {
-                private Rifle() {}
-                public static final String IDLE = "sprites/player/armed/rifle/idle.png";
-                public static final String RUNNING = "sprites/player/armed/rifle/running.png";
-                public static final String CROUCH_IDLE = "sprites/player/armed/rifle/crouch_idle.png";
-                public static final String CROUCH_WALKING = "sprites/player/armed/rifle/crouch_walking.png";
-                public static final String THRUST = "sprites/player/armed/rifle/thrust.png";
-
-                // Add later:
-                //
-                // RUNNING
-                // CROUCH
-                // AIRBORNE
-                // JET_THRUST
-            }
-
-
-            public static final class Pistol {
-                private Pistol() {}
-                // Future pistol stance assets
-            }
-
-
-            public static final class Heavy {
-                private Heavy() {}
-                // Future rocket/heavy stance assets
-            }
-
-
-            public static final class Melee {
-                private Melee() {}
-                // Future melee stance assets
-            }
-        }
-
-
-        // ---------------- ACTIONS ----------------
-        public static final class Actions {
-            private Actions() {}
-            // Future:
-            // THROW
-            // RELOAD
-            // etc.
-        }
-        public static final String AIM_UP = "sprites/player/aim_up.png";
-        public static final String AIM_DOWN = "sprites/player/aim_down.png";
-        public static final String RECOIL = "sprites/player/recoil.png";
+    public static final class Map {
+        private Map() {}
+        public static final String EARTH = "map/earth/map.tmx";
+        public static final String TERRAIN_TILESET = "map/earth/terrain.tsx";
+        public static final String BACKGROUND = "map/background/background.png";
+        public static final String MAP_PIECES = "map/map_pieces/";
     }
 
+    public static final class Player {
+        private Player() {}
+        public static final class Soldier1 {
+            private Soldier1() {}
+            public static final String BASE = "sprites/soldiers/player1/";
+            public static final String IDLE = BASE + "idle/idle_";
+            public static final int IDLE_FRAMES = 12;
+
+            // These exported files are currently named ok_000.png ... ok_011.png.
+            public static final String IDLE_AIM = BASE + "idleAim/ok_";
+            public static final int IDLE_AIM_FRAMES = 12;
+            
+            public static final String WALK = BASE + "walk/walk_";
+            public static final int WALK_FRAMES = 12;
+            
+            public static final String WALK_SHOOT = BASE + "walkShoot/walkShoot_";
+            public static final int WALK_SHOOT_FRAMES = 12;
+
+            public static final String RUN = BASE + "run/run_";
+            public static final int RUN_FRAMES = 12;
+
+            public static final String RUN_SHOOT = BASE + "runShoot/runShoot_";
+            public static final int RUN_SHOOT_FRAMES = 12;
+
+            public static final String CROUCH = BASE + "crouch/crouch_";
+            public static final int CROUCH_FRAMES = 12;
+
+            public static final String CROUCH_AIM = BASE + "crouchAim/crouchAim_";
+            public static final int CROUCH_AIM_FRAMES = 12;
+
+            public static final String CROUCH_SHOOT = BASE + "crouchShoot/crouchShoot_";
+            public static final int CROUCH_SHOOT_FRAMES = 3;
+
+            public static final String JUMP = BASE + "jump/jump_";
+            public static final int JUMP_FRAMES = 12;
+
+            public static final String JUMP_SHOOT = BASE + "jumpShoot/jumpShoot_";
+            public static final int JUMP_SHOOT_FRAMES = 12;
+
+            public static final String SHOOT = BASE + "shoot/shoot_";
+            public static final int SHOOT_FRAMES = 3;
+
+            public static final String HURT = BASE + "hurt/hurt_";
+            public static final int HURT_FRAMES = 12;
+
+            public static final String DEAD = BASE + "dead/dead_";
+            public static final int DEAD_FRAMES = 12;
+
+            public static final String CLIMB = BASE + "climb/climb_";
+            public static final int CLIMB_FRAMES = 12;
+
+            public static final String MELEE = BASE + "melee/melee_";
+            public static final int MELEE_FRAMES = 7;
+
+            public static final String CROUCH_MELEE = BASE + "crouchMelee/crouchMelee_";
+            public static final int CROUCH_MELEE_FRAMES = 7;
+
+            public static final String JUMP_MELEE = BASE + "jumpMelee/jumpMelee_";
+            public static final int JUMP_MELEE_FRAMES = 7;
+
+            public static final String THROW = BASE + "throw/throw_";
+            public static final int THROW_FRAMES = 9;
+
+            public static final String CROUCH_THROW = BASE + "crouchThrow/crouchThrow_";
+            public static final int CROUCH_THROW_FRAMES = 9;
+
+            public static final String JUMP_THROW = BASE + "jumpThrow/jumpThrow_";
+            public static final int JUMP_THROW_FRAMES = 9;
+
+            public static final String HAPPY = BASE + "happy/happy_";
+            public static final int HAPPY_FRAMES = 12;
+        }
+    }
 
     public static final class Weapons {
         private Weapons() {}
         public static final class Rifles {
             private Rifles() {}
-            public static final String AR = "sprites/weapons/rifles/ar.png";
-            public static final String AR_BULLET = "sprites/weapons/rifles/ar_bullet.png";
-            public static final String SMG = "sprites/weapons/rifles/smg.png";
-            public static final String SMG_BULLET = "sprites/weapons/rifles/smg_bullet.png";
-            public static final String SNIPER = "sprites/weapons/rifles/sniper.png";
-            public static final String SNIPER_BULLET = "sprites/weapons/rifles/sniper_bullet.png";
-            public static final String SHOTGUN = "sprites/weapons/rifles/shotgun.png";
-            public static final String SHOTGUN_BULLET = "sprites/weapons/rifles/shotgun_bullet.png";
-        }
-
-        public static final class Pistol {
-            private Pistol() {}
-            public static final String PISTOL = "sprites/weapons/pistol/pistol.png";
-
-            public static final String BULLET = "sprites/weapons/pistol/pistol_bullet.png";
-        }
-
-        public static final class Heavy {
-            private Heavy() {}
-            public static final String ROCKET_LAUNCHER = "sprites/weapons/heavy/rocket_launcher.png";
-            public static final String ROCKET_BULLET = "sprites/weapons/heavy/rocket_bullet.png";
-        }
-
-        public static final class Melee {
-            private Melee() {}
-            public static final String KNIFE = "sprites/weapons/melee/knife.png";
-        }
-
-        public static final class Throwables {
-            private Throwables() {}
-            public static final String GRENADE = "sprites/weapons/throwables/grenade.png";
-            public static final String EMP_GRENADE = "sprites/weapons/throwables/emp_grenade.png";
-            public static final String POISON_GRENADE = "sprites/weapons/throwables/poison_grenade.png";
-            public static final String GLOO_WALL = "sprites/weapons/throwables/gloo_wall.png";
-        }
-
-
-        public static final class Projectiles {
-            private Projectiles() {}
-            public static final String GRENADE = "sprites/weapons/projectile/grenade.png";
-            public static final String ASSAULT_BULLET = "sprites/weapons/projectile/as_bullet.png";
-            public static final String GROUND_GUNNER_BULLET = "sprites/weapons/projectile/gg_bullet.png";
-            public static final String EMP = "sprites/weapons/projectile/emp.png";
-            public static final String POISON = "sprites/weapons/projectile/poison.png";
-            public static final String GLOO_WALL = "sprites/weapons/projectile/gloo_wall.png";
+            public static final String AR = "sprites/guns/rifle/rifle.png";
         }
     }
 
+    public static final class Bullets {
+        private Bullets() {}
+        public static final String BASE = "sprites/bullet/";
 
-    public static final class Enemies {
-        private Enemies() {}
-        public static final class GroundGunner {
-            private GroundGunner() {}
-            public static final String IDLE = "sprites/enemy/ground_gunner/idle.png";
-            public static final String WALKING = "sprites/enemy/ground_gunner/walking.png";
-            public static final String ATTACK = "sprites/enemy/ground_gunner/attack.png";
-            public static final String HIT = "sprites/enemy/ground_gunner/hit.png";
-            public static final String DEATH = "sprites/enemy/ground_gunner/death.png";
-        }
+        public static final String ORANGE_SPIN = BASE + "OrangeSpin__";
+        public static final int ORANGE_SPIN_FRAMES = 10;
 
+        public static final String ORANGE_SCALE = BASE + "OrangeScale__";
+        public static final int ORANGE_SCALE_FRAMES = 10;
 
-        public static final class AirStalker {
-            private AirStalker() {}
-            public static final String IDLE = "sprites/enemy/air_stalker/idle.png";
-            public static final String FLYING = "sprites/enemy/air_stalker/flying.png";
-            public static final String ATTACK = "sprites/enemy/air_stalker/attack.png";
-            public static final String HIT = "sprites/enemy/air_stalker/hit.png";
-            public static final String DEATH = "sprites/enemy/air_stalker/death.png";
-        }
+        public static final String YELLOW_SPIN = BASE + "YellowSpin__";
+        public static final int YELLOW_SPIN_FRAMES = 10;
 
+        public static final String YELLOW_SCALE = BASE + "YellowScale__";
+        public static final int YELLOW_SCALE_FRAMES = 10;
 
-        public static final class PhaseMiner {
-            private PhaseMiner() {}
-            public static final String IDLE = "sprites/enemy/phase_miner/idle.png";
-            public static final String DRILL = "sprites/enemy/phase_miner/drill.png";
-            public static final String ATTACK = "sprites/enemy/phase_miner/attack.png";
-            public static final String HIT = "sprites/enemy/phase_miner/hit.png";
-            public static final String DEATH = "sprites/enemy/phase_miner/death.png";
-        }
+        public static final String GRENADE = BASE + "Grenade__";
+        public static final int GRENADE_FRAMES = 10;
     }
 
-    public static final class Effects {
-        private Effects() {}
-        public static final String FLAME = "sprites/effects/flame.png";
-        public static final String SPARK = "sprites/effects/spark.png";
-        public static final String POISON = "sprites/effects/poison.png";
-        public static final String GRENADE_EXPLOSION = "sprites/effects/grenade_explosion.png";
-        public static final String GLOO_WALL_FORMING = "sprites/effects/gloo_wall_forming.png";
-        public static final String GLOO_WALL_BREAKING = "sprites/effects/gloo_wall_breaking.png";
+    public static final class Muzzle {
+        private Muzzle() {}
+
+        public static final String BASE = "sprites/muzzle/";
+
+        public static final String ORANGE = BASE + "OrangeMuzzle__";
+        public static final int ORANGE_FRAMES = 10;
+
+        public static final String YELLOW = BASE + "YellowMuzzle__";
+        public static final int YELLOW_FRAMES = 10;
     }
 
+    public static final class Explosion {
+        private Explosion() {}
 
-    public static final class Powerups {
-        private Powerups() {}
-        public static final String HEALTH = "sprites/powerups/health_pickup.png";
-        public static final String AMMO = "sprites/powerups/ammo_crate.png";
-        public static final String SHIELD = "sprites/powerups/shield_pickup.png";
-        public static final String JETPACK_BOOSTER = "sprites/powerups/jetpack_booster.png";
-        public static final String RAPID_FIRE = "sprites/powerups/rapid_fire.png";
-        public static final String INVULNERABILITY = "sprites/powerups/invulnerability.png";
-        public static final String DAMAGE_BOOSTER = "sprites/powerups/damage_booster.png";
-        public static final String WALL_PHASE = "sprites/powerups/wall_phase.png";
-    }
+        public static final String BASE = "sprites/explosion/";
 
+        public static final String GROUND = BASE + "GroundExplo__";
+        public static final int GROUND_FRAMES = 11;
 
-    public static final class Map {
-        private Map() {}
-        public static final String ALIEN_RUINS = "map/world/AlienRuins.tmx";
-        public static final String BACKGROUND = "map/background/background.png";
-        public static final String BACKGROUND_BAKED = "map/background/background_baked.png";
-    }
-
-
-    public static final class References {
-        private References() {}
-        public static final String PLAYER = "references/playerReference.png";
-        public static final String GROUND_GUNNER = "references/ground_gunner.png";
-        public static final String AIR_STALKER = "references/air_stalker.png";
-        public static final String PHASE_MINER = "references/phase_miner.png";
+        public static final String MID_AIR = BASE + "MidAirExplo__";
+        public static final int MID_AIR_FRAMES = 11;
     }
 }

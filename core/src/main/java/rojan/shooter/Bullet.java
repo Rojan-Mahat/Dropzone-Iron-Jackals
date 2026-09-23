@@ -10,6 +10,8 @@ public class Bullet {
     private float speed;
     private float width = 25f;
     private float height = 25f;
+    private float balancingX =0f;
+    private float balancingY = -8f;
 
     private Texture texture;
 
@@ -29,10 +31,18 @@ public class Bullet {
 
 
     public void draw(SpriteBatch batch) {
-        float drawX = position.x - width / 2f;
-        float drawY = position.y - height / 2f;
+        float drawX = position.x - width / 2f + balancingX;
+        float drawY = position.y - height / 2f + balancingY;
+        float angle = bulletRotation();
 
-        batch.draw(texture, drawX, drawY, width , height);
+
+        batch.draw(texture,drawX,drawY,width/2f,height/2f,width,height,1f,1f,angle,0,0,texture.getWidth(),texture.getHeight(),false,false);
+    }
+
+    public float bulletRotation(){
+       float angleInRadians = (float)Math.atan2(direction.y,direction.x);
+       float angleInDegrees = angleInRadians * 180f /(float)Math.PI;
+       return angleInDegrees;
     }
 
 

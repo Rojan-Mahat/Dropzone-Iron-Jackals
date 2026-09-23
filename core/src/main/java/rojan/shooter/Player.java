@@ -17,9 +17,6 @@ public class Player{
     private float height;
     private Vector2 gunHoldingPositionOffset;
 
-    private Texture texture;
-    private Sprite sprite;
-
     private Vector2 velocity;
     private float moveSpeed;
 
@@ -34,16 +31,30 @@ public class Player{
     private float maxFallSpeed = -800;
 
     private enum PlayerState{
-        IDLE,
-        RUNNING,
-        CROUCH_IDLE,
-        CROUCH_WALKING,
-        HIT,
-        SHOOTING,
-        JETPACK_THRUST,
-        AIRBORNE,
-        DEAD
-    }
+                    IDLE,
+                    IDLE_AIM,
+                    WALK,
+                    WALK_SHOOT,
+                    RUNNING,
+                    RUNNING_SHOOT,
+                    CROUCH,
+                    CROUCH_AIM,
+                    CROUCH_SHOOT,
+                    JUMP,
+                    JUMPSHOOT,
+                    SHOOT,
+                    HURT,
+                    DEAD,
+                    CLIMB,
+                    MELEE,
+                    CROUCH_MELEE,
+                    JUMP_MELEE,
+                    THROW,
+                    CROUCH_THROW,
+                    JUMP_THROW,
+                    HAPPY
+                }
+
     private PlayerState currentState;
     private PlayerState previousState;
 
@@ -53,62 +64,40 @@ public class Player{
         RIGHT
     }
     private FacingDirection currentDirection;
-
-    public enum PlayerMode{
-        ARMED,
-        UNARMED,
-        THROWING
-    }
-    private PlayerMode currentMode;
-
-    private Texture idleTexture;
-    private TextureRegion[] idleFrames;
     private float stateTime;
 
-    private Texture crouchIdleTexture;
-    private TextureRegion[] crouchIdleFrames;
-
-    private Texture crouchWalkingTexture;
-    private TextureRegion[] crouchWalkingFrames;
-
-    private Texture runningTexture;
+    private Array<Texture> loadedTextures = new Array<>();
+    private TextureRegion[] idleFrames;
     private TextureRegion[] runningFrames;
-
-    private Texture jetThrustTexture;
-    private TextureRegion[] jetThrustFrames;
-
-    private Texture airborneTexture;
-    private TextureRegion[] airborneFrames;
-
-    private Texture flameTexture;
-    private TextureRegion[] flameFrames;
-    private float flameStateTime;
+    private TextureRegion[] idleAimFrames;
+    private TextureRegion[] walkFrames;
+    private TextureRegion[] walkShootFrames;
+    private TextureRegion[] runShootFrames;
+    private TextureRegion[] crouchFrames;
+    private TextureRegion[] crouchAimFrames;
+    private TextureRegion[] crouchShootFrames;
+    private TextureRegion[] jumpFrames;
+    private TextureRegion[] jumpShootFrames;
+    private TextureRegion[] shootFrames;
+    private TextureRegion[] hurtFrames;
+    private TextureRegion[] deadFrames;
+    private TextureRegion[] climbFrames;
+    private TextureRegion[] meleeFrames;
+    private TextureRegion[] crouchMeleeFrames;
+    private TextureRegion[] jumpMeleeFrames;
+    private TextureRegion[] throwFrames;
+    private TextureRegion[] crouchThrowFrames;
+    private TextureRegion[] jumpThrowFrames;
+    private TextureRegion[] happyFrames;
 
     private Weapon currentWeapon;
     private float weaponDrawAdjustmentY = 0f;
 
-    private Texture armedIdleTexture;
-    private TextureRegion armedIdleRegion;
-    private Texture armedCrouchIdleTexture;
-    private TextureRegion armedCrouchIdleRegion;
-    private Texture armedJetTexture;
-    private TextureRegion armedJetRegion;
-
-
-    private Texture armedRunningTexture;
-    private Texture armedCrouchWalkingTexture;
-    private TextureRegion[] armedRunningFrames;
-    private TextureRegion[] armedCrouchWalkingFrames;
 
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
         position = new Vector2(spawnX,spawnY);
         width = widthfromMap;
         height = heightfromMap;
-
-        texture = new Texture(AssetPaths.References.PLAYER);
-        sprite = new Sprite(texture);
-        sprite.setPosition(position.x, position.y);
-        sprite.setSize(width,height);
 
         velocity = new Vector2(0,0);
         moveSpeed = 300f;
@@ -117,78 +106,58 @@ public class Player{
         previousState = PlayerState.IDLE;
 
         currentDirection = FacingDirection.RIGHT;
-        
-        currentMode = PlayerMode.UNARMED;
 
         stateTime = 0f;
 
-        idleTexture = new Texture(AssetPaths.Player.Unarmed.IDLE);
-        TextureRegion[][] idleRegions = TextureRegion.split(idleTexture,idleTexture.getWidth() / 4,idleTexture.getHeight()/2);
-        idleFrames = new TextureRegion[8];
-        int idleIndex = 0;
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < 4; col++){
-                idleFrames[idleIndex] = idleRegions[row][col];
-                idleIndex++;
-            }
+        idleFrames = loadFrames(AssetPaths.Player.Soldier1.IDLE,AssetPaths.Player.Soldier1.IDLE_FRAMES);
+        idleAimFrames = loadFrames(AssetPaths.Player.Soldier1.IDLE_AIM,AssetPaths.Player.Soldier1.IDLE_AIM_FRAMES);
+
+        walkFrames = loadFrames(AssetPaths.Player.Soldier1.WALK,AssetPaths.Player.Soldier1.WALK_FRAMES);
+        walkShootFrames = loadFrames(AssetPaths.Player.Soldier1.WALK_SHOOT, AssetPaths.Player.Soldier1.WALK_SHOOT_FRAMES);
+
+        runningFrames = loadFrames(AssetPaths.Player.Soldier1.RUN,AssetPaths.Player.Soldier1.RUN_FRAMES);
+        runShootFrames = loadFrames(AssetPaths.Player.Soldier1.RUN_SHOOT,AssetPaths.Player.Soldier1.RUN_SHOOT_FRAMES);
+
+        crouchFrames = loadFrames(AssetPaths.Player.Soldier1.CROUCH,AssetPaths.Player.Soldier1.CROUCH_FRAMES);
+        crouchAimFrames = loadFrames(AssetPaths.Player.Soldier1.CROUCH_AIM,AssetPaths.Player.Soldier1.CROUCH_AIM_FRAMES);
+        crouchShootFrames = loadFrames(AssetPaths.Player.Soldier1.CROUCH_SHOOT,AssetPaths.Player.Soldier1.CROUCH_SHOOT_FRAMES);
+
+        jumpFrames = loadFrames(AssetPaths.Player.Soldier1.JUMP,AssetPaths.Player.Soldier1.JUMP_FRAMES);
+        jumpShootFrames = loadFrames(AssetPaths.Player.Soldier1.JUMP_SHOOT,AssetPaths.Player.Soldier1.JUMP_SHOOT_FRAMES);
+
+        shootFrames = loadFrames(AssetPaths.Player.Soldier1.SHOOT,AssetPaths.Player.Soldier1.SHOOT_FRAMES);
+
+        hurtFrames = loadFrames(AssetPaths.Player.Soldier1.HURT,AssetPaths.Player.Soldier1.HURT_FRAMES);
+
+        deadFrames = loadFrames(AssetPaths.Player.Soldier1.DEAD,AssetPaths.Player.Soldier1.DEAD_FRAMES);
+
+        climbFrames = loadFrames(AssetPaths.Player.Soldier1.CLIMB,AssetPaths.Player.Soldier1.CLIMB_FRAMES);
+
+        meleeFrames = loadFrames(AssetPaths.Player.Soldier1.MELEE,AssetPaths.Player.Soldier1.MELEE_FRAMES);
+        crouchMeleeFrames = loadFrames(AssetPaths.Player.Soldier1.CROUCH_MELEE,AssetPaths.Player.Soldier1.CROUCH_MELEE_FRAMES);
+        jumpMeleeFrames = loadFrames(AssetPaths.Player.Soldier1.JUMP_MELEE,AssetPaths.Player.Soldier1.JUMP_MELEE_FRAMES);
+
+        throwFrames = loadFrames(AssetPaths.Player.Soldier1.THROW,AssetPaths.Player.Soldier1.THROW_FRAMES);
+        crouchThrowFrames = loadFrames(AssetPaths.Player.Soldier1.CROUCH_THROW,AssetPaths.Player.Soldier1.CROUCH_THROW_FRAMES);
+        jumpThrowFrames = loadFrames(AssetPaths.Player.Soldier1.JUMP_THROW,AssetPaths.Player.Soldier1.JUMP_THROW_FRAMES);
+
+        happyFrames = loadFrames(AssetPaths.Player.Soldier1.HAPPY,AssetPaths.Player.Soldier1.HAPPY_FRAMES);
+    }
+
+    private TextureRegion[] loadFrames(String prefix, int frameCount){
+        TextureRegion[] frames = new TextureRegion[frameCount];
+        for(int i = 0; i < frameCount; i++){
+            String frameNumber = String.format("%03d", i);
+            String path = prefix + frameNumber + ".png";
+            Texture texture = new Texture(path);
+            loadedTextures.add(texture);
+            frames[i] = new TextureRegion(texture);
         }
-
-        runningTexture = new Texture(AssetPaths.Player.Unarmed.RUNNING);
-        TextureRegion[][] runningRegions = TextureRegion.split(runningTexture,runningTexture.getWidth() / 4,runningTexture.getHeight()/2);
-        runningFrames = new TextureRegion[8];
-        int runningIndex = 0;
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < 4; col++){
-                runningFrames[runningIndex] = runningRegions[row][col];
-                runningIndex++;
-            }
-        }
-
-        crouchIdleTexture = new Texture(AssetPaths.Player.Unarmed.CROUCH_IDLE);
-        TextureRegion[][] crouchRegions = TextureRegion.split(crouchIdleTexture,crouchIdleTexture.getWidth() / 4,crouchIdleTexture.getHeight());
-        crouchIdleFrames = new TextureRegion[4];
-        crouchIdleFrames = crouchRegions[0];
-
-        crouchWalkingTexture = new Texture(AssetPaths.Player.Unarmed.CROUCH_WALKING);
-        TextureRegion[][] crouchWalkingRegions = TextureRegion.split(crouchWalkingTexture,crouchWalkingTexture.getWidth() / 4,crouchWalkingTexture.getHeight());
-        crouchWalkingFrames = new TextureRegion[4];
-        crouchWalkingFrames = crouchWalkingRegions[0];
-
-        jetThrustTexture = new Texture(AssetPaths.Player.Unarmed.JET_THRUST);
-        TextureRegion[][] jetThrustRegions = TextureRegion.split(jetThrustTexture,jetThrustTexture.getWidth() / 4,jetThrustTexture.getHeight());
-        jetThrustFrames = new TextureRegion[4];
-        jetThrustFrames = jetThrustRegions[0];
-
-        airborneTexture = new Texture(AssetPaths.Player.Unarmed.AIRBORNE);
-        TextureRegion[][] airborneRegions = TextureRegion.split(airborneTexture,airborneTexture.getWidth() / 4,airborneTexture.getHeight());
-        airborneFrames = new TextureRegion[4];
-        airborneFrames = airborneRegions[0];
-
-        flameTexture = new Texture(AssetPaths.Effects.FLAME);
-        TextureRegion[][] flameRegions = TextureRegion.split(flameTexture,flameTexture.getWidth() / 4,flameTexture.getHeight());
-        flameFrames = new TextureRegion[4];
-        flameFrames = flameRegions[0];
-        flameStateTime = 0f;
-
-
-        armedIdleTexture = new Texture(AssetPaths.Player.Armed.Rifle.IDLE);
-        armedIdleRegion = new TextureRegion(armedIdleTexture);
-        armedCrouchIdleTexture = new Texture(AssetPaths.Player.Armed.Rifle.CROUCH_IDLE);
-        armedCrouchIdleRegion = new TextureRegion(armedCrouchIdleTexture);
-        armedJetTexture = new Texture(AssetPaths.Player.Armed.Rifle.THRUST);
-        armedJetRegion = new TextureRegion(armedJetTexture);
-
-        armedRunningTexture = new Texture(AssetPaths.Player.Armed.Rifle.RUNNING);
-        TextureRegion[][] armedRunningRegions = TextureRegion.split(armedRunningTexture,armedRunningTexture.getWidth() / 3,armedRunningTexture.getHeight());
-        armedRunningFrames = armedRunningRegions[0];
-
-        armedCrouchWalkingTexture = new Texture(AssetPaths.Player.Armed.Rifle.CROUCH_WALKING);
-        TextureRegion[][] armedCrouchWalkingRegions = TextureRegion.split(armedCrouchWalkingTexture,armedCrouchWalkingTexture.getWidth() / 3,armedCrouchWalkingTexture.getHeight());
-        armedCrouchWalkingFrames = armedCrouchWalkingRegions[0];
-
+        return frames;
     }
 
     public void drawPlayer(SpriteBatch batch,float dt){
+        float frameDuration = 0.083f;
         previousState = currentState;
         updatePlayerState();
         if(previousState!=currentState)
@@ -196,115 +165,135 @@ public class Player{
         else
             stateTime+=dt;
 
-        if(isJetPackActive)
-            drawJetpackFlame(batch, dt);
-
-        switch(currentMode){
-
-            case UNARMED:
-
-            switch(currentState){
-                case JETPACK_THRUST:
-                    int jetThrustIndex = (int)(stateTime / 0.23f) % jetThrustFrames.length;
-                    drawFrame(batch,jetThrustFrames[jetThrustIndex],1f,1f);
-                    break;
-
-                case AIRBORNE:
-                    int airborneIndex = (int)(stateTime / 0.23f) % airborneFrames.length;
-                    drawFrame(batch,airborneFrames[airborneIndex],1f,0.95f);
-                    break;
-
-                case IDLE:
-                    int idleIndex = (int)(stateTime / 0.23f) % idleFrames.length;
-                    drawFrame(batch,idleFrames[idleIndex],1f,1f);
-                    break;
-                
-
-                case RUNNING:
-                    int runningIndex = (int)(stateTime / 0.23f) % runningFrames.length;
-                    drawFrame(batch, runningFrames[runningIndex], 0.95f, 0.95f);
-                    break;
-                
-
-                case CROUCH_IDLE:
-                    int crouchIdleIndex = (int)(stateTime / 0.23f) % crouchIdleFrames.length;
-                    drawFrame(batch,crouchIdleFrames[crouchIdleIndex],0.9f,0.96f);
-                    break;
-
-                case CROUCH_WALKING:
-                    int crouchWalkingIndex = (int)(stateTime / 0.23f) % crouchWalkingFrames.length;
-                    drawFrame(batch,crouchWalkingFrames[crouchWalkingIndex],0.9f,0.96f);
-                    break;
-            }
+        switch(currentState){
+        case IDLE:
+            int idleIndex =(int)(stateTime / frameDuration) % idleFrames.length;
+            drawFrame(batch, idleFrames[idleIndex], 1f, 1f);
             break;
 
-        case ARMED:
-
-            switch(currentState){
-                case JETPACK_THRUST:
-                    drawFrame(batch, armedJetRegion, 1f, 1f);
-                    break;
-
-                case AIRBORNE:
-                    drawFrame(batch, armedJetRegion, 1f, 1f);
-                    break;
-
-                case IDLE:
-                    drawFrame(batch, armedIdleRegion, 1f, 1f);
-                    break;
-                
-
-                case RUNNING:
-                    int runningIndex = (int)(stateTime / 0.23f) % armedRunningFrames.length;
-                    drawFrame(batch, armedRunningFrames[runningIndex], 1f, 1f);
-                    break;
-                
-
-                case CROUCH_IDLE:
-                    drawFrame(batch, armedCrouchIdleRegion, 1f, 1f);
-                    break;
-
-                case CROUCH_WALKING:
-                    int crouchWalkingIndex = (int)(stateTime / 0.23f) % armedCrouchWalkingFrames.length;
-                    drawFrame(batch,armedCrouchWalkingFrames[crouchWalkingIndex],1f,1f);
-                    break;
-            }
+        case IDLE_AIM:
+            int idleAimIndex = (int)(stateTime / frameDuration) % idleAimFrames.length;
+            drawFrame(batch, idleAimFrames[idleAimIndex], 1f, 1f);
             break;
-        
-        case THROWING:
+
+        case WALK:
+            int walkIndex = (int)(stateTime / frameDuration) % walkFrames.length;
+            drawFrame(batch, walkFrames[walkIndex], 1f, 1f);
+            break;
+
+        case WALK_SHOOT:
+            int walkShootIndex = (int)(stateTime / frameDuration) % walkShootFrames.length;
+            drawFrame(batch, walkShootFrames[walkShootIndex], 1f, 1f);
+            break;
+
+        case RUNNING:
+            int runningIndex = (int)(stateTime / frameDuration) % runningFrames.length;
+            drawFrame(batch, runningFrames[runningIndex], 1f, 1f);
+            break;
+
+        case RUNNING_SHOOT:
+            int runningShootIndex = (int)(stateTime / frameDuration) % runShootFrames.length;
+            drawFrame(batch, runShootFrames[runningShootIndex], 1f, 1f);
+            break;
+
+        case CROUCH:
+            int crouchIndex = (int)(stateTime / frameDuration) % crouchFrames.length;
+            drawFrame(batch, crouchFrames[crouchIndex], 1f, 1f);
+            break;
+
+        case CROUCH_AIM:
+            int crouchAimIndex = (int)(stateTime / frameDuration) % crouchAimFrames.length;
+            drawFrame(batch, crouchAimFrames[crouchAimIndex], 1f, 1f);
+            break;
+
+        case CROUCH_SHOOT:
+            int crouchShootIndex = (int)(stateTime / frameDuration) % crouchShootFrames.length;
+            drawFrame(batch, crouchShootFrames[crouchShootIndex], 1f, 1f);
+            break;
+
+        case JUMP:
+            int jumpIndex = (int)(stateTime / frameDuration) % jumpFrames.length;
+            drawFrame(batch, jumpFrames[jumpIndex], 1f, 1f);
+            break;
+
+        case JUMPSHOOT:
+            int jumpShootIndex = (int)(stateTime / frameDuration) % jumpShootFrames.length;
+            drawFrame(batch, jumpShootFrames[jumpShootIndex], 1f, 1f);
+            break;
+
+        case SHOOT:
+            int shootIndex = (int)(stateTime / frameDuration) % shootFrames.length;
+            drawFrame(batch, shootFrames[shootIndex], 1f, 1f);
+            break;
+
+        case HURT:
+            int hurtIndex = (int)(stateTime / frameDuration) % hurtFrames.length;
+            drawFrame(batch, hurtFrames[hurtIndex], 1f, 1f);
+            break;
+
+        case DEAD:
+            int deadIndex = (int)(stateTime / frameDuration) % deadFrames.length;
+            drawFrame(batch, deadFrames[deadIndex], 1f, 1f);
+            break;
+
+        case CLIMB:
+            int climbIndex = (int)(stateTime / frameDuration) % climbFrames.length;
+            drawFrame(batch, climbFrames[climbIndex], 1f, 1f);
+            break;
+
+        case MELEE:
+            int meleeIndex = (int)(stateTime / frameDuration) % meleeFrames.length;
+            drawFrame(batch, meleeFrames[meleeIndex], 1f, 1f);
+            break;
+
+        case CROUCH_MELEE:
+            int crouchMeleeIndex = (int)(stateTime / frameDuration) % crouchMeleeFrames.length;
+            drawFrame(batch, crouchMeleeFrames[crouchMeleeIndex], 1f, 1f);
+            break;
+
+        case JUMP_MELEE:
+            int jumpMeleeIndex = (int)(stateTime / frameDuration) % jumpMeleeFrames.length;
+            drawFrame(batch, jumpMeleeFrames[jumpMeleeIndex], 1f, 1f);
+            break;
+
+        case THROW:
+            int throwIndex = (int)(stateTime / frameDuration) % throwFrames.length;
+            drawFrame(batch, throwFrames[throwIndex], 1f, 1f);
+            break;
+
+        case CROUCH_THROW:
+            int crouchThrowIndex = (int)(stateTime / frameDuration) % crouchThrowFrames.length;
+            drawFrame(batch, crouchThrowFrames[crouchThrowIndex], 1f, 1f);
+            break;
+
+        case JUMP_THROW:
+            int jumpThrowIndex = (int)(stateTime / frameDuration) % jumpThrowFrames.length;
+            drawFrame(batch, jumpThrowFrames[jumpThrowIndex], 1f, 1f);
+            break;
+
+        case HAPPY:
+            int happyIndex = (int)(stateTime / frameDuration) % happyFrames.length;
+            drawFrame(batch, happyFrames[happyIndex], 1f, 1f);
             break;
         }
     }
 
 
     private void updatePlayerState(){
-        if(isJetPackActive)
-            currentState = PlayerState.JETPACK_THRUST;
-
+        if(isCrouching)
+            currentState = PlayerState.CROUCH;
         else if(!isGrounded)
-            currentState = PlayerState.AIRBORNE;
-
-        else if(isGrounded && !isCrouching && velocity.x == 0)
+            currentState = PlayerState.JUMP;
+        else if(isGrounded && velocity.x==0)
             currentState = PlayerState.IDLE;
-        
-        else if(isGrounded && !isCrouching && velocity.x != 0)
+        else if(isGrounded && velocity.x!=0)
             currentState = PlayerState.RUNNING;
+       
         
-        else if(isGrounded && isCrouching && velocity.x == 0)
-            currentState = PlayerState.CROUCH_IDLE;
-        
-        else if(isGrounded && isCrouching && velocity.x != 0)
-            currentState = PlayerState.CROUCH_WALKING;    
-
-        
-        if(velocity.x < 0)
-            currentDirection = FacingDirection.LEFT;
-        else if(velocity.x>0)
-            currentDirection = FacingDirection.RIGHT;
 
     }
 
-    private void drawJetpackFlame(SpriteBatch batch, float dt){
+    /*private void drawJetpackFlame(SpriteBatch batch, float dt){
         flameStateTime += dt;
 
         float flameOffsetX = width * 0.08f;
@@ -330,24 +319,12 @@ public class Player{
             flameX = position.x + width - flameOffsetX - flameWidth;
     
         batch.draw(flameFrames[frameIndex], flameX, flameY, originX, originY,flameWidth,flameHeight,1.1f,1.1f,rotation);
-    }
+    }*/
 
 
-    public void disposePlayer(){
-        texture.dispose();
-        idleTexture.dispose();
-        runningTexture.dispose(); 
-        crouchIdleTexture.dispose(); 
-        crouchWalkingTexture.dispose(); 
-        jetThrustTexture.dispose();
-        airborneTexture.dispose();
-        flameTexture.dispose();
-        armedIdleTexture.dispose();
-        armedCrouchIdleTexture.dispose();
-        armedJetTexture.dispose();
-        armedRunningTexture.dispose();
-        armedCrouchWalkingTexture.dispose();
-
+    public void disposePlayer(){;
+        for(Texture texture : loadedTextures)
+            texture.dispose();
     }
 
     private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY){
@@ -370,6 +347,12 @@ public class Player{
         movementOffset.y = moveBox.y - position.y;
         movementOffset.width = moveBox.width;
         movementOffset.height = moveBox.height;
+
+        System.out.println("PLAYER X: " + position.x);
+        System.out.println("PLAYER Y: " + position.y);
+
+        System.out.println("OFFSET X: " + (moveBox.x - position.x));
+        System.out.println("OFFSET Y: " + (moveBox.y - position.y));
     }
 
     public void receivePlayerCrouchMoveBox(Rectangle crouchMoveBox){
@@ -409,7 +392,6 @@ public class Player{
 
         }
 
-        sprite.setPosition(position.x , position.y);
         updateWeaponDrawAdjustment(velocity.x,velocity.y); 
     }
 
@@ -432,6 +414,12 @@ public class Player{
         for(Rectangle rectangle: solidPlatforms){
             if((position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width)
             && position.y + activeCollider.y < rectangle.y+rectangle.height && position.y + activeCollider.y + activeCollider.height > rectangle.y){
+                System.out.println(
+                    "PLAYER -> left:" + (position.x + activeCollider.x) +
+                    " bottom:" + (position.y + activeCollider.y) +
+                    " right:" + (position.x + activeCollider.x + activeCollider.width) +
+                    " top:" + (position.y + activeCollider.y + activeCollider.height)
+                );
                 if(direction.x < 0)
                     position.x = rectangle.x + rectangle.width - activeCollider.x;
                 else if(direction.x>0)
@@ -507,7 +495,7 @@ public class Player{
 
     public void stopJetpack(){
         isJetPackActive = false;
-        flameStateTime = 0;
+        //flameStateTime = 0;
     }
 
     public void ensureGrounding(Array<Rectangle> solidPlatforms){
@@ -555,21 +543,6 @@ public class Player{
         return handPos;
     }
 
-    public void switchPlayerModeArmed(){
-        currentMode = PlayerMode.ARMED;
-    }
-
-    public void switchPlayerModeUnarmed(){
-        currentMode = PlayerMode.UNARMED;
-    }
-
-    public void switchPlayerModeThrowing(){
-        currentMode = PlayerMode.THROWING;
-    }
-
-    public PlayerMode getCurrentMode(){
-        return currentMode;
-    }
 
     private void updateWeaponDrawAdjustment(float velocity_x , float velocity_y){
         if(!isCrouching){
@@ -594,6 +567,14 @@ public class Player{
 
         else if(isCrouching && velocity_x!=0)
             weaponDrawAdjustmentY = -14.5f;
+    }
+
+    public void setFacingDirectionLeft(){
+        currentDirection = FacingDirection.LEFT;
+    }
+
+    public void setFacingDirectionRight(){
+        currentDirection = FacingDirection.RIGHT;
     }
 
 

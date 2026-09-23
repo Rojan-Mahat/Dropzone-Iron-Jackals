@@ -10,6 +10,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
@@ -35,6 +36,7 @@ public class ShooterGame extends ApplicationAdapter {
     private Player player;
     private SpriteBatch batch;
     private Array<Rectangle> solidPlatforms;
+    private Array<TiledMapTileMapObject> terrain;
 
     private Weapon weapon;
     private Array<Bullet> bullets;
@@ -48,35 +50,33 @@ public class ShooterGame extends ApplicationAdapter {
 
     @Override
     public void create() {
+        System.out.println(Gdx.files.internal(AssetPaths.Map.EARTH).file().getAbsolutePath());
         map = loadMap();
 
         mapRenderer = new OrthogonalTiledMapRenderer(map); 
         camera = createCameraFromMap(map);
         mapRenderer.setView(camera);
 
+        terrain = getTerrainObjectArray(map);
+        terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
+
         player = createPlayerFromMap(map);
-        weapon = createWeaponFromMap(map);
+        //weapon = createWeaponFromMap(map);
         player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
-        player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
+        //player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
 
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
-        bullets = new Array<>();
-        bulletTexture = new Texture(AssetPaths.Weapons.Rifles.AR_BULLET);
+        /*bullets = new Array<>();
+        bulletTexture = new Texture(AssetPaths.Weapons.);*/
     }
 
     @Override
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
         clampCameraToPlayer();
-        Vector2 mouseWorldPosition = getMouseWorldPosition();
-        Vector2 handPosition = player.getHandPosition();
-        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
-            createBulletWhenFired(handPosition, mouseWorldPosition);
-        }
-
         activateGravity(dt);
 
         Vector2 direction = new Vector2(0,0);
@@ -97,7 +97,12 @@ public class ShooterGame extends ApplicationAdapter {
         
         player.move(direction,dt,getWorldSize(),solidPlatforms);
         player.ensureGrounding(solidPlatforms);
-
+        Vector2 mouseWorldPosition = getMouseWorldPosition();
+        //Vector2 handPosition = player.getHandPosition();
+        //if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
+            //createBulletWhenFired(handPosition, mouseWorldPosition);
+        //}
+    
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
             if(!player.getCrouchingState())
                 player.crouch();
@@ -105,7 +110,7 @@ public class ShooterGame extends ApplicationAdapter {
                 player.stand(solidPlatforms);   
         }
 
-        if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
+        /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
             if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
                 player.switchPlayerModeArmed();
             else if(player.getCurrentMode() == Player.PlayerMode.ARMED)
@@ -115,19 +120,42 @@ public class ShooterGame extends ApplicationAdapter {
         for(Bullet bullet : bullets)
             bullet.update(dt);
         
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        */ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
-        player.drawPlayer(batch,dt);
-        weapon.setHandPosition(player.getHandPosition());
-        weapon.setFacingLeft(player.isFacingLeft());
 
-        if(player.getCurrentMode() == Player.PlayerMode.ARMED)
+        for(TiledMapTileMapObject terrainObject : terrain){
+            TextureRegion region = terrainObject.getTextureRegion();
+            float x = terrainObject.getX();
+            float y = terrainObject.getY();
+
+            float width = region.getRegionWidth();
+            float height = region.getRegionHeight();
+
+            float originX = terrainObject.getOriginX();
+            float originY = terrainObject.getOriginY();
+
+            float scaleX = terrainObject.getScaleX();
+            float scaleY = terrainObject.getScaleY();
+
+            float rotation = -terrainObject.getRotation();
+
+            batch.draw(region,x,y,originX,originY,width,height,scaleX,scaleY,rotation);
+        }
+
+        player.drawPlayer(batch,dt);
+        //weapon.setHandPosition(player.getHandPosition());
+        //weapon.setFacingLeft(player.isFacingLeft());
+        updatePlayerFacingDirection(mouseWorldPosition); 
+
+        /*if(player.getCurrentMode() == Player.PlayerMode.ARMED){
+            weapon.rotateWeapon(handPosition, mouseWorldPosition);
             weapon.drawWeapon(batch);
+        }
 
         for(Bullet bullet : bullets)
             bullet.draw(batch);
-        batch.end();
+        */batch.end();  
     }
     
 
@@ -137,15 +165,21 @@ public class ShooterGame extends ApplicationAdapter {
         map.dispose();
         batch.dispose();
         player.disposePlayer();
-        weapon.disposeWeapon();
-        bulletTexture.dispose();
+        /*weapon.disposeWeapon();
+        bulletTexture.dispose();*/
     }
 
 
     private TiledMap loadMap(){
         TmxMapLoader loader = new TmxMapLoader();
-        TiledMap loadedMap = loader.load(AssetPaths.Map.ALIEN_RUINS);
+        TiledMap loadedMap = loader.load(AssetPaths.Map.EARTH);
         return loadedMap;
+    }
+
+    private Array<TiledMapTileMapObject> getTerrainObjectArray(TiledMap map){
+        MapLayer terrainLayer = map.getLayers().get("terrain");
+        Array<TiledMapTileMapObject> terrainObjects  = terrainLayer.getObjects().getByType(TiledMapTileMapObject.class);
+        return terrainObjects;
     }
 
     private OrthographicCamera createCameraFromMap(TiledMap map){
@@ -163,6 +197,11 @@ public class ShooterGame extends ApplicationAdapter {
         RectangleMapObject playerSpawnObject = (RectangleMapObject)playerLayer.getObjects().get("PlayerSpawn"); 
         Rectangle playerRect = playerSpawnObject.getRectangle();
         Player newPlayer = new Player(playerRect.x,playerRect.y,playerRect.width,playerRect.height);
+
+        System.out.println("PLAYER SPAWN X: " + playerRect.x);
+        System.out.println("PLAYER SPAWN Y: " + playerRect.y);
+        System.out.println("PLAYER SPAWN W: " + playerRect.width);
+        System.out.println("PLAYER SPAWN H: " + playerRect.height);
 
         return newPlayer;
     }
@@ -282,6 +321,11 @@ public class ShooterGame extends ApplicationAdapter {
         MapLayer playerLayer = map.getLayers().get("Player");
         RectangleMapObject moveBoxObject = (RectangleMapObject)playerLayer.getObjects().get("playerMovement");
         moveBox = moveBoxObject.getRectangle();
+
+        System.out.println("RAW MOVEBOX X: " + moveBox.x);
+        System.out.println("RAW MOVEBOX Y: " + moveBox.y);
+        System.out.println("RAW MOVEBOX W: " + moveBox.width);
+        System.out.println("RAW MOVEBOX H: " + moveBox.height);
         return moveBox;
     }
 
@@ -331,6 +375,17 @@ public class ShooterGame extends ApplicationAdapter {
     private void activateGravity(float dt){
         player.reactToGravity(gravity, dt);
     }
+
+    private void updatePlayerFacingDirection(Vector2 mousePos){
+        Vector2 playerPos = player.getPlayerCentrePosition();
+        if(mousePos.x > playerPos.x)
+            player.setFacingDirectionRight();
+
+        else if(mousePos.x < playerPos.x)
+            player.setFacingDirectionLeft();
+    }
+
+
 
     
 
