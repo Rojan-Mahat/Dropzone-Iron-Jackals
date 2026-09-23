@@ -61,10 +61,10 @@ public class ShooterGame extends ApplicationAdapter {
         terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
 
         player = createPlayerFromMap(map);
-        //weapon = createWeaponFromMap(map);
+        weapon = createWeaponFromMap(map);
         player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
-        //player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
+        player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
 
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
@@ -98,7 +98,7 @@ public class ShooterGame extends ApplicationAdapter {
         player.move(direction,dt,getWorldSize(),solidPlatforms);
         player.ensureGrounding(solidPlatforms);
         Vector2 mouseWorldPosition = getMouseWorldPosition();
-        //Vector2 handPosition = player.getHandPosition();
+        Vector2 handPosition = player.getHandPosition();
         //if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
             //createBulletWhenFired(handPosition, mouseWorldPosition);
         //}
@@ -144,16 +144,16 @@ public class ShooterGame extends ApplicationAdapter {
         }
 
         player.drawPlayer(batch,dt);
-        //weapon.setHandPosition(player.getHandPosition());
-        //weapon.setFacingLeft(player.isFacingLeft());
+        weapon.setHandPosition(player.getHandPosition());
+        weapon.setFacingLeft(player.isFacingLeft());
         updatePlayerFacingDirection(mouseWorldPosition); 
 
-        /*if(player.getCurrentMode() == Player.PlayerMode.ARMED){
-            weapon.rotateWeapon(handPosition, mouseWorldPosition);
-            weapon.drawWeapon(batch);
-        }
+        
+        weapon.rotateWeapon(handPosition, mouseWorldPosition);
+        weapon.drawWeapon(batch);
+        
 
-        for(Bullet bullet : bullets)
+        /*for(Bullet bullet : bullets)
             bullet.draw(batch);
         */batch.end();  
     }
@@ -165,8 +165,8 @@ public class ShooterGame extends ApplicationAdapter {
         map.dispose();
         batch.dispose();
         player.disposePlayer();
-        /*weapon.disposeWeapon();
-        bulletTexture.dispose();*/
+        weapon.disposeWeapon();
+        //bulletTexture.dispose();
     }
 
 
@@ -339,13 +339,14 @@ public class ShooterGame extends ApplicationAdapter {
 
     private Vector2 extractPlayerGunHoldingOffsetFromMap(TiledMap map){
         MapLayer playerLayer = map.getLayers().get("Player");
-        TiledMapTileMapObject forWeaponObject = (TiledMapTileMapObject) playerLayer.getObjects().get("forWeapon");
+        RectangleMapObject playerSpawMapObject = (RectangleMapObject) playerLayer.getObjects().get("PlayerSpawn");
         RectangleMapObject weaponSocketObject = (RectangleMapObject) playerLayer.getObjects().get("weaponSocket");
 
+        Rectangle forWeaponRect = playerSpawMapObject.getRectangle();
         Rectangle weaponSocketRect = weaponSocketObject.getRectangle();
 
-        float offsetX = weaponSocketRect.x - forWeaponObject.getX();
-        float offsetY = weaponSocketRect.y - forWeaponObject.getY();
+        float offsetX = weaponSocketRect.x - forWeaponRect.x;
+        float offsetY = weaponSocketRect.y - forWeaponRect.y;
 
         return new Vector2(offsetX, offsetY);
     }

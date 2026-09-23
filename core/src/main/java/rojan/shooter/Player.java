@@ -392,7 +392,7 @@ public class Player{
 
         }
 
-        updateWeaponDrawAdjustment(velocity.x,velocity.y); 
+        //updateWeaponDrawAdjustment(velocity.x,velocity.y); 
     }
 
     public Vector2 getPlayerPosition(){
@@ -544,7 +544,7 @@ public class Player{
     }
 
 
-    private void updateWeaponDrawAdjustment(float velocity_x , float velocity_y){
+    /*private void updateWeaponDrawAdjustment(float velocity_x , float velocity_y){
         if(!isCrouching){
             if(velocity_y > -100 &&  velocity_y < 200)
                 weaponDrawAdjustmentY = 9f;
@@ -567,7 +567,7 @@ public class Player{
 
         else if(isCrouching && velocity_x!=0)
             weaponDrawAdjustmentY = -14.5f;
-    }
+    }*/
 
     public void setFacingDirectionLeft(){
         currentDirection = FacingDirection.LEFT;
