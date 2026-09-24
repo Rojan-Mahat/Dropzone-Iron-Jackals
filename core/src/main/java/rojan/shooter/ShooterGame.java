@@ -6,6 +6,7 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -39,15 +40,20 @@ public class ShooterGame extends ApplicationAdapter {
     private float gravity = -1200.f;
     private float jetpackThrust= 2200.f;
 
-   private TextureRegion[] bulletFrames;
-    private Array<Texture> bulletTextures = new Array<>();
+    private Texture bulletTexture;
+
+    private float horizontalHoldTime = 0f;
+    private final float RUN_THRESHOLD = 0.30f;
+
+    private float mouseHeld = 0f;
+
+    private Enemy rifleman;
 
 
 
 
     @Override
-    public void create() {
-        System.out.println(Gdx.files.internal(AssetPaths.Map.EARTH).file().getAbsolutePath());
+    public void create(){
         map = loadMap();
 
         mapRenderer = new OrthogonalTiledMapRenderer(map); 
@@ -64,11 +70,14 @@ public class ShooterGame extends ApplicationAdapter {
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
         player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
 
+        rifleman = create_Jackal_RifleMan_FromMap(map);
+        rifleman.receiveHitbox(extract_Jackal_RifleMan_Hitbox_FromMap(map));
+
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
         bullets = new Array<>();
-        bulletFrames = loadBulletFrames(AssetPaths.Bullets.ORANGE_SPIN,AssetPaths.Bullets.ORANGE_SPIN_FRAMES);
+        bulletTexture = new Texture(AssetPaths.Bullets.BASE+ "AR_bullet.png");
         
     }
 
@@ -79,12 +88,25 @@ public class ShooterGame extends ApplicationAdapter {
         activateGravity(dt);
 
         Vector2 direction = new Vector2(0,0);
-        if(Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))
+
+        boolean movingRight = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+        boolean movingLeft = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
+        if(movingRight)
+            direction.x++;
+        if(movingLeft)
             direction.x--;
 
-        if(Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) 
-            direction.x++;
+        boolean movingHorizontally = movingRight!= movingLeft;
+        if(movingHorizontally)
+            horizontalHoldTime+=dt;
+        else
+            horizontalHoldTime = 0;
 
+        if(horizontalHoldTime > RUN_THRESHOLD)
+            player.setRunningTrue();
+        else
+            player.setRunningFalse();
+        
         boolean jumpJustPressed = Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP);
         boolean jumpHeld = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
         if(jumpJustPressed){
@@ -102,11 +124,31 @@ public class ShooterGame extends ApplicationAdapter {
 
         player.move(direction,dt,getWorldSize(),solidPlatforms);
         player.ensureGrounding(solidPlatforms);
-        Vector2 mouseWorldPosition = getMouseWorldPosition();
-        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
-            createBulletWhenFired(mouseWorldPosition);
+
         
-    
+        Vector2 mouseWorldPosition = getMouseWorldPosition();
+        boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+        float fireInterval = 1f/weapon.getFireRate();
+        if(shooting)
+            player.setShootingTrue();
+        else
+            player.setShootingFalse();
+
+        if(shootOnce){
+            createBulletWhenFired(mouseWorldPosition);
+            mouseHeld = 0f;
+        }
+        else if(shooting){
+            mouseHeld+=dt;
+            if(mouseHeld >= fireInterval){
+                createBulletWhenFired(mouseWorldPosition);
+                mouseHeld-=fireInterval;
+            }
+        }
+        else
+            mouseHeld = 0f;
+
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
             if(!player.getCrouchingState())
                 player.crouch();
@@ -148,6 +190,7 @@ public class ShooterGame extends ApplicationAdapter {
         }
 
         player.drawPlayer(batch,dt);
+        rifleman.drawEnemy(batch, dt);
 
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
@@ -157,8 +200,8 @@ public class ShooterGame extends ApplicationAdapter {
         weapon.drawWeapon(batch, grip);
         for(Bullet bullet : bullets)
             bullet.draw(batch);
-        batch.end();  
-    }
+        batch.end();
+    }  
     
 
     @Override
@@ -168,8 +211,7 @@ public class ShooterGame extends ApplicationAdapter {
         batch.dispose();
         player.disposePlayer();
         weapon.disposeWeapon();
-        for(Texture bullets: bulletTextures)
-            bullets.dispose();
+        bulletTexture.dispose();
     }
 
 
@@ -229,16 +271,21 @@ public class ShooterGame extends ApplicationAdapter {
     }
 
     private void createBulletWhenFired(Vector2 mousePos){
-       Vector2 nozzleOffset = extractARNozzleOffsetFromMap(map);
-       Vector2 gunGrip = player.getCurrentGripWorldPosition();
-       float x = gunGrip.x + nozzleOffset.x;
-       float y = gunGrip.y + nozzleOffset.y;
-       Vector2 nozzlePosition = new Vector2(x,y);
-       Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
-       Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 500.f,bulletFrames);
-       bullets.add(bullet);
-    }
+        Vector2 nozzleOffset = extractARNozzleOffsetFromMap(map);
+        Vector2 gunGrip = player.getCurrentGripWorldPosition();
+        float angle = weapon.getAngleOfRotation();
+        float cos = MathUtils.cosDeg(angle);
+        float sin = MathUtils.sinDeg(angle);
+        float rotatedX = nozzleOffset.x * cos - nozzleOffset.y * sin;
+        float rotatedY = nozzleOffset.x * sin + nozzleOffset.y * cos;
 
+        float x = gunGrip.x + rotatedX;
+        float y = gunGrip.y + rotatedY;
+        Vector2 nozzlePosition = new Vector2(x,y);
+        Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
+        Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 2500.f,bulletTexture);
+        bullets.add(bullet);
+    }
 
     private Vector2 getWorldSize(){
         Vector2 worldSize = new Vector2(0,0);
@@ -379,6 +426,27 @@ public class ShooterGame extends ApplicationAdapter {
         return new Rectangle (jetPackRect.x - forJetpackRect.x , jetPackRect.y - forJetpackRect.y ,jetPackRect.width , jetPackRect.height); 
     }
 
+    private Enemy create_Jackal_RifleMan_FromMap(TiledMap map){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject RiflemanSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Spawn");
+        Rectangle RiflemanSpawnRect = RiflemanSpawnObject.getRectangle();
+        
+        Enemy newRifleman = new Enemy(RiflemanSpawnRect.x, RiflemanSpawnRect.y , 200f);
+        return newRifleman;
+    }
+
+    private Rectangle extract_Jackal_RifleMan_Hitbox_FromMap(TiledMap map){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject Rifleman_HitboxObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Hitbox");
+        RectangleMapObject RiflemanSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Spawn");
+        Rectangle Rifleman_HitboxRect = Rifleman_HitboxObject.getRectangle();
+        Rectangle RiflemanSpawnRect = RiflemanSpawnObject.getRectangle();
+    
+        return new Rectangle ( Rifleman_HitboxRect.x - RiflemanSpawnRect.x , Rifleman_HitboxRect.y - RiflemanSpawnRect.y ,Rifleman_HitboxRect.width , Rifleman_HitboxRect.height); 
+    }
+
+
+
     private void activateGravity(float dt){
         player.reactToGravity(gravity, dt);
     }
@@ -397,20 +465,6 @@ public class ShooterGame extends ApplicationAdapter {
         if(player.getAirTime() > 0.5)
             player.reactToJetpack(jetpackThrust,dt);
     }
-
-    private TextureRegion[] loadBulletFrames(String prefix, int frameCount){
-        TextureRegion[] frames = new TextureRegion[frameCount];
-        for(int i = 0; i < frameCount; i++){
-            String frameNumber = String.format("%03d", i);
-            String path = prefix + frameNumber + ".png";
-            Texture texture = new Texture(path);
-            bulletTextures.add(texture);
-            frames[i] = new TextureRegion(texture);
-        }
-        return frames;
-    }
-        
-
 
 
     

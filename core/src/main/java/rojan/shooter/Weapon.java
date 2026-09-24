@@ -11,6 +11,7 @@ public class Weapon{
     private float width;
     private float height;
     private float damage;
+    private float fireRate = 5f;
     public enum WeaponType{
         PISTOL,
         AR,
@@ -72,6 +73,13 @@ public class Weapon{
         angleOfRotation = angleInRadians * 180f / (float)Math.PI;
     }
 
+    public float getFireRate(){
+        return fireRate;
+    }
+
+    public float getAngleOfRotation(){
+        return angleOfRotation;
+    }
 
     public static void main(String[] args){
 

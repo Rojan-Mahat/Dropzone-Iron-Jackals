@@ -11,8 +11,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.math.Vector2;
 
 import java.util.EnumMap;
 
@@ -26,6 +24,9 @@ public class Player{
 
     private Vector2 velocity;
     private float moveSpeed;
+
+    private boolean isRunning;
+
 
     private Rectangle movementOffset;
     private Rectangle crouchMovementOffset;
@@ -146,6 +147,7 @@ public class Player{
     private float jetpackFlameStateTime;
 
     private float airTime;
+    private boolean isShooting;
 
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
         position = new Vector2(spawnX,spawnY);
@@ -395,14 +397,32 @@ public class Player{
 
 
     private void updatePlayerState(){
-        if(isCrouching)
+
+        if(isCrouching && isShooting)
+            currentState = PlayerState.CROUCH_SHOOT;
+        else if(isCrouching)
             currentState = PlayerState.CROUCH;
-        else if(!isGrounded)
+
+        else if(!isGrounded && isShooting)
+            currentState = PlayerState.JUMPSHOOT;
+
+        else if(!isGrounded && !isJetPackActive)
             currentState = PlayerState.JUMP;
-        else if(isGrounded && velocity.x==0)
+    
+        else if((!isGrounded && isJetPackActive) || (isGrounded && velocity.x==0))
             currentState = PlayerState.IDLE;
-        else if(isGrounded && velocity.x!=0)
+
+        else if(isGrounded && isRunning && isShooting)
+            currentState = PlayerState.RUNNING_SHOOT;
+
+        else if(isGrounded && isRunning)
             currentState = PlayerState.RUNNING;
+
+        else if(isGrounded && !isRunning && isShooting)
+            currentState = PlayerState.WALK_SHOOT;
+
+        else if(isGrounded && !isRunning)
+            currentState = PlayerState.WALK;
     }
 
     private GripPose getCurrentGripPose(){
@@ -466,13 +486,16 @@ public class Player{
     }
 
     public void move(Vector2 direction, float dt, Vector2 worldSize,Array<Rectangle> solidPlatforms){
-        velocity.x= direction.x * moveSpeed;
-
+        float speedMultiplier;
+        if(isRunning)
+            speedMultiplier = 1f;
+        else
+            speedMultiplier = 0.5f;
+        velocity.x= direction.x * moveSpeed * speedMultiplier;
         position.x = position.x + velocity.x * dt;
         resolveHorizontalCollision(direction,solidPlatforms);
         position.y = position.y + velocity.y * dt;
         resolveVerticalCollision(solidPlatforms);
-
 
         if(position.x <= 0)
             position.x = 0;
@@ -767,6 +790,24 @@ public class Player{
     public boolean jumpsAvailable(){
         return jumpCount < MAX_JUMP_PRESSES;
     }
+
+
+    public void setRunningTrue(){
+        isRunning = true;
+    }
+
+    public void setRunningFalse(){
+        isRunning = false;
+    }
+
+    public void setShootingTrue(){
+        isShooting = true;
+    }
+
+    public void setShootingFalse(){
+        isShooting = false;
+    }
+
 
 
  

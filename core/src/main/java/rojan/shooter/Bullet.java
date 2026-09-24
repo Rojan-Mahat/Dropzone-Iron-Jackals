@@ -1,5 +1,6 @@
 package rojan.shooter;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
@@ -11,36 +12,29 @@ public class Bullet{
     private float width = 25f;
     private float height = 25f;
     private float balancingX =0f;
-    private float balancingY = -8f;
-
-    private TextureRegion[] frames;
-    private float stateTime;
+    private float balancingY = 0f;
+    private Texture texture;
 
 
-    public Bullet(Vector2 position, Vector2 direction, float speed, TextureRegion[] frames) {
+    public Bullet(Vector2 position, Vector2 direction, float speed, Texture texture) {
         this.position = new Vector2(position);
         this.direction =new Vector2(direction);
         this.speed = speed;
-        this.frames = frames;
-        this.stateTime = 0f;
+        this.texture = texture;
     }
 
  
     public void update(float dt) {
-        stateTime += dt;
         position.x += direction.x * speed * dt;
         position.y += direction.y * speed * dt;
     }
 
 
     public void draw(SpriteBatch batch) {
-        float frameDuration = 0.05f;
-        int frameIndex = (int)(stateTime / frameDuration) % frames.length;
-        TextureRegion currentFrame = frames[frameIndex];
         float drawX = position.x - width / 2f + balancingX;
         float drawY = position.y - height / 2f + balancingY;
         float angle = bulletRotation();
-        batch.draw(currentFrame, drawX, drawY, width / 2f, height / 2f, width, height,1f,1f,angle);
+        batch.draw(texture, drawX, drawY, width / 2f, height / 2f, width, height,1f,1f,angle,0,0,texture.getWidth(),texture.getHeight(),false,false);
     }
 
     public float bulletRotation(){
@@ -53,4 +47,6 @@ public class Bullet{
     public Vector2 getPosition() {
         return position;
     }
+
+    
 }

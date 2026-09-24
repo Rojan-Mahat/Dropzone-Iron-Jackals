@@ -102,6 +102,7 @@ public final class AssetPaths {
 
     public static final class Bullets {
         private Bullets() {}
+        
         public static final String BASE = "sprites/bullet/";
 
         public static final String ORANGE_SPIN = BASE + "OrangeSpin__";
@@ -132,6 +133,33 @@ public final class AssetPaths {
         public static final int YELLOW_FRAMES = 10;
     }
 
+    public static final class Enemies {
+        private Enemies() {}
+        public static final class IronJackals {
+            private IronJackals() {}
+            public static final class Rifleman {
+                private Rifleman() {}
+                public static final String BASE = "sprites/enemies/iron_jackals/jackal_rifleman/";
+
+                public static final String IDLE = BASE + "idle_";
+                public static final int IDLE_FRAMES = 6;
+
+                public static final String WALK = BASE + "walking_";
+                public static final int WALK_FRAMES = 6;
+
+                public static final String ATTACK = BASE + "attack_";
+                public static final int ATTACK_FRAMES = 6;
+
+                public static final String HURT = BASE + "hurt_";
+                public static final int HURT_FRAMES = 6;
+
+                public static final String DEATH = BASE + "death_";
+                public static final int DEATH_FRAMES = 6;
+            }
+        }
+    }
+
+
     public static final class Explosion {
         private Explosion() {}
 
@@ -143,4 +171,6 @@ public final class AssetPaths {
         public static final String MID_AIR = BASE + "MidAirExplo__";
         public static final int MID_AIR_FRAMES = 11;
     }
+
+
 }
