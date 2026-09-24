@@ -1,3 +1,4 @@
+data/player1/soldier1_grips.json
 map/background/background.png
 map/earth/map.tmx
 map/earth/terrain.tsx
@@ -103,6 +104,8 @@ sprites/explosion/MidAirExplo__008.png
 sprites/explosion/MidAirExplo__009.png
 sprites/explosion/MidAirExplo__010.png
 sprites/guns/rifle/rifle.png
+sprites/jetpack/jetPack.png
+sprites/jetpack/jetpackFlames.png
 sprites/muzzle/OrangeMuzzle__000.png
 sprites/muzzle/OrangeMuzzle__001.png
 sprites/muzzle/OrangeMuzzle__002.png

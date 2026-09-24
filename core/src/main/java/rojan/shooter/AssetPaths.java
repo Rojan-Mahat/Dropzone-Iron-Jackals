@@ -82,6 +82,15 @@ public final class AssetPaths {
             public static final int HAPPY_FRAMES = 12;
         }
     }
+    public static final class JetPack {
+        public static final String jetpack = "sprites/jetpack/jetPack.png";
+        public static final String jetpackFlames = "sprites/jetpack/jetpackFlames.png";
+
+    }
+
+    public static final class Data {
+        public static final String SOLDIER1_GRIPS = "data/player1/soldier1_grips.json";
+    }
 
     public static final class Weapons {
         private Weapons() {}

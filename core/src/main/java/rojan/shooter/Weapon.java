@@ -11,7 +11,6 @@ public class Weapon{
     private float width;
     private float height;
     private float damage;
-    private Vector2 handPositionEveryFrame;
     public enum WeaponType{
         PISTOL,
         AR,
@@ -42,49 +41,35 @@ public class Weapon{
         ARregion = new TextureRegion(ARtexture);
     }
 
-    public void drawWeapon(SpriteBatch batch){
-        if(ARregion.isFlipX() != facingLeft)
-            ARregion.flip(true, false);
+    public void drawWeapon(SpriteBatch batch,Vector2 playerHoldingGunPosition ){
         float originY = offset.y;
-        float originX;
-        if(!facingLeft)
-            originX = offset.x;
+        float originX = offset.x;
+        float scaleY;
+        if(facingLeft)
+            scaleY = -1f;
         else
-            originX = width - offset.x;
-        Vector2 drawPosition = determineWeaponDrawLocation();
-        batch.draw(ARregion, drawPosition.x, drawPosition.y, originX, originY ,width, height,1f,1f,angleOfRotation);
-    }
-
-    public void setHandPosition(Vector2 coordinates){
-        handPositionEveryFrame = coordinates;
+            scaleY = 1f;
+        Vector2 drawPosition = determineWeaponDrawLocation(playerHoldingGunPosition);
+        batch.draw(ARregion, drawPosition.x, drawPosition.y, originX, originY ,width, height,1f,scaleY,angleOfRotation);
     }
 
     public void disposeWeapon(){
         ARtexture.dispose();
     }
 
-    private Vector2 determineWeaponDrawLocation(){
-        float x;
-        if(!facingLeft)
-            x = handPositionEveryFrame.x - offset.x;
-        else
-            x = handPositionEveryFrame.x - (width - offset.x);
-
-       float y = handPositionEveryFrame.y - offset.y;
-       return new Vector2(x,y);
+    public Vector2 determineWeaponDrawLocation(Vector2 playerHoldingGunPosition){
+        float x = playerHoldingGunPosition.x - offset.x;
+        float y = playerHoldingGunPosition.y  - offset.y;
+        return new Vector2(x,y);
     }
 
     public void setFacingLeft(boolean facingLeft){
         this.facingLeft = facingLeft;
     }
 
-    public Vector2 getHandPosition(){
-        return handPositionEveryFrame;
-    }
-
     public void rotateWeapon(Vector2 handPos ,Vector2 mousePos){
         float angleInRadians = (float) Math.atan2(mousePos.y - handPos.y , mousePos.x - handPos.x);
-        angleOfRotation = (angleInRadians * 180 / (float)Math.PI);
+        angleOfRotation = angleInRadians * 180f / (float)Math.PI;
     }
 
 

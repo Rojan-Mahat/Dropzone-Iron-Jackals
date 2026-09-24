@@ -1,9 +1,7 @@
 package rojan.shooter;
 
-
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
-import com.badlogic.gdx.maps.objects.PointMapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -20,9 +18,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.maps.objects.RectangleMapObject;
-import com.badlogic.gdx.maps.objects.PointMapObject;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 
@@ -44,7 +39,9 @@ public class ShooterGame extends ApplicationAdapter {
     private float gravity = -1200.f;
     private float jetpackThrust= 2200.f;
 
-    private Texture bulletTexture;
+   private TextureRegion[] bulletFrames;
+    private Array<Texture> bulletTextures = new Array<>();
+
 
 
 
@@ -61,6 +58,7 @@ public class ShooterGame extends ApplicationAdapter {
         terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
 
         player = createPlayerFromMap(map);
+        player.receiveJetPackDrawData(extractJetpackFromMap(map));
         weapon = createWeaponFromMap(map);
         player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
@@ -69,8 +67,9 @@ public class ShooterGame extends ApplicationAdapter {
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
-        /*bullets = new Array<>();
-        bulletTexture = new Texture(AssetPaths.Weapons.);*/
+        bullets = new Array<>();
+        bulletFrames = loadBulletFrames(AssetPaths.Bullets.ORANGE_SPIN,AssetPaths.Bullets.ORANGE_SPIN_FRAMES);
+        
     }
 
     @Override
@@ -86,22 +85,27 @@ public class ShooterGame extends ApplicationAdapter {
         if(Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) 
             direction.x++;
 
-        if(Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)){
+        boolean jumpJustPressed = Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP);
+        boolean jumpHeld = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
+        if(jumpJustPressed){
             if(player.getCrouchingState())
                 player.stand(solidPlatforms);
-            if(!player.getCrouchingState())
-                player.reactToJetpack(jetpackThrust,dt);
+            if(!player.getCrouchingState() && player.jumpsAvailable())
+                player.jump();
         }
-        else
-             player.stopJetpack();
-        
+        if(jumpHeld)
+            JumpVSFlight(dt);
+        else{
+            player.setAirTime(0f);
+            player.stopJetpack();
+        }
+
         player.move(direction,dt,getWorldSize(),solidPlatforms);
         player.ensureGrounding(solidPlatforms);
         Vector2 mouseWorldPosition = getMouseWorldPosition();
-        Vector2 handPosition = player.getHandPosition();
-        //if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
-            //createBulletWhenFired(handPosition, mouseWorldPosition);
-        //}
+        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
+            createBulletWhenFired(mouseWorldPosition);
+        
     
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
             if(!player.getCrouchingState())
@@ -115,12 +119,12 @@ public class ShooterGame extends ApplicationAdapter {
                 player.switchPlayerModeArmed();
             else if(player.getCurrentMode() == Player.PlayerMode.ARMED)
                 player.switchPlayerModeUnarmed();
-        }
+        }*/
 
         for(Bullet bullet : bullets)
             bullet.update(dt);
         
-        */ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
 
@@ -144,18 +148,16 @@ public class ShooterGame extends ApplicationAdapter {
         }
 
         player.drawPlayer(batch,dt);
-        weapon.setHandPosition(player.getHandPosition());
-        weapon.setFacingLeft(player.isFacingLeft());
+
+        weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
-
-        
-        weapon.rotateWeapon(handPosition, mouseWorldPosition);
-        weapon.drawWeapon(batch);
-        
-
-        /*for(Bullet bullet : bullets)
+        weapon.setFacingLeft(player.isFacingLeft());
+        Vector2 grip = player.getCurrentGripWorldPosition();
+        weapon.rotateWeapon(grip, mouseWorldPosition);
+        weapon.drawWeapon(batch, grip);
+        for(Bullet bullet : bullets)
             bullet.draw(batch);
-        */batch.end();  
+        batch.end();  
     }
     
 
@@ -166,7 +168,8 @@ public class ShooterGame extends ApplicationAdapter {
         batch.dispose();
         player.disposePlayer();
         weapon.disposeWeapon();
-        //bulletTexture.dispose();
+        for(Texture bullets: bulletTextures)
+            bullets.dispose();
     }
 
 
@@ -189,6 +192,7 @@ public class ShooterGame extends ApplicationAdapter {
         OrthographicCamera newCamera = new OrthographicCamera(cameraRect.width,cameraRect.height);
         newCamera.position.set(cameraRect.x + cameraRect.width/2 , cameraRect.y + cameraRect.height/2 , 0);
         newCamera.update();
+
         return newCamera; 
     }
 
@@ -197,11 +201,6 @@ public class ShooterGame extends ApplicationAdapter {
         RectangleMapObject playerSpawnObject = (RectangleMapObject)playerLayer.getObjects().get("PlayerSpawn"); 
         Rectangle playerRect = playerSpawnObject.getRectangle();
         Player newPlayer = new Player(playerRect.x,playerRect.y,playerRect.width,playerRect.height);
-
-        System.out.println("PLAYER SPAWN X: " + playerRect.x);
-        System.out.println("PLAYER SPAWN Y: " + playerRect.y);
-        System.out.println("PLAYER SPAWN W: " + playerRect.width);
-        System.out.println("PLAYER SPAWN H: " + playerRect.height);
 
         return newPlayer;
     }
@@ -229,13 +228,14 @@ public class ShooterGame extends ApplicationAdapter {
         return new Vector2(x/normalizer, y/normalizer);
     }
 
-    private void createBulletWhenFired(Vector2 handPos, Vector2 mousePos){
+    private void createBulletWhenFired(Vector2 mousePos){
        Vector2 nozzleOffset = extractARNozzleOffsetFromMap(map);
-       float x = handPos.x + nozzleOffset.x;
-       float y = handPos.y + nozzleOffset.y;
+       Vector2 gunGrip = player.getCurrentGripWorldPosition();
+       float x = gunGrip.x + nozzleOffset.x;
+       float y = gunGrip.y + nozzleOffset.y;
        Vector2 nozzlePosition = new Vector2(x,y);
        Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
-       Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 500.f,bulletTexture);
+       Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 500.f,bulletFrames);
        bullets.add(bullet);
     }
 
@@ -288,7 +288,6 @@ public class ShooterGame extends ApplicationAdapter {
         float minCameraY = camera.viewportHeight / 2;
         float maxCameraY = worldSize.y - camera.viewportHeight / 2;
 
-
         if(cameraX < minCameraX)
             cameraX = minCameraX;
         
@@ -313,6 +312,7 @@ public class ShooterGame extends ApplicationAdapter {
         Array<RectangleMapObject> platforms = collisionLayer.getObjects().getByType(RectangleMapObject.class);
         for(RectangleMapObject platform : platforms)
             solidPlatforms.add(platform.getRectangle());
+
         return solidPlatforms;
     }
 
@@ -322,10 +322,6 @@ public class ShooterGame extends ApplicationAdapter {
         RectangleMapObject moveBoxObject = (RectangleMapObject)playerLayer.getObjects().get("playerMovement");
         moveBox = moveBoxObject.getRectangle();
 
-        System.out.println("RAW MOVEBOX X: " + moveBox.x);
-        System.out.println("RAW MOVEBOX Y: " + moveBox.y);
-        System.out.println("RAW MOVEBOX W: " + moveBox.width);
-        System.out.println("RAW MOVEBOX H: " + moveBox.height);
         return moveBox;
     }
 
@@ -373,6 +369,16 @@ public class ShooterGame extends ApplicationAdapter {
         return new Vector2(AR_NozzleRect.x- weaponSocketRect.x , AR_NozzleRect.y - weaponSocketRect.y );
     }
 
+    private Rectangle extractJetpackFromMap(TiledMap map){
+        MapLayer referenceLayer = map.getLayers().get("reference");
+        RectangleMapObject forJetpackObject = (RectangleMapObject) referenceLayer.getObjects().get("forJetpack");
+        RectangleMapObject jetPackObject = (RectangleMapObject) referenceLayer.getObjects().get("jetPack");
+        Rectangle forJetpackRect = forJetpackObject.getRectangle();
+        Rectangle jetPackRect = jetPackObject.getRectangle();
+        
+        return new Rectangle (jetPackRect.x - forJetpackRect.x , jetPackRect.y - forJetpackRect.y ,jetPackRect.width , jetPackRect.height); 
+    }
+
     private void activateGravity(float dt){
         player.reactToGravity(gravity, dt);
     }
@@ -385,6 +391,25 @@ public class ShooterGame extends ApplicationAdapter {
         else if(mousePos.x < playerPos.x)
             player.setFacingDirectionLeft();
     }
+
+    private void JumpVSFlight(float dt){
+        player.setAirTime(player.getAirTime()+dt);
+        if(player.getAirTime() > 0.5)
+            player.reactToJetpack(jetpackThrust,dt);
+    }
+
+    private TextureRegion[] loadBulletFrames(String prefix, int frameCount){
+        TextureRegion[] frames = new TextureRegion[frameCount];
+        for(int i = 0; i < frameCount; i++){
+            String frameNumber = String.format("%03d", i);
+            String path = prefix + frameNumber + ".png";
+            Texture texture = new Texture(path);
+            bulletTextures.add(texture);
+            frames[i] = new TextureRegion(texture);
+        }
+        return frames;
+    }
+        
 
 
 

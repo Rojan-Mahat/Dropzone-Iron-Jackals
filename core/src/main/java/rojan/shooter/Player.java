@@ -1,5 +1,6 @@
 package rojan.shooter;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -7,8 +8,14 @@ import com.badlogic.gdx.math.Vector2;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.math.Vector2;
+
+import java.util.EnumMap;
+
 
 
 public class Player{
@@ -65,6 +72,7 @@ public class Player{
     }
     private FacingDirection currentDirection;
     private float stateTime;
+    private int currentFrameIndex;
 
     private Array<Texture> loadedTextures = new Array<>();
     private TextureRegion[] idleFrames;
@@ -93,6 +101,51 @@ public class Player{
     private Weapon currentWeapon;
     private float weaponDrawAdjustmentY = 0f;
 
+    private int jumpCount;
+    private static final int MAX_JUMP_PRESSES = 3;
+
+    private static class GripPose{
+        Vector2 position;
+        float angle;
+
+        GripPose(float x, float y, float angle){
+            position = new Vector2(x, y);
+            this.angle = angle;
+        }
+    }
+    private GripPose[] idleGripPoses;
+    private GripPose[] idleAimGripPoses;
+    private GripPose[] walkGripPoses;
+    private GripPose[] walkShootGripPoses;
+    private GripPose[] runningGripPoses;
+    private GripPose[] runningShootGripPoses;
+    private GripPose[] crouchGripPoses;
+    private GripPose[] crouchAimGripPoses;
+    private GripPose[] crouchShootGripPoses;
+    private GripPose[] jumpGripPoses;
+    private GripPose[] jumpShootGripPoses;
+    private GripPose[] shootGripPoses;
+    private GripPose[] hurtGripPoses;
+    private GripPose[] deadGripPoses;
+    private GripPose[] climbGripPoses;
+    private GripPose[] meleeGripPoses;
+    private GripPose[] crouchMeleeGripPoses;
+    private GripPose[] jumpMeleeGripPoses;
+    private GripPose[] throwGripPoses;
+    private GripPose[] crouchThrowGripPoses;
+    private GripPose[] jumpThrowGripPoses;
+    private GripPose[] happyGripPoses;
+
+    private EnumMap<PlayerState, GripPose[]> gripPoseMap;
+    private Rectangle jetPackDrawData;
+    private Texture jetpackTexture;
+    private Sprite jetpackSprite; 
+
+    private Texture jetpackFlameTexture;
+    private TextureRegion[] jetpackFlameFrames;
+    private float jetpackFlameStateTime;
+
+    private float airTime;
 
     Player(float spawnX, float spawnY, float widthfromMap, float heightfromMap){
         position = new Vector2(spawnX,spawnY);
@@ -142,6 +195,50 @@ public class Player{
         jumpThrowFrames = loadFrames(AssetPaths.Player.Soldier1.JUMP_THROW,AssetPaths.Player.Soldier1.JUMP_THROW_FRAMES);
 
         happyFrames = loadFrames(AssetPaths.Player.Soldier1.HAPPY,AssetPaths.Player.Soldier1.HAPPY_FRAMES);
+
+        idleGripPoses = new GripPose[idleFrames.length];
+        idleAimGripPoses = new GripPose[idleAimFrames.length];
+
+        walkGripPoses = new GripPose[walkFrames.length];
+        walkShootGripPoses = new GripPose[walkShootFrames.length];
+
+        runningGripPoses = new GripPose[runningFrames.length];
+        runningShootGripPoses = new GripPose[runShootFrames.length];
+
+        crouchGripPoses = new GripPose[crouchFrames.length];
+        crouchAimGripPoses = new GripPose[crouchAimFrames.length];
+        crouchShootGripPoses = new GripPose[crouchShootFrames.length];
+
+        jumpGripPoses = new GripPose[jumpFrames.length];
+        jumpShootGripPoses = new GripPose[jumpShootFrames.length];
+
+        shootGripPoses = new GripPose[shootFrames.length];
+
+        hurtGripPoses = new GripPose[hurtFrames.length];
+
+        deadGripPoses = new GripPose[deadFrames.length];
+
+        meleeGripPoses = new GripPose[meleeFrames.length];
+        crouchMeleeGripPoses = new GripPose[crouchMeleeFrames.length];
+        jumpMeleeGripPoses = new GripPose[jumpMeleeFrames.length];
+
+        throwGripPoses = new GripPose[throwFrames.length];
+        crouchThrowGripPoses = new GripPose[crouchThrowFrames.length];
+        jumpThrowGripPoses = new GripPose[jumpThrowFrames.length];
+
+        happyGripPoses = new GripPose[happyFrames.length];
+
+        loadAllGripPoses();
+
+        gripPoseMap = new EnumMap<>(PlayerState.class);
+        linkGripPoseMap();
+
+        jetpackTexture = new Texture(AssetPaths.JetPack.jetpack);
+        jetpackSprite = new Sprite(jetpackTexture);
+
+        jetpackFlameTexture = new Texture(AssetPaths.JetPack.jetpackFlames);
+        TextureRegion[][] flameSheet = TextureRegion.split(jetpackFlameTexture, jetpackFlameTexture.getWidth() / 4, jetpackFlameTexture.getHeight());
+        jetpackFlameFrames = flameSheet[0];
     }
 
     private TextureRegion[] loadFrames(String prefix, int frameCount){
@@ -165,117 +262,135 @@ public class Player{
         else
             stateTime+=dt;
 
+        boolean faceLeft = currentDirection == FacingDirection.LEFT;
+        if(jetpackSprite.isFlipX() != faceLeft)
+            jetpackSprite.flip(true, false);
+
+        float jetPackX,jetPackY;
+        
+        if(currentDirection == FacingDirection.RIGHT)
+            jetPackX = position.x + jetPackDrawData.x;
+        else
+            jetPackX =position.x + width - jetPackDrawData.x - jetPackDrawData.width;
+        jetPackY  = position.y + jetPackDrawData.y;
+
+        if(isJetPackActive)
+            drawJetpackFlame(batch,dt,jetPackX,jetPackY);
+        batch.draw(jetpackSprite,jetPackX,jetPackY,jetPackDrawData.width,jetPackDrawData.height);
+    
+
         switch(currentState){
         case IDLE:
-            int idleIndex =(int)(stateTime / frameDuration) % idleFrames.length;
-            drawFrame(batch, idleFrames[idleIndex], 1f, 1f);
+            currentFrameIndex =(int)(stateTime / frameDuration) % idleFrames.length;
+            drawFrame(batch, idleFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case IDLE_AIM:
-            int idleAimIndex = (int)(stateTime / frameDuration) % idleAimFrames.length;
-            drawFrame(batch, idleAimFrames[idleAimIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % idleAimFrames.length;
+            drawFrame(batch, idleAimFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case WALK:
-            int walkIndex = (int)(stateTime / frameDuration) % walkFrames.length;
-            drawFrame(batch, walkFrames[walkIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % walkFrames.length;
+            drawFrame(batch, walkFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case WALK_SHOOT:
-            int walkShootIndex = (int)(stateTime / frameDuration) % walkShootFrames.length;
-            drawFrame(batch, walkShootFrames[walkShootIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % walkShootFrames.length;
+            drawFrame(batch, walkShootFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case RUNNING:
-            int runningIndex = (int)(stateTime / frameDuration) % runningFrames.length;
-            drawFrame(batch, runningFrames[runningIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % runningFrames.length;
+            drawFrame(batch, runningFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case RUNNING_SHOOT:
-            int runningShootIndex = (int)(stateTime / frameDuration) % runShootFrames.length;
-            drawFrame(batch, runShootFrames[runningShootIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % runShootFrames.length;
+            drawFrame(batch, runShootFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CROUCH:
-            int crouchIndex = (int)(stateTime / frameDuration) % crouchFrames.length;
-            drawFrame(batch, crouchFrames[crouchIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % crouchFrames.length;
+            drawFrame(batch, crouchFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CROUCH_AIM:
-            int crouchAimIndex = (int)(stateTime / frameDuration) % crouchAimFrames.length;
-            drawFrame(batch, crouchAimFrames[crouchAimIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % crouchAimFrames.length;
+            drawFrame(batch, crouchAimFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CROUCH_SHOOT:
-            int crouchShootIndex = (int)(stateTime / frameDuration) % crouchShootFrames.length;
-            drawFrame(batch, crouchShootFrames[crouchShootIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % crouchShootFrames.length;
+            drawFrame(batch, crouchShootFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case JUMP:
-            int jumpIndex = (int)(stateTime / frameDuration) % jumpFrames.length;
-            drawFrame(batch, jumpFrames[jumpIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % jumpFrames.length;
+            drawFrame(batch, jumpFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case JUMPSHOOT:
-            int jumpShootIndex = (int)(stateTime / frameDuration) % jumpShootFrames.length;
-            drawFrame(batch, jumpShootFrames[jumpShootIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % jumpShootFrames.length;
+            drawFrame(batch, jumpShootFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case SHOOT:
-            int shootIndex = (int)(stateTime / frameDuration) % shootFrames.length;
-            drawFrame(batch, shootFrames[shootIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % shootFrames.length;
+            drawFrame(batch, shootFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case HURT:
-            int hurtIndex = (int)(stateTime / frameDuration) % hurtFrames.length;
-            drawFrame(batch, hurtFrames[hurtIndex], 1f, 1f);
+            currentFrameIndex= (int)(stateTime / frameDuration) % hurtFrames.length;
+            drawFrame(batch, hurtFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case DEAD:
-            int deadIndex = (int)(stateTime / frameDuration) % deadFrames.length;
-            drawFrame(batch, deadFrames[deadIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % deadFrames.length;
+            drawFrame(batch, deadFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CLIMB:
-            int climbIndex = (int)(stateTime / frameDuration) % climbFrames.length;
-            drawFrame(batch, climbFrames[climbIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % climbFrames.length;
+            drawFrame(batch, climbFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case MELEE:
-            int meleeIndex = (int)(stateTime / frameDuration) % meleeFrames.length;
-            drawFrame(batch, meleeFrames[meleeIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % meleeFrames.length;
+            drawFrame(batch, meleeFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CROUCH_MELEE:
-            int crouchMeleeIndex = (int)(stateTime / frameDuration) % crouchMeleeFrames.length;
-            drawFrame(batch, crouchMeleeFrames[crouchMeleeIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % crouchMeleeFrames.length;
+            drawFrame(batch, crouchMeleeFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case JUMP_MELEE:
-            int jumpMeleeIndex = (int)(stateTime / frameDuration) % jumpMeleeFrames.length;
-            drawFrame(batch, jumpMeleeFrames[jumpMeleeIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % jumpMeleeFrames.length;
+            drawFrame(batch, jumpMeleeFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case THROW:
-            int throwIndex = (int)(stateTime / frameDuration) % throwFrames.length;
-            drawFrame(batch, throwFrames[throwIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % throwFrames.length;
+            drawFrame(batch, throwFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case CROUCH_THROW:
-            int crouchThrowIndex = (int)(stateTime / frameDuration) % crouchThrowFrames.length;
-            drawFrame(batch, crouchThrowFrames[crouchThrowIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % crouchThrowFrames.length;
+            drawFrame(batch, crouchThrowFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case JUMP_THROW:
-            int jumpThrowIndex = (int)(stateTime / frameDuration) % jumpThrowFrames.length;
-            drawFrame(batch, jumpThrowFrames[jumpThrowIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % jumpThrowFrames.length;
+            drawFrame(batch, jumpThrowFrames[currentFrameIndex], 1f, 1f);
             break;
 
         case HAPPY:
-            int happyIndex = (int)(stateTime / frameDuration) % happyFrames.length;
-            drawFrame(batch, happyFrames[happyIndex], 1f, 1f);
+            currentFrameIndex = (int)(stateTime / frameDuration) % happyFrames.length;
+            drawFrame(batch, happyFrames[currentFrameIndex], 1f, 1f);
             break;
         }
+
     }
 
 
@@ -288,43 +403,32 @@ public class Player{
             currentState = PlayerState.IDLE;
         else if(isGrounded && velocity.x!=0)
             currentState = PlayerState.RUNNING;
-       
-        
-
     }
 
-    /*private void drawJetpackFlame(SpriteBatch batch, float dt){
-        flameStateTime += dt;
+    private GripPose getCurrentGripPose(){
+        GripPose[] poses = gripPoseMap.get(currentState);
+        return poses[currentFrameIndex];
+    }
 
-        float flameOffsetX = width * 0.08f;
-        int frameIndex = (int)(flameStateTime / 0.08f) % flameFrames.length;
-        float flameWidth = width * 0.38f;
-        float flameHeight = height * 0.32f;
-        float flameX;
+    public void drawJetpackFlame(SpriteBatch batch, float dt, float x , float y){
+        jetpackFlameStateTime += dt;
 
-        float nozzleY = position.y + height * 0.635f;
-        float flameY = nozzleY - flameHeight;
+        int frameIndex = (int)(jetpackFlameStateTime / 0.07f) % jetpackFlameFrames.length;
+        TextureRegion currentFlame = jetpackFlameFrames[frameIndex];
+        float flameWidth = jetPackDrawData.width;
 
-        float originX = flameWidth / 2f;
-        float originY = flameHeight;
-        float rotation;
-        if(currentDirection == FacingDirection.RIGHT)
-            rotation = -8f;
-        else
-            rotation = 8f;
-
-        if(currentDirection == FacingDirection.RIGHT)
-            flameX = position.x + flameOffsetX;
-        else
-            flameX = position.x + width - flameOffsetX - flameWidth;
+        float flameHeight = flameWidth * ((float)currentFlame.getRegionHeight()/ currentFlame.getRegionWidth());
+        float flameX = x;
+        float flameY = y - flameHeight/2;
     
-        batch.draw(flameFrames[frameIndex], flameX, flameY, originX, originY,flameWidth,flameHeight,1.1f,1.1f,rotation);
-    }*/
+        batch.draw(currentFlame, flameX, flameY,flameWidth,flameHeight);
+    }
 
 
     public void disposePlayer(){;
         for(Texture texture : loadedTextures)
             texture.dispose();
+        jetpackTexture.dispose();
     }
 
     private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY){
@@ -347,12 +451,6 @@ public class Player{
         movementOffset.y = moveBox.y - position.y;
         movementOffset.width = moveBox.width;
         movementOffset.height = moveBox.height;
-
-        System.out.println("PLAYER X: " + position.x);
-        System.out.println("PLAYER Y: " + position.y);
-
-        System.out.println("OFFSET X: " + (moveBox.x - position.x));
-        System.out.println("OFFSET Y: " + (moveBox.y - position.y));
     }
 
     public void receivePlayerCrouchMoveBox(Rectangle crouchMoveBox){
@@ -391,8 +489,6 @@ public class Player{
             velocity.y = 0;
 
         }
-
-        //updateWeaponDrawAdjustment(velocity.x,velocity.y); 
     }
 
     public Vector2 getPlayerPosition(){
@@ -414,12 +510,6 @@ public class Player{
         for(Rectangle rectangle: solidPlatforms){
             if((position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width)
             && position.y + activeCollider.y < rectangle.y+rectangle.height && position.y + activeCollider.y + activeCollider.height > rectangle.y){
-                System.out.println(
-                    "PLAYER -> left:" + (position.x + activeCollider.x) +
-                    " bottom:" + (position.y + activeCollider.y) +
-                    " right:" + (position.x + activeCollider.x + activeCollider.width) +
-                    " top:" + (position.y + activeCollider.y + activeCollider.height)
-                );
                 if(direction.x < 0)
                     position.x = rectangle.x + rectangle.width - activeCollider.x;
                 else if(direction.x>0)
@@ -427,7 +517,6 @@ public class Player{
             }
         }         
     }
-        
 
     private void resolveVerticalCollision(Array<Rectangle> solidPlatforms){
         Rectangle activeCollider;
@@ -450,6 +539,40 @@ public class Player{
             }
         }
     }
+    private void linkGripPoseMap() {
+        gripPoseMap.put(PlayerState.IDLE, idleGripPoses);
+        gripPoseMap.put(PlayerState.IDLE_AIM, idleAimGripPoses);
+
+        gripPoseMap.put(PlayerState.WALK, walkGripPoses);
+        gripPoseMap.put(PlayerState.WALK_SHOOT, walkShootGripPoses);
+
+        gripPoseMap.put(PlayerState.RUNNING, runningGripPoses);
+        gripPoseMap.put(PlayerState.RUNNING_SHOOT, runningShootGripPoses);
+
+        gripPoseMap.put(PlayerState.CROUCH, crouchGripPoses);
+        gripPoseMap.put(PlayerState.CROUCH_AIM, crouchAimGripPoses);
+        gripPoseMap.put(PlayerState.CROUCH_SHOOT, crouchShootGripPoses);
+
+        gripPoseMap.put(PlayerState.JUMP, jumpGripPoses);
+        gripPoseMap.put(PlayerState.JUMPSHOOT, jumpShootGripPoses);
+
+        gripPoseMap.put(PlayerState.SHOOT, shootGripPoses);
+
+        gripPoseMap.put(PlayerState.HURT, hurtGripPoses);
+        gripPoseMap.put(PlayerState.DEAD, deadGripPoses);
+
+        gripPoseMap.put(PlayerState.MELEE, meleeGripPoses);
+        gripPoseMap.put(PlayerState.CROUCH_MELEE, crouchMeleeGripPoses);
+        gripPoseMap.put(PlayerState.JUMP_MELEE, jumpMeleeGripPoses);
+
+        gripPoseMap.put(PlayerState.THROW, throwGripPoses);
+        gripPoseMap.put(PlayerState.CROUCH_THROW, crouchThrowGripPoses);
+        gripPoseMap.put(PlayerState.JUMP_THROW, jumpThrowGripPoses);
+
+        gripPoseMap.put(PlayerState.HAPPY, happyGripPoses);
+    }
+
+
     public boolean isFacingLeft(){
         return currentDirection == FacingDirection.LEFT;
     }
@@ -493,9 +616,17 @@ public class Player{
         return isGrounded;
     }
 
+    public boolean getJetPackStatus(){
+        return isJetPackActive;
+    }
+
+    public void receiveJetPackDrawData(Rectangle data){
+        jetPackDrawData = new Rectangle(data);  
+    }
+
     public void stopJetpack(){
         isJetPackActive = false;
-        //flameStateTime = 0;
+        jetpackFlameStateTime = 0;
     }
 
     public void ensureGrounding(Array<Rectangle> solidPlatforms){
@@ -511,6 +642,8 @@ public class Player{
             if((position.y + activeCollider.y >= rectangle.y + rectangle.height) && (position.y + activeCollider.y <= rectangle.y + rectangle.height + offset)
             && (rectangle.x < position.x + activeCollider.x + activeCollider.width) && (rectangle.x+rectangle.width > position.x + activeCollider.x)){
                 isGrounded = true;
+                airTime = 0;
+                jumpCount = 0;
                 break;
             }
         }
@@ -519,8 +652,11 @@ public class Player{
     public void reactToGravity(float gravity , float dt){
         if(!isGrounded)
             velocity.y+= gravity * dt;
-        else if(isGrounded)
+        else if(isGrounded){
             velocity.y = 0;
+            airTime = 0;
+            jumpCount = 0;
+        }
 
         if(velocity.y < maxFallSpeed)
             velocity.y = maxFallSpeed;
@@ -543,31 +679,64 @@ public class Player{
         return handPos;
     }
 
+    public Vector2 getCurrentGripWorldPosition() {
+        GripPose pose = getCurrentGripPose();
+        return new Vector2(position.x+pose.position.x , position.y+pose.position.y);
+    }
 
-    /*private void updateWeaponDrawAdjustment(float velocity_x , float velocity_y){
-        if(!isCrouching){
-            if(velocity_y > -100 &&  velocity_y < 200)
-                weaponDrawAdjustmentY = 9f;
 
-            else if(velocity_y >= -400 &&  velocity_y < -100)
-                weaponDrawAdjustmentY = 2.5f;
-            
-            else if(velocity_y < -400)
-                weaponDrawAdjustmentY = -2;
+    private void loadAllGripPoses(){
+        JsonValue root = new JsonReader().parse(Gdx.files.internal(AssetPaths.Data.SOLDIER1_GRIPS));
+        loadGripPoseArray(root, "IDLE", idleGripPoses);
+        loadGripPoseArray(root, "IDLE_AIM", idleAimGripPoses);
 
-            else if(velocity_y > 200 && velocity_y < 450)
-                weaponDrawAdjustmentY = 12;
+        loadGripPoseArray(root, "WALK", walkGripPoses);
+        loadGripPoseArray(root, "WALK_SHOOT", walkShootGripPoses);
 
-            else if(velocity_y > 450)
-                weaponDrawAdjustmentY = 15;
+        loadGripPoseArray(root, "RUNNING", runningGripPoses);
+        loadGripPoseArray(root, "RUNNING_SHOOT", runningShootGripPoses);
+
+        loadGripPoseArray(root, "CROUCH", crouchGripPoses);
+        loadGripPoseArray(root, "CROUCH_AIM", crouchAimGripPoses);
+        loadGripPoseArray(root, "CROUCH_SHOOT", crouchShootGripPoses);
+
+        loadGripPoseArray(root, "JUMP", jumpGripPoses);
+        loadGripPoseArray(root, "JUMPSHOOT", jumpShootGripPoses);
+
+        loadGripPoseArray(root, "SHOOT", shootGripPoses);
+
+        loadGripPoseArray(root, "HURT", hurtGripPoses);
+        loadGripPoseArray(root, "DEAD", deadGripPoses);
+
+        loadGripPoseArray(root, "MELEE", meleeGripPoses);
+        loadGripPoseArray(root, "CROUCH_MELEE", crouchMeleeGripPoses);
+        loadGripPoseArray(root, "JUMP_MELEE", jumpMeleeGripPoses);
+
+        loadGripPoseArray(root, "THROW", throwGripPoses);
+        loadGripPoseArray(root, "CROUCH_THROW", crouchThrowGripPoses);
+        loadGripPoseArray(root, "JUMP_THROW", jumpThrowGripPoses);
+
+        loadGripPoseArray(root, "HAPPY", happyGripPoses);
+    }
+
+    
+
+    private void loadGripPoseArray(JsonValue root, String stateName, GripPose[] targetArray) {
+        JsonValue stateData = root.get(stateName);
+        if(targetArray.length != stateData.size){
+            System.out.println("Grip data does not match animation frame count!");
+            return;
         }
+        int m = 0;
+        for(JsonValue pose = stateData.child; pose!=null ; pose = pose.next){
+            float x = pose.getFloat("x");
+            float y = pose.getFloat("y");
+            float angle = pose.getFloat("angle");
+            targetArray[m] = new GripPose(x,y,angle);
+            m++;
+        }
+    }           
 
-        else if(isCrouching && velocity_x == 0)
-            weaponDrawAdjustmentY = -22;
-
-        else if(isCrouching && velocity_x!=0)
-            weaponDrawAdjustmentY = -14.5f;
-    }*/
 
     public void setFacingDirectionLeft(){
         currentDirection = FacingDirection.LEFT;
@@ -577,7 +746,30 @@ public class Player{
         currentDirection = FacingDirection.RIGHT;
     }
 
+    public void startJetpack(){
+        isJetPackActive = true;
+    }
 
+    public void jump(){
+        currentState = PlayerState.JUMP;
+        velocity.y = 625f;
+        jumpCount++;
+    }
+
+    public float getAirTime(){
+        return airTime;
+    }
+
+    public void setAirTime(float aT){
+        airTime = aT;
+    }
+
+    public boolean jumpsAvailable(){
+        return jumpCount < MAX_JUMP_PRESSES;
+    }
+
+
+ 
 
     public static void main(String[] args){
 
