@@ -9,12 +9,15 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.math.Rectangle;
 
 public class Enemy{
-    private enum EnemyType{
-        Jackal_RifleMan,
-        Jackal_heavy,
-        Jackal_hoverDrone;
+    public enum EnemyType{
+        RIFLEMAN,
+        HEAVY,
+        HOVER_DRONE,
+        DRILL_CRAWLER
     }
+
     private EnemyType type;
+
     private float hitPoints;
     private float Damage;
     private Vector2 position;
@@ -29,11 +32,20 @@ public class Enemy{
 
 
 
-    Enemy(float x, float y, float drawSize){
+    Enemy(EnemyType type, float x, float y, float drawSize){
+        this.type = type;
         position = new Vector2(x, y);
         this.drawSize = drawSize;
         loadedTextures = new Array<>();
-        idleFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.IDLE, AssetPaths.Enemies.IronJackals.Rifleman.IDLE_FRAMES);
+        if(type == EnemyType.RIFLEMAN)
+            idleFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.IDLE, AssetPaths.Enemies.IronJackals.Rifleman.IDLE_FRAMES);
+        else if(type == EnemyType.HEAVY)
+            idleFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.IDLE, AssetPaths.Enemies.IronJackals.Heavy.IDLE_FRAMES);
+        else if(type == EnemyType.HOVER_DRONE)
+            idleFrames = loadFrames(AssetPaths.Enemies.IronJackals.HoverDrone.IDLE, AssetPaths.Enemies.IronJackals.HoverDrone.IDLE_FRAMES);
+        else if(type == EnemyType.DRILL_CRAWLER)
+            idleFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.IDLE, AssetPaths.Enemies.IronJackals.DrillCrawler.IDLE_FRAMES);
+
         stateTime = 0f;
     }
 

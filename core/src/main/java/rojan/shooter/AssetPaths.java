@@ -156,6 +156,68 @@ public final class AssetPaths {
                 public static final String DEATH = BASE + "death_";
                 public static final int DEATH_FRAMES = 6;
             }
+            public static final class Heavy {
+                private Heavy() {}
+                public static final String BASE = "sprites/enemies/iron_jackals/jackal_heavy/";
+
+                public static final String IDLE = BASE + "idle_";
+                public static final int IDLE_FRAMES = 6;
+
+                public static final String WALK = BASE + "walking";
+                public static final int WALK_FRAMES = 6;
+
+                public static final String ATTACK = BASE + "attack_";
+                public static final int ATTACK_FRAMES = 6;
+
+                public static final String HURT = BASE + "hurt_";
+                public static final int HURT_FRAMES = 6;
+
+                public static final String DEATH = BASE + "death_";
+                public static final int DEATH_FRAMES = 6;
+            }
+            public static final class HoverDrone {
+                private HoverDrone() {}
+                public static final String BASE = "sprites/enemies/iron_jackals/jackal_hover_drone/";
+
+                public static final String IDLE = BASE + "idle_";
+                public static final int IDLE_FRAMES = 6;
+
+                public static final String WALK = BASE + "flying";
+                public static final int WALK_FRAMES = 6;
+
+                public static final String ATTACK = BASE + "attack_";
+                public static final int ATTACK_FRAMES = 6;
+
+                public static final String HURT = BASE + "hurt_";
+                public static final int HURT_FRAMES = 6;
+
+                public static final String DEATH = BASE + "death_";
+                public static final int DEATH_FRAMES = 6;
+            }
+
+            public static final class DrillCrawler {
+                private DrillCrawler() {}
+                public static final String BASE = "sprites/enemies/iron_jackals/jackal_drill_crawler/";
+
+                public static final String ATTACK = BASE + "attack_";
+                public static final int ATTACK_FRAMES = 6;
+
+                public static final String DEATH = BASE + "death_";
+                public static final int DEATH_FRAMES = 6;
+
+                public static final String DRILL = BASE + "drill_";
+                public static final int DRILL_FRAMES = 6;
+
+                public static final String HURT = BASE + "hurt_";
+                public static final int HURT_FRAMES = 6;
+
+                public static final String IDLE = BASE + "idle_";
+                public static final int IDLE_FRAMES = 6;
+                
+                public static final String WALK = BASE + "walking_";
+                public static final int WALK_FRAMES = 6;
+                
+            }
         }
     }
 
