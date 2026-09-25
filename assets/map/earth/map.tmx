@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="11" nextobjectid="456">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="12" nextobjectid="527">
  <tileset firstgid="1" source="terrain.tsx"/>
- <layer id="1" name="Tile Layer 1" width="64" height="36" locked="1">
+ <layer id="1" name="Tile Layer 1" width="64" height="36" visible="0" locked="1">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -333,12 +333,238 @@
  </objectgroup>
  <objectgroup id="10" name="Enemies">
   <object id="440" name="Rifleman_Hitbox" x="3026" y="1173" width="58" height="117.5"/>
-  <object id="441" name="Rifleman_Spawn" x="3054.5" y="1289.5" width="1" height="1"/>
-  <object id="443" name="Hover_Drone_Hitbox" x="3158" y="936" width="96" height="67"/>
-  <object id="445" name="Hover_Drone_Spawn" x="3205.5" y="969" width="1" height="1"/>
+  <object id="441" name="Rifleman_Spawn" x="3054.5" y="1289.5" width="1" height="1">
+   <properties>
+    <property name="drawHeight" type="float" value="170"/>
+    <property name="drawWidth" type="float" value="130"/>
+   </properties>
+  </object>
+  <object id="443" name="Hover_Drone_Hitbox" x="3158" y="936" width="94" height="57"/>
+  <object id="445" name="Hover_Drone_Spawn" x="3204.5" y="964" width="1" height="1">
+   <properties>
+    <property name="drawHeight" type="float" value="160"/>
+    <property name="drawWidth" type="float" value="130"/>
+   </properties>
+  </object>
   <object id="446" name="Heavy_Hitbox" x="2166" y="505.41" width="75" height="117"/>
-  <object id="448" name="Heavy_Spawn" x="2203" y="621.419" width="1" height="1"/>
-  <object id="452" name="Drill_Crawler_Hitbox" x="1624" y="413.683" width="72" height="58.9052"/>
-  <object id="453" name="Drill_Crawler_Spawn" x="1659.5" y="471.613" width="1" height="1"/>
+  <object id="448" name="Heavy_Spawn" x="2203" y="621.419" width="1" height="1">
+   <properties>
+    <property name="drawHeight" type="float" value="175"/>
+    <property name="drawWidth" type="float" value="127"/>
+   </properties>
+  </object>
+  <object id="452" name="Drill_Crawler_Hitbox" x="1624" y="413.683" width="94" height="58.9052"/>
+  <object id="453" name="Drill_Crawler_Spawn" x="1670.5" y="471.613" width="1" height="1">
+   <properties>
+    <property name="drawHeight" type="float" value="160"/>
+    <property name="drawWidth" type="float" value="120"/>
+   </properties>
+  </object>
+  <object id="468" type="headshot" x="2206.32" y="506.314" width="3.92297" height="21.526">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="469" type="headshot" x="2203.1" y="507.723" width="9.15359" height="19.1622">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="470" type="headshot" x="2200.53" y="511.646" width="4.87856" height="10.2098">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="471" type="headshot" x="2210.89" y="509.181" width="3.72179" height="21.3249">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="472" type="headshot" x="2214.5" y="510.439" width="2.26325" height="20.1178">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="473" type="headshot" x="2216.58" y="514.663" width="1.30766" height="5.58269">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="475" type="headshot" x="2209.94" y="507.27" width="3.92297" height="4.02356">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="476" type="headshot" x="2201.5" y="508.127" width="4.42583" height="3.81735">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="477" type="bodyshot" x="2189.62" y="518.945" width="27.156" height="56.8678">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="478" type="bodyshot" x="2212.84" y="526.784" width="14.1637" height="40.9768">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="479" type="bodyshot" x="2174.13" y="517.566" width="24.4468" height="46.8288">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="482" type="limbshot" x="2182.78" y="564.171" width="17.9431" height="24.0758">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="483" type="limbshot" x="2174.36" y="586.161" width="17.6493" height="35.8294">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="484" type="limbshot" x="2205.88" y="568.531" width="23.128" height="18.3886">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="485" type="limbshot" x="2211.92" y="587.109" width="21.4218" height="30.1422">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="486" type="limbshot" x="2179.49" y="581.053" width="19.0777" height="11.9917">
+   <properties>
+    <property name="owner" value="heavy"/>
+   </properties>
+  </object>
+  <object id="487" type="bodyshot" x="1636.52" y="421.45" width="49.8699" height="39.1137">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="488" type="bodyshot" x="1626.3" y="428.055" width="18.1879" height="18.6455">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="489" type="bodyshot" x="1639.53" y="414.734" width="37.9441" height="7.86705">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="490" type="bodyshot" x="1685.02" y="426.73" width="8.40944" height="30.7042">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="491" type="headshot" x="1694.01" y="436.9" width="10.1696" height="17.6012">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="492" type="headshot" x="1701.99" y="439.269" width="8.62717" height="11.9297">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="493" type="headshot" x="1708.88" y="441.985" width="8.40944" height="6.45376">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="494" type="limbshot" x="1624.35" y="456.457" width="10.4094" height="16.2322">
+   <properties>
+    <property name="owner" value="driller"/>
+   </properties>
+  </object>
+  <object id="495" x="1677" y="458.217" width="15.841" height="13.6898"/>
+  <object id="496" type="limbshot" x="3158.11" y="958.206" width="25.6641" height="26.6572">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="500" type="bodyshot" x="3173.68" y="952.318" width="51.3743" height="24.4523">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="501" type="headshot" x="3224.68" y="946.286" width="9.58723" height="23.5794">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="502" type="headshot" x="3231.42" y="949.395" width="15.5469" height="21.2474">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="503" type="bodyshot" x="3200.32" y="971.938" width="51.3046" height="7.51432">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="504" type="limbshot" x="3206.8" y="975.825" width="25.1341" height="13.4739">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="505" type="bodyshot" x="3177.26" y="940.326" width="60.3736" height="9.58723">
+   <properties>
+    <property name="owner" value="drone"/>
+   </properties>
+  </object>
+  <object id="506" type="bodyshot" x="3169.04" y="950.172" width="22.1745" height="12.6966">
+   <properties>
+    <property name="owner" value="drones"/>
+   </properties>
+  </object>
+  <object id="507" type="headshot" x="3046.73" y="1178.4" width="23.9837" height="28.7804">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="508" type="headshot" x="3041.13" y="1184.79" width="31.3787" height="15.3895">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="509" type="bodyshot" x="3039.93" y="1201.78" width="27.981" height="44.7696">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="510" type="bodyshot" x="3034.74" y="1203.58" width="11.792" height="38.7736">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="511" type="limbshot" x="3038.13" y="1243.75" width="14.7947" height="18.7872">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="512" type="limbshot" x="3028.74" y="1260.74" width="18.1904" height="29.38">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="513" type="limbshot" x="3056.32" y="1241.16" width="13.3909" height="15.9891">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="514" type="limbshot" x="3063.52" y="1249.15" width="11.792" height="39.773">
+   <properties>
+    <property name="owner" value="rifleman"/>
+   </properties>
+  </object>
+  <object id="515" type="limbshot" x="3061.32" y="1280.93" width="24.3834" height="6.79538">
+   <properties>
+    <property name="owner" value="riflemans"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

@@ -2,6 +2,7 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -10,6 +11,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
@@ -19,10 +21,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import rojan.shooter.AssetPaths.Enemies.IronJackals.DrillCrawler;
-
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
+import com.badlogic.gdx.graphics.Color;
 
 //./gradlew lwjgl3:run
 
@@ -50,6 +51,7 @@ public class ShooterGame extends ApplicationAdapter {
     private float mouseHeld = 0f;
 
     private Array<Enemy> enemies;
+    private ShapeRenderer shapeRenderer;
 
 
 
@@ -72,19 +74,17 @@ public class ShooterGame extends ApplicationAdapter {
         player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
         player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
 
+        Enemy.loadEnemyAssetOnce();
         enemies = new Array<>();
         Enemy rifleman = create_Jackal_RifleMan_FromMap(map);
-        rifleman.receiveHitbox(extract_Jackal_RifleMan_Hitbox_FromMap(map));
         Enemy heavy = create_Jackal_Heavy_FromMap(map);
-        heavy.receiveHitbox(extract_Jackal_Heavy_Hitbox_FromMap(map));
         Enemy hoverDrone = create_Jackal_HoverDrone_FromMap(map);
-        heavy.receiveHitbox(extract_Jackal_HoverDrone_Hitbox_FromMap(map));
         Enemy drillCrawler = create_Jackal_DrillCrawler_FromMap(map);
-        drillCrawler.receiveHitbox(extract_Jackal_DrillCrawler_Hitbox_FromMap(map));
         enemies.add(rifleman);
         enemies.add(heavy);
         enemies.add(hoverDrone);
         enemies.add(drillCrawler);
+        shapeRenderer = new ShapeRenderer();
         
 
         batch = new SpriteBatch();
@@ -215,7 +215,15 @@ public class ShooterGame extends ApplicationAdapter {
         weapon.drawWeapon(batch, grip);
         for(Bullet bullet : bullets)
             bullet.draw(batch);
-        batch.end();
+        batch.end(); 
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        for(Enemy enemy : enemies){
+            Rectangle box = enemy.getWorldHurtbox();
+            shapeRenderer.rect(box.x,box.y,box.width,box.height);
+        }
+
+        shapeRenderer.end();
     }  
     
 
@@ -227,6 +235,7 @@ public class ShooterGame extends ApplicationAdapter {
         player.disposePlayer();
         weapon.disposeWeapon();
         bulletTexture.dispose();
+        shapeRenderer.dispose();
     }
 
 
@@ -445,8 +454,9 @@ public class ShooterGame extends ApplicationAdapter {
         MapLayer enemiesLayer = map.getLayers().get("Enemies");
         RectangleMapObject RiflemanSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Spawn");
         Rectangle RiflemanSpawnRect = RiflemanSpawnObject.getRectangle();
-        
-        Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , 200f);
+        float drawWidth = RiflemanSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = RiflemanSpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map));
         return newRifleman;
     }
 
@@ -464,8 +474,9 @@ public class ShooterGame extends ApplicationAdapter {
         MapLayer enemiesLayer = map.getLayers().get("Enemies");
         RectangleMapObject HeavySpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Heavy_Spawn");
         Rectangle HeavySpawnRect = HeavySpawnObject.getRectangle();
-        
-        Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, HeavySpawnRect.x, HeavySpawnRect.y , 200f);
+        float drawWidth = HeavySpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = HeavySpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, HeavySpawnRect.x, HeavySpawnRect.y , drawWidth, drawHeight , extract_Jackal_Heavy_Hitbox_FromMap(map));
         return newHeavy;
     }
 
@@ -482,8 +493,9 @@ public class ShooterGame extends ApplicationAdapter {
         MapLayer enemiesLayer = map.getLayers().get("Enemies");
         RectangleMapObject HoverDroneSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Hover_Drone_Spawn");
         Rectangle HoverDroneSpawnRect = HoverDroneSpawnObject.getRectangle();
-        
-        Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, HoverDroneSpawnRect.x, HoverDroneSpawnRect.y , 200f);
+        float drawWidth = HoverDroneSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = HoverDroneSpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, HoverDroneSpawnRect.x, HoverDroneSpawnRect.y , drawWidth , drawHeight ,extract_Jackal_HoverDrone_Hitbox_FromMap(map));
         return HoverDrone;
     }
 
@@ -500,8 +512,9 @@ public class ShooterGame extends ApplicationAdapter {
         MapLayer enemiesLayer = map.getLayers().get("Enemies");
         RectangleMapObject DrillCrawlerSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Drill_Crawler_Spawn");
         Rectangle DrillCrawlerSpawnRect = DrillCrawlerSpawnObject.getRectangle();
-        
-        Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, DrillCrawlerSpawnRect.x, DrillCrawlerSpawnRect.y , 200f);
+        float drawWidth = DrillCrawlerSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = DrillCrawlerSpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, DrillCrawlerSpawnRect.x, DrillCrawlerSpawnRect.y , drawWidth, drawHeight, extract_Jackal_DrillCrawler_Hitbox_FromMap(map));
         return newDrillCrawler;
     }
 
@@ -513,7 +526,6 @@ public class ShooterGame extends ApplicationAdapter {
         Rectangle DrillCrawlerSpawnRect = DrillCrawlerSpawnObject.getRectangle();
         return new Rectangle (DrillCrawler_HitboxRect.x - DrillCrawlerSpawnRect.x , DrillCrawler_HitboxRect.y - DrillCrawlerSpawnRect.y ,DrillCrawler_HitboxRect.width , DrillCrawler_HitboxRect.height); 
     }
-
 
 
 

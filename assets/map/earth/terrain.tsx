@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.2" name="terrain" tilewidth="4096" tileheight="2304" tilecount="34" columns="0">
+<tileset version="1.10" tiledversion="1.12.2" name="terrain" tilewidth="4096" tileheight="2304" tilecount="35" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="0">
   <image source="../map_pieces/1.png" width="2172" height="724"/>
@@ -102,5 +102,8 @@
  </tile>
  <tile id="36">
   <image source="../../sprites/enemies/iron_jackals/jackal_heavy/idle_00.png" width="1024" height="1024"/>
+ </tile>
+ <tile id="37">
+  <image source="../../sprites/enemies/iron_jackals/jackal_drill_crawler/idle_00.png" width="1024" height="1024"/>
  </tile>
 </tileset>

@@ -163,7 +163,7 @@ public final class AssetPaths {
                 public static final String IDLE = BASE + "idle_";
                 public static final int IDLE_FRAMES = 6;
 
-                public static final String WALK = BASE + "walking";
+                public static final String WALK = BASE + "walking_";
                 public static final int WALK_FRAMES = 6;
 
                 public static final String ATTACK = BASE + "attack_";
@@ -182,7 +182,7 @@ public final class AssetPaths {
                 public static final String IDLE = BASE + "idle_";
                 public static final int IDLE_FRAMES = 6;
 
-                public static final String WALK = BASE + "flying";
+                public static final String WALK = BASE + "flying_";
                 public static final int WALK_FRAMES = 6;
 
                 public static final String ATTACK = BASE + "attack_";
