@@ -2,12 +2,11 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
-import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -21,9 +20,10 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import rojan.shooter.Enemy.EnemyType;
+
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
-import com.badlogic.gdx.graphics.Color;
 
 //./gradlew lwjgl3:run
 
@@ -75,6 +75,7 @@ public class ShooterGame extends ApplicationAdapter {
         player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
 
         Enemy.loadEnemyAssetOnce();
+        extractAllEnemyHitboxes();
         enemies = new Array<>();
         Enemy rifleman = create_Jackal_RifleMan_FromMap(map);
         Enemy heavy = create_Jackal_Heavy_FromMap(map);
@@ -84,6 +85,10 @@ public class ShooterGame extends ApplicationAdapter {
         enemies.add(heavy);
         enemies.add(hoverDrone);
         enemies.add(drillCrawler);
+        
+
+        
+
         shapeRenderer = new ShapeRenderer();
         
 
@@ -92,6 +97,7 @@ public class ShooterGame extends ApplicationAdapter {
         solidPlatforms = extractSolidPlatformsFromMap(map);
         bullets = new Array<>();
         bulletTexture = new Texture(AssetPaths.Bullets.BASE+ "AR_bullet.png");
+        
         
     }
 
@@ -215,6 +221,7 @@ public class ShooterGame extends ApplicationAdapter {
         weapon.drawWeapon(batch, grip);
         for(Bullet bullet : bullets)
             bullet.draw(batch);
+        bulletEnemyCollisionChecker();
         batch.end(); 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -307,7 +314,7 @@ public class ShooterGame extends ApplicationAdapter {
         float y = gunGrip.y + rotatedY;
         Vector2 nozzlePosition = new Vector2(x,y);
         Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
-        Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 2500.f,bulletTexture);
+        Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 2500.f,bulletTexture, 1.5f);
         bullets.add(bullet);
     }
 
@@ -456,6 +463,7 @@ public class ShooterGame extends ApplicationAdapter {
         Rectangle RiflemanSpawnRect = RiflemanSpawnObject.getRectangle();
         float drawWidth = RiflemanSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = RiflemanSpawnObject.getProperties().get("drawHeight", Float.class);
+
         Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map));
         return newRifleman;
     }
@@ -548,6 +556,146 @@ public class ShooterGame extends ApplicationAdapter {
         if(player.getAirTime() > 0.5)
             player.reactToJetpack(jetpackThrust,dt);
     }
+
+    private Array<Rectangle> extractEnemiesHurtBoxesByTypeFromMap(TiledMap map , String hitClass, String owner){
+        Array<Rectangle> enemyHurtboxes = new Array<>();
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        Array<RectangleMapObject> enemyHurtBox = enemiesLayer.getObjects().getByType(RectangleMapObject.class);
+        Rectangle spawnRect = new Rectangle();
+        if("heavy".equals(owner)){
+            RectangleMapObject spawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Heavy_Spawn");
+            spawnRect = spawnObject.getRectangle();
+        }
+        else if("rifleman".equals(owner)){
+            RectangleMapObject spawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Spawn");
+            spawnRect = spawnObject.getRectangle();
+        }
+        else if("driller".equals(owner)){
+            RectangleMapObject spawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Drill_Crawler_Spawn");
+            spawnRect = spawnObject.getRectangle();
+        }
+        else if("drone".equals(owner)){
+            RectangleMapObject spawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Hover_Drone_Spawn");
+            spawnRect = spawnObject.getRectangle();
+        }
+
+        for(RectangleMapObject hurtbox : enemyHurtBox){
+            String className = hurtbox.getProperties().get("type", String.class);
+            String ownerName = hurtbox.getProperties().get("owner", String.class);
+
+            if(hitClass.equals(className) && owner.equals(ownerName)){
+                Rectangle specificHurtBox = new Rectangle(hurtbox.getRectangle());
+                specificHurtBox.x = Enemy.getEnemyScale() * (specificHurtBox.x - spawnRect.x);
+                specificHurtBox.y = Enemy.getEnemyScale() * (specificHurtBox.y - spawnRect.y);
+                specificHurtBox.width *= Enemy.getEnemyScale();
+                specificHurtBox.height*= Enemy.getEnemyScale();
+                enemyHurtboxes.add(specificHurtBox);
+            }  
+        }
+        return enemyHurtboxes;  
+    }
+
+
+    private void extractAllEnemyHitboxes(){
+        Array<Rectangle> Rifleman_Headshot = extractEnemiesHurtBoxesByTypeFromMap(map,"headshot","rifleman");
+        Array<Rectangle> Rifleman_Bodyshot = extractEnemiesHurtBoxesByTypeFromMap(map,"bodyshot","rifleman");
+        Array<Rectangle> Rifleman_Limbshot = extractEnemiesHurtBoxesByTypeFromMap(map,"limbshot","rifleman");
+
+        Array<Rectangle> Heavy_Headshot = extractEnemiesHurtBoxesByTypeFromMap(map,"headshot","heavy");
+        Array<Rectangle> Heavy_Bodyshot = extractEnemiesHurtBoxesByTypeFromMap(map,"bodyshot","heavy");
+        Array<Rectangle> Heavy_Limbshot = extractEnemiesHurtBoxesByTypeFromMap(map,"limbshot","heavy");
+
+        Array<Rectangle> Drone_Headshot = extractEnemiesHurtBoxesByTypeFromMap(map,"headshot","drone");
+        Array<Rectangle> Drone_Bodyshot = extractEnemiesHurtBoxesByTypeFromMap(map,"bodyshot","drone");
+        Array<Rectangle> Drone_Limbshot = extractEnemiesHurtBoxesByTypeFromMap(map,"limbshot","drone");
+
+        Array<Rectangle> Drill_Headshot = extractEnemiesHurtBoxesByTypeFromMap(map,"headshot","driller");
+        Array<Rectangle> Drill_Bodyshot = extractEnemiesHurtBoxesByTypeFromMap(map,"bodyshot","driller");
+        Array<Rectangle> Drill_Limbshot = extractEnemiesHurtBoxesByTypeFromMap(map,"limbshot","driller");
+
+        Enemy.setEnemyHurtBox(EnemyType.RIFLEMAN, Rifleman_Headshot,Rifleman_Bodyshot,Rifleman_Limbshot);
+        Enemy.setEnemyHurtBox(EnemyType.HEAVY, Heavy_Headshot,Heavy_Bodyshot,Heavy_Limbshot);
+        Enemy.setEnemyHurtBox(EnemyType.HOVER_DRONE, Drone_Headshot,Drone_Bodyshot,Drone_Limbshot);
+        Enemy.setEnemyHurtBox(EnemyType.DRILL_CRAWLER, Drill_Headshot,Drill_Bodyshot,Drill_Limbshot);
+    }     
+
+
+    private void bulletEnemyCollisionChecker(){
+        for(Bullet bullet : bullets){
+            for(Enemy enemy: enemies){
+                boolean chanceOfCollision = false;
+                boolean headshot = false;
+                boolean bodyshot = false;
+                boolean limbshot = false;
+                Rectangle hurtbox = enemy.getWorldHurtbox();
+                if((bullet.getPosition().y  - bullet.getRadius() < hurtbox.y + hurtbox.height)
+                && (bullet.getPosition().y  + bullet.getRadius() > hurtbox.y)
+                &&(bullet.getPosition().x  + bullet.getRadius() > hurtbox.x)
+                &&(bullet.getPosition().x  - bullet.getRadius() <  hurtbox.x + hurtbox.width)){
+                    chanceOfCollision = true;
+                }
+
+                if(chanceOfCollision && !bullet.isWasted()){
+                    for(Rectangle rect : enemy.getHeadshotBoxes()){
+                        float rectX= enemy.getPosition().x + rect.x;
+                        float rectY = enemy.getPosition().y + rect.y;
+                        float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
+                        float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
+                        float dx = bullet.getPosition().x - closestX;
+                        float dy = bullet.getPosition().y - closestY;
+                        if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
+                            headshot = true;
+                            enemy.enemyHurt(40);
+                            bullet.considerWasted();
+                            break;
+                        }
+                        if(bullet.isWasted())
+                            break;
+                    }
+
+                    if(!headshot && !bullet.isWasted()){
+                        for(Rectangle rect : enemy.getBodyshotBoxes()){
+                            float rectX= enemy.getPosition().x + rect.x;
+                            float rectY = enemy.getPosition().y + rect.y;
+                            float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
+                            float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
+                            float dx = bullet.getPosition().x - closestX;
+                            float dy = bullet.getPosition().y - closestY;
+                            if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
+                                bodyshot = true;
+                                enemy.enemyHurt(20);
+                                bullet.considerWasted();
+                                break;
+                            }
+                        }
+                        if(bullet.isWasted())
+                            break;
+                    }
+
+                    if(!headshot && !bodyshot && !bullet.isWasted()){
+                        for(Rectangle rect : enemy.getLimbshotBoxes()){
+                            float rectX= enemy.getPosition().x + rect.x;
+                            float rectY = enemy.getPosition().y + rect.y;
+                            float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
+                            float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
+                            float dx = bullet.getPosition().x - closestX;
+                            float dy = bullet.getPosition().y - closestY;
+                            if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
+                                limbshot = true;
+                                enemy.enemyHurt(10);
+                                bullet.considerWasted();
+                                break;
+                            }
+                        }
+                        if(bullet.isWasted())
+                            break;
+                    }
+                }
+            }
+
+        }
+    }
+    
 
 
     

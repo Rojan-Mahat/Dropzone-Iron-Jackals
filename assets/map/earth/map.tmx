@@ -518,7 +518,7 @@
   </object>
   <object id="506" type="bodyshot" x="3169.04" y="950.172" width="22.1745" height="12.6966">
    <properties>
-    <property name="owner" value="drones"/>
+    <property name="owner" value="drone"/>
    </properties>
   </object>
   <object id="507" type="headshot" x="3046.73" y="1178.4" width="23.9837" height="28.7804">
@@ -563,7 +563,7 @@
   </object>
   <object id="515" type="limbshot" x="3061.32" y="1280.93" width="24.3834" height="6.79538">
    <properties>
-    <property name="owner" value="riflemans"/>
+    <property name="owner" value="rifleman"/>
    </properties>
   </object>
  </objectgroup>

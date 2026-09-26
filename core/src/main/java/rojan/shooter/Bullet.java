@@ -8,19 +8,23 @@ import com.badlogic.gdx.math.Vector2;
 public class Bullet{
     private Vector2 position;
     private Vector2 direction;
+    private float radius;
     private float speed;
     private float width = 25f;
     private float height = 25f;
     private float balancingX =0f;
     private float balancingY = 0f;
     private Texture texture;
+    boolean considerWasted;
 
 
-    public Bullet(Vector2 position, Vector2 direction, float speed, Texture texture) {
+    public Bullet(Vector2 position, Vector2 direction, float speed, Texture texture, float radius) {
         this.position = new Vector2(position);
         this.direction =new Vector2(direction);
         this.speed = speed;
         this.texture = texture;
+        this.radius = radius;
+        considerWasted = false;
     }
 
  
@@ -46,6 +50,18 @@ public class Bullet{
 
     public Vector2 getPosition() {
         return position;
+    }
+
+    public float getRadius(){
+        return radius;
+    }
+
+    public void considerWasted(){
+        considerWasted = true;
+    }
+
+    public boolean isWasted(){
+        return considerWasted;
     }
 
     

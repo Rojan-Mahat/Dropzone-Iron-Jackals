@@ -107,10 +107,23 @@ public class Enemy{
     private Rectangle hurtbox;
     private static final float ENEMY_SCALE = 1.3f;
 
-    private Array<Rectangle> headshotBoxes;
-    private Array<Rectangle> bodyshotBoxes;
-    private Array<Rectangle> limbshotBoxes;
+    private static class EnemyHitRegions{
+        Array<Rectangle> headshotBoxes;
+        Array<Rectangle> bodyshotBoxes;
+        Array<Rectangle> limbshotBoxes;
 
+        EnemyHitRegions(Array<Rectangle> headshots, Array<Rectangle> bodyshots, Array<Rectangle> limbs){
+            headshotBoxes = new Array<>(headshots);
+            bodyshotBoxes = new Array<>(bodyshots);
+            limbshotBoxes = new Array<>(limbs);
+        } 
+    
+    }
+    private static EnemyHitRegions riflemanHitRegions;
+    private static EnemyHitRegions heavyHitRegions;
+    private static EnemyHitRegions droneHitRegions;
+    private static EnemyHitRegions drillerHitRegions;
+    private EnemyHitRegions hitRegions;
 
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox){
@@ -121,21 +134,25 @@ public class Enemy{
         this.hurtbox = new Rectangle(scaleRectangle(hitbox));
         if(type == EnemyType.RIFLEMAN){
             animations = riflemanAnimations;
+            this.hitRegions = riflemanHitRegions;
             maxHitPoints = 100;
             hitPoints = maxHitPoints;
         }
         else if(type == EnemyType.HEAVY){
             animations = heavyAnimations;
+            this.hitRegions = heavyHitRegions;
             maxHitPoints = 250;
             hitPoints = maxHitPoints;
         }
         else if(type == EnemyType.HOVER_DRONE){
-           animations = hoverDroneAnimations;
+            animations = hoverDroneAnimations;
+            this.hitRegions = droneHitRegions;
             maxHitPoints = 70;
             hitPoints = maxHitPoints;
         }
         else if(type == EnemyType.DRILL_CRAWLER){
             animations = drillCrawlerAnimations;
+            this.hitRegions = drillerHitRegions;
             maxHitPoints = 180;
             hitPoints = maxHitPoints;
         }
@@ -172,8 +189,18 @@ public class Enemy{
 
     public void drawEnemy(SpriteBatch batch, float dt){
         stateTime += dt;
-        int frameIndex = (int)(stateTime / 0.18f) % animations.idleFrames.length;
-        TextureRegion frame = animations.idleFrames[frameIndex];
+        TextureRegion frame;
+        if(currentState == EnemyState.DEAD){
+            int frameIndex = (int)(stateTime / 0.18f);
+            if(frameIndex >= animations.deathFrames.length)
+                frameIndex = animations.deathFrames.length-1;
+            frame = animations.deathFrames[frameIndex];
+        }
+        else{
+            int frameIndex = (int)(stateTime / 0.18f) % animations.idleFrames.length;
+            frame = animations.idleFrames[frameIndex];
+        }
+        
         float scaleX = drawWidth / 1024f;
         float scaleY = drawHeight/1024f;
 
@@ -189,8 +216,9 @@ public class Enemy{
 
     public void enemyHurt(float damage){
         hitPoints-=damage;
-        if(hitPoints <= 0)
+        if(hitPoints <= 0){
             currentState = EnemyState.DEAD;
+            stateTime = 0f;}
     }
 
     public Rectangle getWorldHurtbox(){
@@ -200,7 +228,40 @@ public class Enemy{
     private Rectangle scaleRectangle(Rectangle rect){
         return new Rectangle(rect.x * ENEMY_SCALE,rect.y * ENEMY_SCALE,rect.width * ENEMY_SCALE,rect.height * ENEMY_SCALE);
     }
+
+    public static void setEnemyHurtBox(EnemyType type ,Array<Rectangle> headshots, Array<Rectangle> bodyshots, Array<Rectangle> limbs){
+        if(type == EnemyType.RIFLEMAN)
+            riflemanHitRegions = new EnemyHitRegions(headshots, bodyshots, limbs);
+        else if(type == EnemyType.HEAVY)
+            heavyHitRegions = new EnemyHitRegions(headshots, bodyshots, limbs);
+        else if(type == EnemyType.HOVER_DRONE)
+            droneHitRegions = new EnemyHitRegions(headshots, bodyshots, limbs);
+        else if(type == EnemyType.DRILL_CRAWLER)
+            drillerHitRegions = new EnemyHitRegions(headshots, bodyshots, limbs);
+    }
     
+
+    static public float getEnemyScale(){
+        return  ENEMY_SCALE;
+    }
+
+    public Vector2 getPosition(){
+        return position;
+    }
+
+    public Array<Rectangle> getHeadshotBoxes(){
+        return hitRegions.headshotBoxes;
+    }
+
+    public Array<Rectangle> getBodyshotBoxes(){
+        return hitRegions.bodyshotBoxes;  
+    }
+
+    public Array<Rectangle> getLimbshotBoxes(){
+        return hitRegions.limbshotBoxes;  
+    }
+
+
 
 
 
