@@ -397,7 +397,6 @@ public class Player{
 
 
     private void updatePlayerState(){
-
         if(isCrouching && isShooting)
             currentState = PlayerState.CROUCH_SHOOT;
         else if(isCrouching)
@@ -624,10 +623,8 @@ public class Player{
                     break;
                 }
             }
-            if (canStand){
+            if (canStand)
                 isCrouching = false;
-                System.out.println("STANDING");
-            }
         }
     }
 

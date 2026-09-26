@@ -94,6 +94,12 @@ sprites/enemies/iron_jackals/jackal_drill_crawler/drill_02.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/drill_03.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/drill_04.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/drill_05.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_00.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_01.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_02.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_03.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_04.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/drill_up_05.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/explosion_00.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/explosion_01.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/explosion_02.png
@@ -118,6 +124,12 @@ sprites/enemies/iron_jackals/jackal_drill_crawler/idle_02.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/idle_03.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/idle_04.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/idle_05.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_00.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_01.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_02.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_03.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_04.png
+sprites/enemies/iron_jackals/jackal_drill_crawler/jump_05.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/walking_00.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/walking_01.png
 sprites/enemies/iron_jackals/jackal_drill_crawler/walking_02.png

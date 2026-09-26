@@ -211,7 +211,7 @@ public class ShooterGame extends ApplicationAdapter {
 
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt);
+            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms);
 
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
@@ -225,13 +225,31 @@ public class ShooterGame extends ApplicationAdapter {
         removeEnemies();
         batch.end(); 
         shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        for(Enemy enemy : enemies){
-            Rectangle box = enemy.getWorldHurtbox();
-            shapeRenderer.rect(box.x,box.y,box.width,box.height);
-        }
+shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-        shapeRenderer.end();
+shapeRenderer.setColor(0f,1f,1f,1f);
+for(Rectangle rectangle : solidPlatforms){
+    shapeRenderer.rect(
+        rectangle.x,
+        rectangle.y,
+        rectangle.width,
+        rectangle.height
+    );
+}
+
+shapeRenderer.setColor(1f,0f,1f,1f);
+for(Enemy enemy : enemies){
+    Rectangle box = enemy.getWorldHurtbox();
+
+    shapeRenderer.rect(
+        box.x,
+        box.y,
+        box.width,
+        box.height
+    );
+}
+
+shapeRenderer.end();
     }  
     
 
@@ -541,6 +559,8 @@ public class ShooterGame extends ApplicationAdapter {
 
     private void activateGravity(float dt){
         player.reactToGravity(gravity, dt);
+        for(Enemy enemy: enemies)
+            enemy.reactToGravity(gravity,dt);
     }
 
     private void updatePlayerFacingDirection(Vector2 mousePos){
@@ -638,8 +658,10 @@ public class ShooterGame extends ApplicationAdapter {
 
                 if(chanceOfCollision && !bullet.isWasted()){
                     for(Rectangle rect : enemy.getHeadshotBoxes()){
-                        float rectX= enemy.getPosition().x + rect.x;
-                        float rectY = enemy.getPosition().y + rect.y;
+                        Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                        float rectX = worldRect.x;
+                        float rectY = worldRect.y;
+                       
                         float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
                         float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
                         float dx = bullet.getPosition().x - closestX;
@@ -656,8 +678,10 @@ public class ShooterGame extends ApplicationAdapter {
 
                     if(!headshot && !bullet.isWasted()){
                         for(Rectangle rect : enemy.getBodyshotBoxes()){
-                            float rectX= enemy.getPosition().x + rect.x;
-                            float rectY = enemy.getPosition().y + rect.y;
+                            Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                            float rectX = worldRect.x;
+                            float rectY = worldRect.y;
+                            
                             float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
                             float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
                             float dx = bullet.getPosition().x - closestX;
@@ -675,8 +699,10 @@ public class ShooterGame extends ApplicationAdapter {
 
                     if(!headshot && !bodyshot && !bullet.isWasted()){
                         for(Rectangle rect : enemy.getLimbshotBoxes()){
-                            float rectX= enemy.getPosition().x + rect.x;
-                            float rectY = enemy.getPosition().y + rect.y;
+                            Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                            float rectX = worldRect.x;
+                            float rectY = worldRect.y;
+
                             float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
                             float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
                             float dx = bullet.getPosition().x - closestX;

@@ -333,7 +333,7 @@
  </objectgroup>
  <objectgroup id="10" name="Enemies">
   <object id="440" name="Rifleman_Hitbox" x="3026" y="1173" width="58" height="117.5"/>
-  <object id="441" name="Rifleman_Spawn" x="3054.5" y="1289.5" width="1" height="1">
+  <object id="441" name="Rifleman_Spawn" x="3054.59" y="1289.5" width="1" height="1">
    <properties>
     <property name="drawHeight" type="float" value="170"/>
     <property name="drawWidth" type="float" value="130"/>
