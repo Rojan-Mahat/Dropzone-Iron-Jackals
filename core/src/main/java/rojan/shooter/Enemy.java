@@ -3,6 +3,7 @@ package rojan.shooter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
@@ -22,7 +23,8 @@ public class Enemy{
         FLYING,
         HURT,
         DRILL,
-        IDLE
+        IDLE,
+        EXPLODING
     }
     private EnemyState currentState;
     private EnemyType type;
@@ -30,7 +32,7 @@ public class Enemy{
     private float maxHitPoints;
     private float Damage;
     private Vector2 position;
-    private Vector2 speed;
+    private Vector2 velocity;
     private static class EnemyAnimations{
         private float originX;
         private float originY;
@@ -94,6 +96,9 @@ public class Enemy{
             }
         }
     }
+    private static Texture healthBarTexture;
+    private static TextureRegion[] healthBarFrames;
+
     private static EnemyAnimations riflemanAnimations;
     private static EnemyAnimations heavyAnimations;
     private static EnemyAnimations hoverDroneAnimations;
@@ -106,6 +111,9 @@ public class Enemy{
     private float drawHeight;
     private Rectangle hurtbox;
     private static final float ENEMY_SCALE = 1.3f;
+    private final float DEATH_FRAME_DURATION = 0.09f;
+    private final float IDLE_FRAME_DURATION = 0.12f;
+    
 
     private static class EnemyHitRegions{
         Array<Rectangle> headshotBoxes;
@@ -124,6 +132,7 @@ public class Enemy{
     private static EnemyHitRegions droneHitRegions;
     private static EnemyHitRegions drillerHitRegions;
     private EnemyHitRegions hitRegions;
+    private boolean readyTobeRemoved;
 
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox){
@@ -158,6 +167,10 @@ public class Enemy{
         }
         currentState = EnemyState.IDLE;
         stateTime = 0f;
+        readyTobeRemoved = false;
+        healthBarTexture = new Texture(AssetPaths.Resource.enemyHealthBar);
+        TextureRegion[][] splitHealthBar = TextureRegion.split(healthBarTexture,256,48);
+        healthBarFrames = splitHealthBar[0];
     }
 
     private static TextureRegion[] loadFrames(String prefix, int frameCount){
@@ -188,16 +201,16 @@ public class Enemy{
     }
 
     public void drawEnemy(SpriteBatch batch, float dt){
-        stateTime += dt;
+        updateEnemy(dt);
         TextureRegion frame;
         if(currentState == EnemyState.DEAD){
-            int frameIndex = (int)(stateTime / 0.18f);
+            int frameIndex = (int)(stateTime / DEATH_FRAME_DURATION);
             if(frameIndex >= animations.deathFrames.length)
                 frameIndex = animations.deathFrames.length-1;
             frame = animations.deathFrames[frameIndex];
         }
         else{
-            int frameIndex = (int)(stateTime / 0.18f) % animations.idleFrames.length;
+            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.idleFrames.length;
             frame = animations.idleFrames[frameIndex];
         }
         
@@ -208,6 +221,7 @@ public class Enemy{
         float drawY = position.y - animations.originY * scaleY;
 
         batch.draw(frame, drawX, drawY, drawWidth, drawHeight);
+        drawHealthBar(batch);
     }
 
     public float getHitPoints(){
@@ -215,10 +229,13 @@ public class Enemy{
     }
 
     public void enemyHurt(float damage){
+        if(currentState == EnemyState.DEAD || currentState == EnemyState.EXPLODING)
+            return;
         hitPoints-=damage;
         if(hitPoints <= 0){
             currentState = EnemyState.DEAD;
-            stateTime = 0f;}
+            stateTime = 0f;
+        }
     }
 
     public Rectangle getWorldHurtbox(){
@@ -261,6 +278,33 @@ public class Enemy{
         return hitRegions.limbshotBoxes;  
     }
 
+    private void updateEnemy(float dt){
+        stateTime += dt;
+        if(currentState == EnemyState.DEAD && !readyTobeRemoved){
+            if(stateTime >= DEATH_FRAME_DURATION * animations.deathFrames.length)
+                readyTobeRemoved = true;
+        }
+    }
+
+    public boolean isReadytoBeRemoved(){
+        return readyTobeRemoved;
+    }
+
+    private void drawHealthBar(SpriteBatch batch){
+    if(currentState == EnemyState.DEAD || currentState == EnemyState.EXPLODING)
+        return;
+    float healthRatio = MathUtils.clamp(hitPoints / maxHitPoints,0f,1f);
+    int frameIndex = 11 - (int)Math.ceil(11f * healthRatio);
+
+    float barWidth = 90f;
+    float barHeight = barWidth * (48f / 256f);
+
+    Rectangle worldHurtbox = getWorldHurtbox();
+
+    float barX = worldHurtbox.x + worldHurtbox.width/2f - barWidth/2f;
+    float barY = worldHurtbox.y + worldHurtbox.height + 10f;
+    batch.draw(healthBarFrames[frameIndex],barX,barY,barWidth,barHeight);
+}
 
 
 

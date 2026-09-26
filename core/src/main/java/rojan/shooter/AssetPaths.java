@@ -153,8 +153,8 @@ public final class AssetPaths {
                 public static final String HURT = BASE + "hurt_";
                 public static final int HURT_FRAMES = 6;
 
-                public static final String DEATH = BASE + "death_";
-                public static final int DEATH_FRAMES = 6;
+                public static final String DEATH = BASE + "explosion_";
+                public static final int DEATH_FRAMES = 12;
             }
             public static final class Heavy {
                 private Heavy() {}
@@ -172,8 +172,8 @@ public final class AssetPaths {
                 public static final String HURT = BASE + "hurt_";
                 public static final int HURT_FRAMES = 6;
 
-                public static final String DEATH = BASE + "death_";
-                public static final int DEATH_FRAMES = 6;
+                public static final String DEATH = BASE + "explosion_";
+                public static final int DEATH_FRAMES = 12;
             }
             public static final class HoverDrone {
                 private HoverDrone() {}
@@ -191,8 +191,8 @@ public final class AssetPaths {
                 public static final String HURT = BASE + "hurt_";
                 public static final int HURT_FRAMES = 6;
 
-                public static final String DEATH = BASE + "death_";
-                public static final int DEATH_FRAMES = 6;
+                public static final String DEATH = BASE + "explosion_";
+                public static final int DEATH_FRAMES = 12;
             }
 
             public static final class DrillCrawler {
@@ -202,8 +202,8 @@ public final class AssetPaths {
                 public static final String ATTACK = BASE + "attack_";
                 public static final int ATTACK_FRAMES = 6;
 
-                public static final String DEATH = BASE + "death_";
-                public static final int DEATH_FRAMES = 6;
+                public static final String DEATH = BASE + "explosion_";
+                public static final int DEATH_FRAMES = 12;
 
                 public static final String DRILL = BASE + "drill_";
                 public static final int DRILL_FRAMES = 6;
@@ -233,6 +233,20 @@ public final class AssetPaths {
         public static final String MID_AIR = BASE + "MidAirExplo__";
         public static final int MID_AIR_FRAMES = 11;
     }
+
+
+     public static final class Resource {
+        private Resource() {}
+
+        public static final String BASE = "sprites/resource/";
+
+        public static final String enemyHealthBar = BASE + "AllHealthBar.png";
+
+
+    }
+
+
+
 
 
 }

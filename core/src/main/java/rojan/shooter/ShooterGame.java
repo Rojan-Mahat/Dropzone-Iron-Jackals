@@ -222,6 +222,7 @@ public class ShooterGame extends ApplicationAdapter {
         for(Bullet bullet : bullets)
             bullet.draw(batch);
         bulletEnemyCollisionChecker();
+        removeEnemies();
         batch.end(); 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -693,6 +694,14 @@ public class ShooterGame extends ApplicationAdapter {
                 }
             }
 
+        }
+    }
+
+
+    private void removeEnemies(){
+        for(int i = enemies.size-1 ; i >= 0 ; i--){
+            if(enemies.get(i).isReadytoBeRemoved())
+                enemies.removeIndex(i);
         }
     }
     
