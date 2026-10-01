@@ -491,11 +491,8 @@ public class Player{
         else
             speedMultiplier = 0.5f;
         velocity.x= direction.x * moveSpeed * speedMultiplier;
-        position.x = position.x + velocity.x * dt;
-        resolveHorizontalCollision(direction,solidPlatforms);
-        position.y = position.y + velocity.y * dt;
-        resolveVerticalCollision(solidPlatforms);
-
+        resolveHorizontalCollision(dt,solidPlatforms);
+        resolveVerticalCollision(dt,solidPlatforms);
         if(position.x <= 0)
             position.x = 0;
         
@@ -513,6 +510,11 @@ public class Player{
         }
     }
 
+    public Rectangle getWorldHitbox(){
+        Rectangle activeCollider = getActiveMovementCollider();
+        return new Rectangle(position.x + activeCollider.x,position.y + activeCollider.y,activeCollider.width,activeCollider.height);
+    }
+
     public Vector2 getPlayerPosition(){
         return position;
     }
@@ -522,44 +524,45 @@ public class Player{
         return centrePosition;
     }
 
-    private void resolveHorizontalCollision(Vector2 direction,Array<Rectangle> solidPlatforms){
-        Rectangle activeCollider;
-        if(isCrouching)
-            activeCollider = crouchMovementOffset;
-        else
-            activeCollider = movementOffset;
+    private void resolveHorizontalCollision(float dt,Array<Rectangle> solidPlatforms){
+        float oldX = position.x;
+        position.x += velocity.x * dt;
+        Rectangle activeCollider = getActiveMovementCollider();
+        Rectangle worldCollider = new Rectangle(position.x + activeCollider.x,position.y + activeCollider.y,activeCollider.width,activeCollider.height);
 
         for(Rectangle rectangle: solidPlatforms){
-            if((position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width)
-            && position.y + activeCollider.y < rectangle.y+rectangle.height && position.y + activeCollider.y + activeCollider.height > rectangle.y){
-                if(direction.x < 0)
-                    position.x = rectangle.x + rectangle.width - activeCollider.x;
-                else if(direction.x>0)
-                    position.x = rectangle.x - activeCollider.width - activeCollider.x; 
-            }
+            if(!worldCollider.overlaps(rectangle))
+                continue; 
+            position.x = oldX;
+            velocity.x = 0;
+            return;
         }         
     }
 
-    private void resolveVerticalCollision(Array<Rectangle> solidPlatforms){
-        Rectangle activeCollider;
-        if(isCrouching)
-            activeCollider = crouchMovementOffset;
-        else
-            activeCollider = movementOffset;
-
-        for(Rectangle rectangle: solidPlatforms){
-            if((position.y + activeCollider.y + activeCollider.height > rectangle.y && position.y + activeCollider.y < rectangle.y + rectangle.height)
-            && (position.x + activeCollider.x + activeCollider.width > rectangle.x && position.x + activeCollider.x < rectangle.x + rectangle.width )){
-                if(velocity.y > 0){
-                    position.y = rectangle.y - activeCollider.height - activeCollider.y;
-                    velocity.y = 0;
-                }
-                else if(velocity.y < 0){
-                    position.y = rectangle.y + rectangle.height - activeCollider.y;
-                    velocity.y = 0;
-                }
+    private void resolveVerticalCollision(float dt, Array<Rectangle> solidPlatforms){
+        Rectangle activeCollider = getActiveMovementCollider();
+        position.y += velocity.y * dt;
+        Rectangle worldCollider = getWorldHitbox();
+        for(Rectangle rectangle : solidPlatforms){
+            if(!worldCollider.overlaps(rectangle))
+                continue;
+            if(velocity.y < 0){
+                position.y = rectangle.y + rectangle.height - activeCollider.y;
+                velocity.y = 0;
+                isGrounded = true;
             }
+            else if(velocity.y > 0){
+                position.y = rectangle.y - activeCollider.height - activeCollider.y;
+                velocity.y = 0;
+            }
+            return;
         }
+    }
+
+    private Rectangle getActiveMovementCollider(){
+        if(isCrouching)
+            return crouchMovementOffset;
+        return movementOffset;
     }
     private void linkGripPoseMap() {
         gripPoseMap.put(PlayerState.IDLE, idleGripPoses);

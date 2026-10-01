@@ -103,7 +103,7 @@
  <tile id="36">
   <image source="../../sprites/enemies/iron_jackals/jackal_heavy/idle_00.png" width="1024" height="1024"/>
  </tile>
- <tile id="37">
+ <tile id="38">
   <image source="../../sprites/enemies/iron_jackals/jackal_drill_crawler/idle_00.png" width="1024" height="1024"/>
  </tile>
 </tileset>

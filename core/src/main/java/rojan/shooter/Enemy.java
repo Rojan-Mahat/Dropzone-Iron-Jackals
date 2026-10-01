@@ -3,6 +3,8 @@ package rojan.shooter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -43,6 +45,10 @@ public class Enemy{
         private TextureRegion[] hurtFrames;
         private TextureRegion[] drillFrames;
         private TextureRegion[] deathFrames;
+        private TextureRegion[] prepareFrames;
+        private TextureRegion[] jumpFrames;
+        private TextureRegion[] airborneFrames;
+        private TextureRegion[] landFrames;
         private TextureRegion[] flyFrames;
         EnemyAnimations(EnemyType type){
             if(type == EnemyType.RIFLEMAN){
@@ -77,6 +83,10 @@ public class Enemy{
                 hurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.HURT, AssetPaths.Enemies.IronJackals.DrillCrawler.HURT_FRAMES);
                 deathFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.DEATH, AssetPaths.Enemies.IronJackals.DrillCrawler.DEATH_FRAMES);
                 drillFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.DRILL, AssetPaths.Enemies.IronJackals.DrillCrawler.DRILL_FRAMES);
+                prepareFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.PREPARE,AssetPaths.Enemies.IronJackals.DrillCrawler.PREPARE_FRAMES);
+                jumpFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.JUMP,AssetPaths.Enemies.IronJackals.DrillCrawler.JUMP_FRAMES);
+                airborneFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.AIRBORNE,AssetPaths.Enemies.IronJackals.DrillCrawler.AIRBORNE_FRAMES);
+                landFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.LAND,AssetPaths.Enemies.IronJackals.DrillCrawler.LAND_FRAMES);
             }
 
             if(type == EnemyType.RIFLEMAN){   
@@ -114,6 +124,7 @@ public class Enemy{
     private static final float ENEMY_SCALE = 1.3f;
     private final float DEATH_FRAME_DURATION = 0.09f;
     private final float IDLE_FRAME_DURATION = 0.12f;
+    private static final float DRILLER_DRAW_SCALE = 1.5f;
 
     private float detectionRadius;
     private float attackRange;
@@ -122,8 +133,9 @@ public class Enemy{
     private boolean isGrounded;
     private float drillRotation;
     private boolean facingRight;
+    private Vector2 nozzlePosition;
+    private Array<Circle> drillCircles;
     
-
     private static class EnemyHitRegions{
         Array<Rectangle> headshotBoxes;
         Array<Rectangle> bodyshotBoxes;
@@ -142,10 +154,13 @@ public class Enemy{
     private static EnemyHitRegions drillerHitRegions;
     private EnemyHitRegions hitRegions;
     private boolean readyTobeRemoved;
+    private boolean scouting;
     private boolean isChasing;
+    private boolean attacking;
+    private Rectangle homePlatform;
 
 
-    Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox){
+    Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
         position = new Vector2(x, y);
         this.drawWidth = drawWidth * ENEMY_SCALE;
@@ -159,7 +174,7 @@ public class Enemy{
             hitPoints = maxHitPoints;
             this.detectionRadius = 700;
             this.attackRange = 350;
-            this.moveSpeed = 325;
+            this.moveSpeed = 125;
             this.maxRiseSpeed = 500;
         }
         else if(type == EnemyType.HEAVY){
@@ -185,12 +200,19 @@ public class Enemy{
         else if(type == EnemyType.DRILL_CRAWLER){
             animations = drillCrawlerAnimations;
             this.hitRegions = drillerHitRegions;
+            this.drawWidth *= DRILLER_DRAW_SCALE;
+            this.drawHeight *= DRILLER_DRAW_SCALE;
             maxHitPoints = 180;
             hitPoints = maxHitPoints;
             this.detectionRadius = 500;
             this.attackRange = 20;
             this.moveSpeed = 125;
             maxRiseSpeed = 0 ;
+            this.drillCircles = new Array<>();
+            float circleScale = ENEMY_SCALE * DRILLER_DRAW_SCALE;
+            for(Circle circle : drillCircles)
+                this.drillCircles.add(new Circle(circle.x * circleScale,circle.y * circleScale,circle.radius * circleScale));
+            
         }
         currentState = EnemyState.IDLE;
         stateTime = 0f;
@@ -229,14 +251,12 @@ public class Enemy{
         healthBarFrames = splitHealthBar[0];
     }
 
-    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms){
-        if(type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY || (type == EnemyType.DRILL_CRAWLER && currentState != EnemyState.DRILL)){
-            position.y += velocity.y * dt;
-            resolveVerticalCollision(solidPlatforms);
+    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms,Rectangle playerHurtbox){
+        if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY )|| (type == EnemyType.DRILL_CRAWLER && currentState != EnemyState.DRILL)){
+            resolveVerticalCollision(dt,solidPlatforms);
             ensureGrounding(getWorldHurtbox(),solidPlatforms);
         }
-    
-        updateEnemy(dt,playerPosition,solidPlatforms);
+        updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox);
         TextureRegion frame;
         if(currentState == EnemyState.DEAD){
             int frameIndex = (int)(stateTime / DEATH_FRAME_DURATION);
@@ -286,6 +306,10 @@ public class Enemy{
 
     public float getHitPoints(){
         return hitPoints;
+    }
+
+    public EnemyType getType(){
+        return type;
     }
 
     public void enemyHurt(float damage){
@@ -358,74 +382,52 @@ public class Enemy{
     batch.draw(healthBarFrames[frameIndex],barX,barY,barWidth,barHeight);
 }
 
-public void reactToGravity(float gravity , float dt){
-    if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY) ||
-    (type == EnemyType.DRILL_CRAWLER && currentState!=EnemyState.DRILL)){
-        if(!isGrounded)
-            velocity.y+=gravity*dt;
-        else
+    public void reactToGravity(float gravity , float dt){
+        if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY) ||
+        (type == EnemyType.DRILL_CRAWLER && currentState!=EnemyState.DRILL)){
+            if(!isGrounded)
+                velocity.y+=gravity*dt;
+            else
+                velocity.y = 0;
+            if(velocity.y < maxFallSpeed)
+                velocity.y = maxFallSpeed;
+        }
+    }
+
+    private void resolveHorizontalCollision(float dt,Array<Rectangle> solidPlatforms){
+        float oldX = position.x;
+        position.x += velocity.x * dt;
+        Rectangle worldHurtbox = getWorldHurtbox();
+        for(Rectangle rectangle: solidPlatforms){
+            if(!worldHurtbox.overlaps(rectangle))
+                continue;
+            if(type == EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING){
+                currentState = EnemyState.DRILL;
+                position.x = oldX;
+                return;
+            }
+            position.x = oldX;
+            velocity.x = 0;
+            return;
+        }
+    }
+
+    private void resolveVerticalCollision(float dt, Array<Rectangle> solidPlatforms){
+        float oldY = position.y;
+        position.y += velocity.y * dt;
+        Rectangle worldHurtbox = getWorldHurtbox();
+        for(Rectangle rectangle: solidPlatforms){
+            if(!worldHurtbox.overlaps(rectangle))
+                continue;
+            if(type == EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING){
+                currentState = EnemyState.DRILL;
+                position.y = oldY;
+                return;
+            }
+            position.y = oldY;
             velocity.y = 0;
-        if(velocity.y < maxFallSpeed)
-            velocity.y = maxFallSpeed;
-    }
-}
-
-private void resolveHorizontalCollision(Vector2 movementDirection, Array<Rectangle> solidPlatforms){
-    boolean overlapping = false;
-        Rectangle worldHurtbox = getWorldHurtbox();
-        for(Rectangle rectangle: solidPlatforms){
-            if((worldHurtbox.x + worldHurtbox.width > rectangle.x && worldHurtbox.x < rectangle.x + rectangle.width)
-            && worldHurtbox.y < rectangle.y+rectangle.height && worldHurtbox.y + worldHurtbox.height > rectangle.y){
-                overlapping = true;
-                if(movementDirection.x < 0){
-                    if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING && isChasing)
-                        currentState = EnemyState.DRILL;
-                    if(currentState!=EnemyState.DRILL){
-                        position.x = rectangle.x + rectangle.width - hurtbox.x;
-                        velocity.x = 0;
-                    }
-                }
-                else if(movementDirection.x>0){
-                    if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING && isChasing)
-                        currentState = EnemyState.DRILL;
-                    if(currentState!=EnemyState.DRILL){
-                        position.x = rectangle.x - hurtbox.width - hurtbox.x; 
-                        velocity.x = 0;
-                    }
-                }
-            }
+            return;
         }
-        if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.DRILL && !overlapping)
-            currentState = EnemyState.WALKING;         
-    }
-
-    private void resolveVerticalCollision(Array<Rectangle> solidPlatforms){
-        boolean overlapping = false;
-        Rectangle worldHurtbox = getWorldHurtbox();
-        for(Rectangle rectangle: solidPlatforms){
-            if((worldHurtbox.y + worldHurtbox.height > rectangle.y &&  worldHurtbox.y < rectangle.y + rectangle.height)
-            && (worldHurtbox.x + worldHurtbox.width > rectangle.x && worldHurtbox.x < rectangle.x + rectangle.width )){
-                overlapping = true;
-                if(velocity.y > 0){
-                    if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING && isChasing)
-                        currentState = EnemyState.DRILL;
-                    if(currentState!=EnemyState.DRILL){
-                        position.y = rectangle.y - hurtbox.height - hurtbox.y;
-                        velocity.y = 0;
-                    }
-                }
-                else if(velocity.y < 0){
-                    if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING && isChasing)
-                        currentState = EnemyState.DRILL;
-                    if(currentState!=EnemyState.DRILL){
-                        position.y = rectangle.y + rectangle.height - hurtbox.y;
-                        velocity.y = 0;
-                    }
-                }
-            }
-        }
-        if(type==EnemyType.DRILL_CRAWLER && currentState == EnemyState.DRILL && !overlapping)
-            currentState = EnemyState.WALKING;
     }
 
     public void ensureGrounding(Rectangle worldHurtbox,Array<Rectangle> solidPlatforms){
@@ -436,6 +438,8 @@ private void resolveHorizontalCollision(Vector2 movementDirection, Array<Rectang
                 if((worldHurtbox.y >= rectangle.y + rectangle.height) && (worldHurtbox.y <= rectangle.y + rectangle.height + offset)
                 && (rectangle.x < worldHurtbox.x + worldHurtbox.width) && (rectangle.x+rectangle.width > worldHurtbox.x)){
                     isGrounded = true;
+                    if((type == EnemyType.RIFLEMAN ||type == EnemyType.HEAVY) && (homePlatform == null))
+                        homePlatform = rectangle;
                     break;
                 }
             }
@@ -443,7 +447,7 @@ private void resolveHorizontalCollision(Vector2 movementDirection, Array<Rectang
     }
 
 
-    public Rectangle getWorldHitRegion(Rectangle rect){
+public Rectangle getWorldHitRegion(Rectangle rect){
     float worldX;
     if(facingRight)
         worldX = position.x + rect.x;
@@ -454,7 +458,7 @@ private void resolveHorizontalCollision(Vector2 movementDirection, Array<Rectang
 
 
 
-public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms){
+public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms, Rectangle playerHurtbox){
     stateTime+= dt;
     if(currentState == EnemyState.DEAD){
         if(!readyTobeRemoved){
@@ -462,26 +466,46 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
                 readyTobeRemoved = true;
             return;
         }
+        return;
     }
-    
-    float dx = playerPosition.x - position.x;
-    float dy = playerPosition.y - position.y;
-    float distanceSquared = dx*dx + dy*dy;
-    boolean playerFoundInsideDetectionRadius =  distanceSquared <= (detectionRadius*detectionRadius);
+    boolean playerFoundInsideDetectionRadius;
+    boolean playerFoundInsideAttackRadius;
+    if(!(type==EnemyType.HEAVY)){
+        float dx = playerPosition.x - position.x;
+        float dy = playerPosition.y - position.y;
+        float distanceSquared = dx*dx + dy*dy;
+        playerFoundInsideDetectionRadius =  distanceSquared <= (detectionRadius*detectionRadius);
+        playerFoundInsideAttackRadius = distanceSquared <= (attackRange * attackRange);
+    }
+    else{
+        playerFoundInsideDetectionRadius = false;
+        playerFoundInsideAttackRadius = false;
+    }
+    if(type==EnemyType.HEAVY){
+        //updateHeavy(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
+        //need behavioral settings fixed
+    }
+    else if(type==EnemyType.RIFLEMAN)
+        updateRifleman(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
 
-    if(!playerFoundInsideDetectionRadius){
-        isChasing = false;
+    else if(type==EnemyType.DRILL_CRAWLER)
+        updateDrillCrawler(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerPosition, solidPlatforms);
+    
+    else if(type == EnemyType.HOVER_DRONE){}
+        //updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
+}
+
+    /*if(!playerFoundInsideDetectionRadius){
         currentState = EnemyState.IDLE;
     }
     else{
-        boolean playerFoundInsideAttackRadius = distanceSquared <= (attackRange * attackRange);
+       
         if(playerFoundInsideAttackRadius){
-            isChasing = false;
             currentState = EnemyState.ATTACK;
             attackPlayer(dt, playerPosition);
         }
         else{
-            isChasing = true;
+            
             if(type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY || type == EnemyType.DRILL_CRAWLER){
                 if(type == EnemyType.DRILL_CRAWLER && currentState!=EnemyState.DRILL)
                     currentState = EnemyState.WALKING;
@@ -494,11 +518,7 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
                 currentState = EnemyState.FLYING;
                 flyChase(dt, playerPosition);
              }
-        }
-
-    }
-
-}
+        }*/
 
 private void attackPlayer(float dt ,Vector2 playerPos){
     
@@ -512,27 +532,54 @@ private void flyChase(float dt ,Vector2 playerPos){
 
 }
 
-private void drillChase(float dt ,Vector2 playerPos,Array<Rectangle> solidPlatforms){
+private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos,Array<Rectangle> solidPlatforms){
+    if(currentState == EnemyState.DRILL){
+        finishDrilling(dt,playerPos,solidPlatforms);
+        return;
+    }
+
+    if(playerFoundInsideAttackRadius){
+        currentState = EnemyState.ATTACK;
+        attackPlayer(dt,playerPos);
+        return;
+    }
+
+    if(playerFoundInsideDetectionRadius){
+        currentState = EnemyState.WALKING;
+        drillChase(dt,playerPos);
+        return;
+    }
+
+    currentState = EnemyState.IDLE;
+    velocity.x = 0;
+}
+private void drillChase(float dt,Vector2 playerPos){
     float dx = playerPos.x - position.x;
-    float dy = playerPos.y - position.y;
-    if(dx > 0)
+    if(dx>0)
         facingRight = true;
-    else if(dx < 0)
+    else if(dx<0)
         facingRight = false;
-
-    float length = (float)Math.sqrt((dx*dx)+(dy*dy));
-    float directionX = dx/length;
-    float directionY = dy/length;
-    velocity.x = directionX * moveSpeed;
-    velocity.y = directionY * moveSpeed;
-
+    float dy = playerPos.y - position.y;
+    float length = (float)Math.sqrt(dx*dx + dy*dy);
+    if(length == 0)
+        return;
+    velocity.x = (dx/length) * moveSpeed;
+    velocity.y = (dy/length) * moveSpeed;
     position.x += velocity.x * dt;
     position.y += velocity.y * dt;
-
     drillRotation = MathUtils.atan2(dy,dx) * MathUtils.radiansToDegrees;
-    resolveHorizontalCollision(playerPos,solidPlatforms);
+}
 
-
+private Vector2 setNozzle(float playerX){
+    updateFacingDirection(playerX);
+    Rectangle hurtbox = getWorldHurtbox();
+    float nozzleY = hurtbox.y + hurtbox.height * 0.65f;
+    float nozzleX;
+    if(facingRight)
+        nozzleX = hurtbox.x + hurtbox.width;
+    else
+        nozzleX = hurtbox.x; 
+    return new Vector2(nozzleX,nozzleY);
 }
 
 public void jump(){
@@ -540,6 +587,156 @@ public void jump(){
         velocity.y = maxRiseSpeed;
         isGrounded = false;
     }
+}
+
+private void updateFacingDirection(float playerX){
+    if(!scouting){
+        if(playerX > position.x)
+            facingRight = true;
+        else if(playerX < position.x)
+            facingRight = false;
+    }
+}
+
+private void updateRifleman(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,  float dt,Rectangle playerHurtbox,Array<Rectangle> solidPlatforms){
+     if(homePlatform == null){
+        velocity.x = 0;
+        return;
+    }
+    nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
+    if(playerFoundInsideDetectionRadius && isPlayerInLifeofSight(playerHurtbox,solidPlatforms))
+        if(playerFoundInsideAttackRadius)
+            riflemanAttack(dt);
+        else
+            riflemanMoveTowardsPlayer(playerHurtbox,dt);
+    else if(isPlayerInLifeofSight(playerHurtbox,solidPlatforms) && !scouting)
+        currentState = EnemyState.IDLE;
+    else
+        riflemanScout(dt);
+}
+
+private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
+    scouting = false;
+    attacking = false;
+    if(position.x + hurtbox.x < playerHurtbox.x){
+        facingRight = true;
+        velocity.x = moveSpeed;
+    }
+    else if(position.x + hurtbox.x > playerHurtbox.x){
+        facingRight = false;
+        velocity.x = -moveSpeed;
+    }
+
+    float oldPos = position.x;
+    float newPos = oldPos + velocity.x * dt;
+    if((newPos + hurtbox.x + hurtbox.width >= homePlatform.x + homePlatform.width) || (newPos + hurtbox.x <= homePlatform.x))
+        position.x = oldPos;
+    else 
+        position.x = newPos;
+}
+
+private void riflemanAttack(float dt){
+    attacking = true;
+    scouting = false;
+    if(attacking)
+        currentState = EnemyState.ATTACK;
+    
+}
+
+private void riflemanScout(float dt){
+    attacking = false;
+    scouting = true;
+    if(scouting)
+        currentState = EnemyState.WALKING;
+    if(facingRight)
+        velocity.x = moveSpeed;
+    else
+        velocity.x = -moveSpeed;
+    float oldPos = position.x;
+    float newPos = oldPos + velocity.x * dt;
+    if(newPos + hurtbox.x + hurtbox.width >= homePlatform.x + homePlatform.width){
+        position.x = oldPos;
+        facingRight = false;
+        velocity.x = -moveSpeed;
+    }
+    
+    else if(newPos + hurtbox.x <= homePlatform.x){
+        position.x = oldPos;
+        facingRight = true;
+        velocity.x = moveSpeed;
+
+    }
+    else 
+        position.x = newPos;
+}
+
+private boolean isPlayerInLifeofSight(Rectangle playerHurtbox, Array<Rectangle>solidPlatforms){
+    boolean first = true;
+    boolean second = true;
+    boolean third = true;
+    Vector2 playerBottom = new Vector2( playerHurtbox.x + playerHurtbox.width/2, playerHurtbox.y);
+    Vector2 playerCentre = new Vector2(playerHurtbox.x + playerHurtbox.width/2,playerHurtbox.y+ playerHurtbox.height/2);
+    Vector2 playerHead = new Vector2(playerHurtbox.x + playerHurtbox.width/2,playerHurtbox.y+ playerHurtbox.height);
+    for(Rectangle platform : solidPlatforms){
+        if(Intersector.intersectSegmentRectangle(nozzlePosition,playerBottom,platform))
+            first = false;
+    }
+    for(Rectangle platform : solidPlatforms){
+        if(Intersector.intersectSegmentRectangle(nozzlePosition,playerCentre,platform))
+            second = false;
+    }
+    for(Rectangle platform : solidPlatforms){
+        if(Intersector.intersectSegmentRectangle(nozzlePosition,playerHead,platform))
+            third = false;
+    }
+    return first || second || third;
+}
+
+private void finishDrilling(float dt,Vector2 playerPos,Array<Rectangle> solidPlatforms){
+    drillChase(dt,playerPos);
+    if(!overlapsAnySolid(solidPlatforms) && isStanding(solidPlatforms)){
+        currentState = EnemyState.WALKING;
+        isGrounded = true;
+        velocity.y = 0;
+    }
+}
+
+private boolean overlapsAnySolid(Array<Rectangle> solidPlatforms){
+    Rectangle worldHurtbox = getWorldHurtbox();
+    for(Rectangle rectangle : solidPlatforms){
+        if(worldHurtbox.overlaps(rectangle))
+            return true;
+    }
+    return false;
+}
+
+private boolean isStanding(Array<Rectangle> solidPlatforms){
+    Rectangle worldHurtbox = getWorldHurtbox();
+    float offset = 2f;
+    for(Rectangle rectangle : solidPlatforms){
+        float platformTop = rectangle.y + rectangle.height;
+        boolean feetOnTop = worldHurtbox.y >= platformTop && worldHurtbox.y <= platformTop + offset;
+        boolean horizontalOverlap = worldHurtbox.x + worldHurtbox.width > rectangle.x && worldHurtbox.x < rectangle.x + rectangle.width;
+        if(feetOnTop && horizontalOverlap)
+            return true;
+    }
+    return false;
+}
+
+public Array<Circle> getWorldDrillCircles(){
+    Array<Circle> worldCircles = new Array<>();
+    float rotation = currentState == EnemyState.DRILL ? drillRotation : 0f;
+    float radians = rotation * MathUtils.degreesToRadians;
+    float cos = MathUtils.cos(radians);
+    float sin = MathUtils.sin(radians);
+    for(Circle circle : drillCircles){
+        float localX = facingRight || currentState == EnemyState.DRILL ? circle.x: -circle.x;
+        float localY = circle.y - 10f;
+        float rotatedX = localX * cos - localY * sin;
+        float rotatedY = localX * sin + localY * cos;
+        worldCircles.add(new Circle(position.x + rotatedX,position.y + rotatedY,circle.radius));
+    }
+    return worldCircles;
 }
 
 

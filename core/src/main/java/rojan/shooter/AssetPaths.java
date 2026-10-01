@@ -200,22 +200,35 @@ public final class AssetPaths {
                 public static final String BASE = "sprites/enemies/iron_jackals/jackal_drill_crawler/";
 
                 public static final String ATTACK = BASE + "attack_";
-                public static final int ATTACK_FRAMES = 6;
+                public static final int ATTACK_FRAMES = 12;
 
                 public static final String DEATH = BASE + "explosion_";
                 public static final int DEATH_FRAMES = 12;
 
                 public static final String DRILL = BASE + "drill_";
-                public static final int DRILL_FRAMES = 6;
+                public static final int DRILL_FRAMES = 12;
 
                 public static final String HURT = BASE + "hurt_";
-                public static final int HURT_FRAMES = 6;
+                public static final int HURT_FRAMES = 12;
 
                 public static final String IDLE = BASE + "idle_";
-                public static final int IDLE_FRAMES = 6;
+                public static final int IDLE_FRAMES = 12;
                 
                 public static final String WALK = BASE + "walking_";
-                public static final int WALK_FRAMES = 6;
+                public static final int WALK_FRAMES = 12;
+
+                 public static final String PREPARE = BASE + "prepare_";
+                public static final int PREPARE_FRAMES = 12;
+
+                public static final String JUMP = BASE + "jump_";
+                public static final int JUMP_FRAMES = 12;
+
+                public static final String AIRBORNE = BASE + "airborne_";
+                public static final int AIRBORNE_FRAMES = 12;
+
+                public static final String LAND = BASE + "land_";
+                public static final int LAND_FRAMES = 12;
+
                 
             }
         }

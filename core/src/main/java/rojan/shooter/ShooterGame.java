@@ -2,6 +2,8 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -24,6 +26,9 @@ import rojan.shooter.Enemy.EnemyType;
 
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
+import com.badlogic.gdx.maps.objects.EllipseMapObject;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Ellipse;
 
 //./gradlew lwjgl3:run
 
@@ -168,7 +173,7 @@ public class ShooterGame extends ApplicationAdapter {
         }
         else
             mouseHeld = 0f;
-
+        bulletPlatformCollision();
         if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
             if(!player.getCrouchingState())
                 player.crouch();
@@ -211,7 +216,7 @@ public class ShooterGame extends ApplicationAdapter {
 
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms);
+            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox());
 
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
@@ -224,32 +229,6 @@ public class ShooterGame extends ApplicationAdapter {
         bulletEnemyCollisionChecker();
         removeEnemies();
         batch.end(); 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-shapeRenderer.setColor(0f,1f,1f,1f);
-for(Rectangle rectangle : solidPlatforms){
-    shapeRenderer.rect(
-        rectangle.x,
-        rectangle.y,
-        rectangle.width,
-        rectangle.height
-    );
-}
-
-shapeRenderer.setColor(1f,0f,1f,1f);
-for(Enemy enemy : enemies){
-    Rectangle box = enemy.getWorldHurtbox();
-
-    shapeRenderer.rect(
-        box.x,
-        box.y,
-        box.width,
-        box.height
-    );
-}
-
-shapeRenderer.end();
     }  
     
 
@@ -403,6 +382,22 @@ shapeRenderer.end();
         batch.setProjectionMatrix(camera.combined);
     }
 
+    private void bulletPlatformCollision(){
+        for(Bullet bullet : bullets){
+            float x = bullet.getPosition().x;
+            float y = bullet.getPosition().y;
+            float r = bullet.getRadius();
+            Circle bulletZone = new Circle(x,y,r);
+            for(Rectangle solid : solidPlatforms){
+                if(Intersector.overlaps(bulletZone,solid)){
+                    bullet.considerWasted();
+                    removeBullets();
+                    break;
+                }
+            }
+        }
+    }
+
     private Array<Rectangle> extractSolidPlatformsFromMap(TiledMap map){
         Array<Rectangle> solidPlatforms = new Array<>();
         MapLayer collisionLayer = map.getLayers().get("collision");
@@ -483,7 +478,7 @@ shapeRenderer.end();
         float drawWidth = RiflemanSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = RiflemanSpawnObject.getProperties().get("drawHeight", Float.class);
 
-        Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map));
+        Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
         return newRifleman;
     }
 
@@ -503,7 +498,7 @@ shapeRenderer.end();
         Rectangle HeavySpawnRect = HeavySpawnObject.getRectangle();
         float drawWidth = HeavySpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = HeavySpawnObject.getProperties().get("drawHeight", Float.class);
-        Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, HeavySpawnRect.x, HeavySpawnRect.y , drawWidth, drawHeight , extract_Jackal_Heavy_Hitbox_FromMap(map));
+        Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, HeavySpawnRect.x, HeavySpawnRect.y , drawWidth, drawHeight , extract_Jackal_Heavy_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
         return newHeavy;
     }
 
@@ -522,7 +517,7 @@ shapeRenderer.end();
         Rectangle HoverDroneSpawnRect = HoverDroneSpawnObject.getRectangle();
         float drawWidth = HoverDroneSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = HoverDroneSpawnObject.getProperties().get("drawHeight", Float.class);
-        Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, HoverDroneSpawnRect.x, HoverDroneSpawnRect.y , drawWidth , drawHeight ,extract_Jackal_HoverDrone_Hitbox_FromMap(map));
+        Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, HoverDroneSpawnRect.x, HoverDroneSpawnRect.y , drawWidth , drawHeight ,extract_Jackal_HoverDrone_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
         return HoverDrone;
     }
 
@@ -541,7 +536,7 @@ shapeRenderer.end();
         Rectangle DrillCrawlerSpawnRect = DrillCrawlerSpawnObject.getRectangle();
         float drawWidth = DrillCrawlerSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = DrillCrawlerSpawnObject.getProperties().get("drawHeight", Float.class);
-        Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, DrillCrawlerSpawnRect.x, DrillCrawlerSpawnRect.y , drawWidth, drawHeight, extract_Jackal_DrillCrawler_Hitbox_FromMap(map));
+        Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, DrillCrawlerSpawnRect.x, DrillCrawlerSpawnRect.y , drawWidth, drawHeight, extract_Jackal_DrillCrawler_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
         return newDrillCrawler;
     }
 
@@ -649,6 +644,18 @@ shapeRenderer.end();
                 boolean bodyshot = false;
                 boolean limbshot = false;
                 Rectangle hurtbox = enemy.getWorldHurtbox();
+                if(enemy.getType() == Enemy.EnemyType.DRILL_CRAWLER && !bullet.isWasted()){
+                    Circle bulletCircle = new Circle(bullet.getPosition().x,bullet.getPosition().y,bullet.getRadius());
+                    for(Circle circle : enemy.getWorldDrillCircles()){
+                        if(Intersector.overlaps(bulletCircle,circle)){
+                            enemy.enemyHurt(20);
+                            bullet.considerWasted();
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
                 if((bullet.getPosition().y  - bullet.getRadius() < hurtbox.y + hurtbox.height)
                 && (bullet.getPosition().y  + bullet.getRadius() > hurtbox.y)
                 &&(bullet.getPosition().x  + bullet.getRadius() > hurtbox.x)
@@ -723,14 +730,37 @@ shapeRenderer.end();
         }
     }
 
-
     private void removeEnemies(){
         for(int i = enemies.size-1 ; i >= 0 ; i--){
             if(enemies.get(i).isReadytoBeRemoved())
                 enemies.removeIndex(i);
         }
     }
-    
+
+    private void removeBullets(){
+        for(int i = bullets.size-1 ; i >= 0 ; i--){
+            if(bullets.get(i).isWasted())
+                bullets.removeIndex(i);        
+        }
+    }
+
+    private Array<Circle> extract_Jackal_DrillCrawler_Circles_FromMap(TiledMap map){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject spawnObject = (RectangleMapObject)enemiesLayer.getObjects().get("Drill_Crawler_Spawn");
+        Rectangle spawn = spawnObject.getRectangle();
+        Array<Circle> circles = new Array<>();
+        for(EllipseMapObject object : enemiesLayer.getObjects().getByType(EllipseMapObject.class)){
+            if(object.getName() == null || !object.getName().startsWith("Drill_Crawler_Circle_"))
+                continue;
+            Ellipse ellipse = object.getEllipse();
+            float centerX = ellipse.x + ellipse.width/2f;
+            float centerY = ellipse.y + ellipse.height/2f;
+            float radius = ellipse.width/2f;
+            circles.add(new Circle(centerX - spawn.x,centerY - spawn.y,radius));
+        }
+        return circles;
+    }
+        
 
 
     
