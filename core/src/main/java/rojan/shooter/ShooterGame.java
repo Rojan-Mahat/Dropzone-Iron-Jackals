@@ -27,7 +27,6 @@ import rojan.shooter.Enemy.EnemyType;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 import com.badlogic.gdx.maps.objects.EllipseMapObject;
-import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Ellipse;
 
 //./gradlew lwjgl3:run

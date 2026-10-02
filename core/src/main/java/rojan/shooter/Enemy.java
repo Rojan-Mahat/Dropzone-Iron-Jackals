@@ -135,6 +135,7 @@ public class Enemy{
     private boolean facingRight;
     private Vector2 nozzlePosition;
     private Array<Circle> drillCircles;
+    private boolean targetNeverSeen;
     
     private static class EnemyHitRegions{
         Array<Rectangle> headshotBoxes;
@@ -174,7 +175,7 @@ public class Enemy{
             hitPoints = maxHitPoints;
             this.detectionRadius = 700;
             this.attackRange = 350;
-            this.moveSpeed = 125;
+            this.moveSpeed = 165;
             this.maxRiseSpeed = 500;
         }
         else if(type == EnemyType.HEAVY){
@@ -367,20 +368,20 @@ public class Enemy{
     }
 
     private void drawHealthBar(SpriteBatch batch){
-    if(currentState == EnemyState.DEAD || currentState == EnemyState.EXPLODING)
-        return;
-    float healthRatio = MathUtils.clamp(hitPoints / maxHitPoints,0f,1f);
-    int frameIndex = 11 - (int)Math.ceil(11f * healthRatio);
+        if(currentState == EnemyState.DEAD || currentState == EnemyState.EXPLODING)
+            return;
+        float healthRatio = MathUtils.clamp(hitPoints / maxHitPoints,0f,1f);
+        int frameIndex = 11 - (int)Math.ceil(11f * healthRatio);
 
-    float barWidth = 90f;
-    float barHeight = barWidth * (48f / 256f);
+        float barWidth = 90f;
+        float barHeight = barWidth * (48f / 256f);
 
-    Rectangle worldHurtbox = getWorldHurtbox();
+        Rectangle worldHurtbox = getWorldHurtbox();
 
-    float barX = worldHurtbox.x + worldHurtbox.width/2f - barWidth/2f;
-    float barY = worldHurtbox.y + worldHurtbox.height + 10f;
-    batch.draw(healthBarFrames[frameIndex],barX,barY,barWidth,barHeight);
-}
+        float barX = worldHurtbox.x + worldHurtbox.width/2f - barWidth/2f;
+        float barY = worldHurtbox.y + worldHurtbox.height + 10f;
+        batch.draw(healthBarFrames[frameIndex],barX,barY,barWidth,barHeight);
+    }
 
     public void reactToGravity(float gravity , float dt){
         if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY) ||
@@ -492,7 +493,7 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         updateDrillCrawler(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerPosition, solidPlatforms);
     
     else if(type == EnemyType.HOVER_DRONE){}
-        //updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
+        //updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt ,playerPosition , playerHurtbox, solidPlatforms);
 }
 
     /*if(!playerFoundInsideDetectionRadius){
@@ -700,6 +701,38 @@ private void finishDrilling(float dt,Vector2 playerPos,Array<Rectangle> solidPla
         velocity.y = 0;
     }
 }
+
+private void  updateHoverDrone(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos, Rectangle playerHurtbox, Array<Rectangle> solidPlatforms){
+    nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
+    if(playerFoundInsideAttackRadius){
+        droneAttack();
+        return;
+    }
+    if(targetNeverSeen)
+        currentState = EnemyState.IDLE;
+    else 
+        droneChase(dt, playerPos,playerHurtbox,solidPlatforms);
+}
+
+
+private void droneChase(float dt, Vector2 playerPos,Rectangle playerHurtbox,Array<Rectangle> solidPlatforms){
+    targetNeverSeen = false;
+    if(position.x < playerHurtbox.x)
+        velocity.x = moveSpeed;
+    else if(position.x > playerHurtbox.x)
+        velocity.x = -moveSpeed;
+    resolveHorizontalCollision(dt, solidPlatforms);
+    resolveVerticalCollision(dt, solidPlatforms);
+}
+
+private void sendPlayerLocationToHeavy(){
+
+}
+
+private void droneAttack(){
+
+}
+
 
 private boolean overlapsAnySolid(Array<Rectangle> solidPlatforms){
     Rectangle worldHurtbox = getWorldHurtbox();
