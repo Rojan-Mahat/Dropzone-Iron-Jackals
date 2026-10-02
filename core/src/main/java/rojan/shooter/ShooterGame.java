@@ -228,6 +228,41 @@ public class ShooterGame extends ApplicationAdapter {
         bulletEnemyCollisionChecker();
         removeEnemies();
         batch.end(); 
+        shapeRenderer.setProjectionMatrix(camera.combined);
+shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+for(Enemy enemy : enemies){
+
+    Rectangle hurtbox = enemy.getWorldHurtbox();
+
+    shapeRenderer.setColor(1,0,0,1);
+    shapeRenderer.rect(
+        hurtbox.x,
+        hurtbox.y,
+        hurtbox.width,
+        hurtbox.height
+    );
+
+    shapeRenderer.setColor(0,1,0,1);
+    for(Rectangle rect : enemy.getHeadshotBoxes()){
+        Rectangle world = enemy.getWorldHitRegion(rect);
+        shapeRenderer.rect(world.x,world.y,world.width,world.height);
+    }
+
+    shapeRenderer.setColor(0,0,1,1);
+    for(Rectangle rect : enemy.getBodyshotBoxes()){
+        Rectangle world = enemy.getWorldHitRegion(rect);
+        shapeRenderer.rect(world.x,world.y,world.width,world.height);
+    }
+
+    shapeRenderer.setColor(1,1,0,1);
+    for(Rectangle rect : enemy.getLimbshotBoxes()){
+        Rectangle world = enemy.getWorldHitRegion(rect);
+        shapeRenderer.rect(world.x,world.y,world.width,world.height);
+    }
+}
+
+shapeRenderer.end();
     }  
     
 

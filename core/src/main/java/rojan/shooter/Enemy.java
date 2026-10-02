@@ -26,7 +26,8 @@ public class Enemy{
         HURT,
         DRILL,
         IDLE,
-        EXPLODING
+        EXPLODING,
+        CHARGING
     }
     private EnemyState currentState;
     private EnemyType type;
@@ -50,6 +51,7 @@ public class Enemy{
         private TextureRegion[] airborneFrames;
         private TextureRegion[] landFrames;
         private TextureRegion[] flyFrames;
+        private TextureRegion[] chargeFrames;
         EnemyAnimations(EnemyType type){
             if(type == EnemyType.RIFLEMAN){
                 idleFrames  = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.IDLE, AssetPaths.Enemies.IronJackals.Rifleman.IDLE_FRAMES);
@@ -73,7 +75,7 @@ public class Enemy{
                 attackFrames = loadFrames(AssetPaths.Enemies.IronJackals.HoverDrone.ATTACK, AssetPaths.Enemies.IronJackals.HoverDrone.ATTACK_FRAMES);
                 hurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.HoverDrone.HURT, AssetPaths.Enemies.IronJackals.HoverDrone.HURT_FRAMES);
                 deathFrames = loadFrames(AssetPaths.Enemies.IronJackals.HoverDrone.DEATH, AssetPaths.Enemies.IronJackals.HoverDrone.DEATH_FRAMES);
-
+                chargeFrames =  loadFrames(AssetPaths.Enemies.IronJackals.HoverDrone.CHARGE, AssetPaths.Enemies.IronJackals.HoverDrone.CHARGE_FRAMES);
             }
 
             else if(type == EnemyType.DRILL_CRAWLER){
@@ -125,6 +127,7 @@ public class Enemy{
     private final float DEATH_FRAME_DURATION = 0.09f;
     private final float IDLE_FRAME_DURATION = 0.12f;
     private static final float DRILLER_DRAW_SCALE = 1.5f;
+    private static final float DRONE_DRAW_SCALE = 0.5f;
 
     private float detectionRadius;
     private float attackRange;
@@ -159,7 +162,7 @@ public class Enemy{
     private boolean isChasing;
     private boolean attacking;
     private Rectangle homePlatform;
-
+    private float DRILL_HEAD_OFFSET_X = 100f;
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
@@ -194,9 +197,17 @@ public class Enemy{
             maxHitPoints = 70;
             hitPoints = maxHitPoints;
             this.detectionRadius = 850;
-            this.attackRange = 250;
+            this.attackRange = 200;
             this.moveSpeed = 450;
             this.maxRiseSpeed = 500;
+            this.drawWidth *= DRONE_DRAW_SCALE;
+            this.drawHeight *= DRONE_DRAW_SCALE;
+            float centerX = hurtbox.x + hurtbox.width / 2f;
+            float centerY = hurtbox.y + hurtbox.height / 2f;
+            hurtbox.width *= DRONE_DRAW_SCALE;
+            hurtbox.height *= DRONE_DRAW_SCALE;
+            hurtbox.x = centerX - hurtbox.width / 2f;
+            hurtbox.y = centerY - hurtbox.height / 2f;
         }
         else if(type == EnemyType.DRILL_CRAWLER){
             animations = drillCrawlerAnimations;
@@ -295,7 +306,11 @@ public class Enemy{
         float rotationOriginX = animations.originX * scaleX;
         float rotationOriginY = animations.originY * scaleY;
         float rotation = 0f;
-        float renderScaleX = facingRight ? 1f : -1f;
+        float renderScaleX;
+        if(type == EnemyType.HOVER_DRONE)
+            renderScaleX = 1f;
+        else
+            renderScaleX = facingRight ? 1f : -1f;
         if(currentState == EnemyState.DRILL){
             rotation = drillRotation;
             renderScaleX = 1f;
@@ -395,7 +410,7 @@ public class Enemy{
         }
     }
 
-    private void resolveHorizontalCollision(float dt,Array<Rectangle> solidPlatforms){
+    private boolean resolveHorizontalCollision(float dt,Array<Rectangle> solidPlatforms){
         float oldX = position.x;
         position.x += velocity.x * dt;
         Rectangle worldHurtbox = getWorldHurtbox();
@@ -405,15 +420,16 @@ public class Enemy{
             if(type == EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING){
                 currentState = EnemyState.DRILL;
                 position.x = oldX;
-                return;
+                return true;
             }
             position.x = oldX;
             velocity.x = 0;
-            return;
+            return true;
         }
+        return false;
     }
 
-    private void resolveVerticalCollision(float dt, Array<Rectangle> solidPlatforms){
+    private boolean resolveVerticalCollision(float dt, Array<Rectangle> solidPlatforms){
         float oldY = position.y;
         position.y += velocity.y * dt;
         Rectangle worldHurtbox = getWorldHurtbox();
@@ -423,12 +439,13 @@ public class Enemy{
             if(type == EnemyType.DRILL_CRAWLER && currentState == EnemyState.WALKING){
                 currentState = EnemyState.DRILL;
                 position.y = oldY;
-                return;
+                return true;
             }
             position.y = oldY;
             velocity.y = 0;
-            return;
+            return true;
         }
+        return false;
     }
 
     public void ensureGrounding(Rectangle worldHurtbox,Array<Rectangle> solidPlatforms){
@@ -472,12 +489,30 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     boolean playerFoundInsideDetectionRadius;
     boolean playerFoundInsideAttackRadius;
     if(!(type==EnemyType.HEAVY)){
-        float dx = playerPosition.x - position.x;
-        float dy = playerPosition.y - position.y;
-        float distanceSquared = dx*dx + dy*dy;
-        playerFoundInsideDetectionRadius =  distanceSquared <= (detectionRadius*detectionRadius);
-        playerFoundInsideAttackRadius = distanceSquared <= (attackRange * attackRange);
+        float dx,dy;
+        float headX = position.x;
+        if(type == EnemyType.DRILL_CRAWLER){
+            if(facingRight)
+                headX = position.x + DRILL_HEAD_OFFSET_X;
+            else
+                headX = position.x - DRILL_HEAD_OFFSET_X;
+
+            dx = playerPosition.x - headX;
+            dy = playerPosition.y - position.y;
+            float playerCenterX = playerHurtbox.x + playerHurtbox.width / 2f;
+            float distanceSquared = dx * dx + dy * dy;
+            playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
+            playerFoundInsideAttackRadius = Math.abs(playerCenterX - headX) <= attackRange;
+        }
+        else{
+            dx = playerPosition.x - headX;
+            dy = playerPosition.y - position.y;
+            float distanceSquared = dx * dx + dy * dy;
+            playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
+            playerFoundInsideAttackRadius = distanceSquared <= attackRange * attackRange;
+        }
     }
+
     else{
         playerFoundInsideDetectionRadius = false;
         playerFoundInsideAttackRadius = false;
@@ -492,34 +527,9 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     else if(type==EnemyType.DRILL_CRAWLER)
         updateDrillCrawler(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerPosition, solidPlatforms);
     
-    else if(type == EnemyType.HOVER_DRONE){}
-        //updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt ,playerPosition , playerHurtbox, solidPlatforms);
+    else if(type == EnemyType.HOVER_DRONE)
+        updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt ,playerPosition , playerHurtbox, solidPlatforms);
 }
-
-    /*if(!playerFoundInsideDetectionRadius){
-        currentState = EnemyState.IDLE;
-    }
-    else{
-       
-        if(playerFoundInsideAttackRadius){
-            currentState = EnemyState.ATTACK;
-            attackPlayer(dt, playerPosition);
-        }
-        else{
-            
-            if(type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY || type == EnemyType.DRILL_CRAWLER){
-                if(type == EnemyType.DRILL_CRAWLER && currentState!=EnemyState.DRILL)
-                    currentState = EnemyState.WALKING;
-                if(type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY)
-                    groundChase(dt,playerPosition);
-                else 
-                    drillChase(dt, playerPosition,solidPlatforms);
-            }
-             else if(type == EnemyType.HOVER_DRONE){
-                currentState = EnemyState.FLYING;
-                flyChase(dt, playerPosition);
-             }
-        }*/
 
 private void attackPlayer(float dt ,Vector2 playerPos){
     
@@ -702,25 +712,28 @@ private void finishDrilling(float dt,Vector2 playerPos,Array<Rectangle> solidPla
     }
 }
 
-private void  updateHoverDrone(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos, Rectangle playerHurtbox, Array<Rectangle> solidPlatforms){
-    nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
-    if(playerFoundInsideAttackRadius){
-        droneAttack();
-        return;
-    }
+private void updateHoverDrone(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos, Rectangle playerHurtbox, Array<Rectangle> solidPlatforms){
     if(targetNeverSeen)
         currentState = EnemyState.IDLE;
     else 
-        droneChase(dt, playerPos,playerHurtbox,solidPlatforms);
+        droneChase(dt,playerHurtbox,solidPlatforms);
 }
 
 
-private void droneChase(float dt, Vector2 playerPos,Rectangle playerHurtbox,Array<Rectangle> solidPlatforms){
+private void droneChase(float dt,Rectangle playerHurtbox,Array<Rectangle> solidPlatforms){
     targetNeverSeen = false;
-    if(position.x < playerHurtbox.x)
-        velocity.x = moveSpeed;
-    else if(position.x > playerHurtbox.x)
-        velocity.x = -moveSpeed;
+    Vector2 diffVector = new Vector2(playerHurtbox.x + playerHurtbox.width / 2,playerHurtbox.y + playerHurtbox.height / 2).sub(position);
+    if(diffVector.len() <= attackRange){
+        velocity.x = 0;
+        velocity.y = 0;
+        droneAttack();
+        return;
+    }
+    currentState = EnemyState.FLYING;
+    Vector2 direction = diffVector.nor();
+    velocity.x = direction.x * moveSpeed;
+    velocity.y = direction.y * moveSpeed;
+
     resolveHorizontalCollision(dt, solidPlatforms);
     resolveVerticalCollision(dt, solidPlatforms);
 }
@@ -730,7 +743,7 @@ private void sendPlayerLocationToHeavy(){
 }
 
 private void droneAttack(){
-
+    currentState = EnemyState.ATTACK;
 }
 
 
@@ -771,6 +784,7 @@ public Array<Circle> getWorldDrillCircles(){
     }
     return worldCircles;
 }
+
 
 
 

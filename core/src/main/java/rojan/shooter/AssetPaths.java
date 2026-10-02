@@ -180,16 +180,19 @@ public final class AssetPaths {
                 public static final String BASE = "sprites/enemies/iron_jackals/jackal_hover_drone/";
 
                 public static final String IDLE = BASE + "idle_";
-                public static final int IDLE_FRAMES = 6;
+                public static final int IDLE_FRAMES = 12;
 
                 public static final String WALK = BASE + "flying_";
-                public static final int WALK_FRAMES = 6;
+                public static final int WALK_FRAMES = 12;
+
+                public static final String CHARGE = BASE + "charge_";
+                public static final int CHARGE_FRAMES = 6;
 
                 public static final String ATTACK = BASE + "attack_";
-                public static final int ATTACK_FRAMES = 6;
+                public static final int ATTACK_FRAMES = 8;
 
                 public static final String HURT = BASE + "hurt_";
-                public static final int HURT_FRAMES = 6;
+                public static final int HURT_FRAMES = 8;
 
                 public static final String DEATH = BASE + "explosion_";
                 public static final int DEATH_FRAMES = 12;
