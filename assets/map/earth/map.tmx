@@ -45,7 +45,7 @@
   <image source="../background/background.png" width="4096" height="2304"/>
  </imagelayer>
  <objectgroup id="6" name="reference">
-  <object id="271" name="Camera" x="556.187" y="223.152" width="2786.58" height="2016.46"/>
+  <object id="271" name="Camera" x="1480.94" y="866.851" width="1200" height="720"/>
   <object id="422" name="forJetpack" x="1919.25" y="1253.85" width="80" height="120"/>
   <object id="424" name="jetPack" x="1902.05" y="1288.69" width="75" height="90"/>
  </objectgroup>
@@ -189,7 +189,7 @@
   <object id="276" x="1025.96" y="2055.01" width="528.43" height="139.061"/>
   <object id="278" x="1847.96" y="2503.09"/>
  </objectgroup>
- <objectgroup color="#ff0000" id="7" name="collision" visible="0" locked="1">
+ <objectgroup color="#ff0000" id="7" name="collision" locked="1">
   <object id="217" x="-1.62344" y="1055.62" width="205.666" height="79.5934"/>
   <object id="218" x="616.344" y="1195.82" width="136.392" height="71.8237"/>
   <object id="219" x="461.056" y="1275.65" width="363.614" height="64.3174"/>

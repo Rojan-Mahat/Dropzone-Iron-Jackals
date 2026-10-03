@@ -209,7 +209,7 @@ public class ShooterGame extends ApplicationAdapter {
         drawDroneBeam();
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox());  
+            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity());  
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
         weapon.setFacingLeft(player.isFacingLeft());
@@ -219,6 +219,8 @@ public class ShooterGame extends ApplicationAdapter {
         for(Bullet bullet : bullets)
             bullet.draw(batch);
         drawDroneOverlayFx();
+        transferDroneLockToHeavy();
+        drawHeavyLockFx();
         bulletEnemyCollisionChecker();
         removeEnemies();
         batch.end(); 
@@ -607,12 +609,8 @@ private void drawDroneOverlayFx(){
         float targetX = center.x + MathUtils.cosDeg(angle) * magnitude;
         float targetY = center.y + MathUtils.sinDeg(angle) * magnitude;
         float stateTime = enemy.getStateTime();
-        if(enemy.getCurrentState() == Enemy.EnemyState.CHARGING){
-            int reticleFrame =(int)(stateTime/0.10f) % FxAssets.targetReticle.length;
-            float reticleCanvasSize = 350f;
-            batch.draw(FxAssets.targetReticle[reticleFrame], targetX - reticleCanvasSize/2f,targetY - reticleCanvasSize/2f,reticleCanvasSize,reticleCanvasSize);
-        }
-        else if(enemy.getCurrentState() == Enemy.EnemyState.ATTACK){
+        
+        if(enemy.getCurrentState() == Enemy.EnemyState.ATTACK){
             int burstFrame = (int)(stateTime/0.05f);
             if(burstFrame < FxAssets.droneBurst.length){
                 float burstCanvasSize = 350f;
@@ -626,6 +624,48 @@ private void drawDroneOverlayFx(){
             float contactCanvasSize = 300f;
             batch.draw(FxAssets.beamContact[contactFrame],targetX - contactCanvasSize/2f,targetY - contactCanvasSize/2f,contactCanvasSize,contactCanvasSize);
         }
+    }
+}
+
+private void transferDroneLockToHeavy(){
+    Enemy heavy = null;
+    Enemy drone = null;
+    for(Enemy enemy : enemies){
+        if(enemy.getType() == EnemyType.HEAVY)
+            heavy = enemy;
+        else if(enemy.getType() == EnemyType.HOVER_DRONE)
+            drone = enemy;
+    }
+    if(heavy != null && drone != null && drone.isHeavyLocking()){
+        heavy.setHeavyLock(true);
+        drone.setHeavyLock(false);
+    }
+}
+
+private void drawHeavyLockFx(){
+    Rectangle playerHurtbox = player.getWorldHitbox();
+    for(Enemy enemy : enemies){
+        if(enemy.getType() != EnemyType.HEAVY)
+            continue;
+        if(!enemy.isHeavyLocking())
+            continue;
+        float targetX;
+        float targetY;
+        float frameDuration;
+        if(enemy.isHeavyLeftTarget()){
+            Vector2 predicted = enemy.getHeavyPredictedRainFirePosition();
+            targetX = predicted.x;
+            targetY = predicted.y;
+            frameDuration = 0.012f;
+        }
+        else{
+            targetX = playerHurtbox.x + playerHurtbox.width/2f;
+            targetY = playerHurtbox.y + playerHurtbox.height/2f;
+            frameDuration = 0.10f;
+        }
+        int reticleFrame = (int)(enemy.getHeavyLockTimer()/frameDuration) % FxAssets.targetReticle.length;
+        float reticleCanvasSize = 350f;
+        batch.draw(FxAssets.targetReticle[reticleFrame],targetX-reticleCanvasSize/2f,targetY-reticleCanvasSize/2f,reticleCanvasSize,reticleCanvasSize);
     }
 }
 
@@ -839,6 +879,8 @@ private void drawDroneOverlayFx(){
         }
         return circles;
     }
+
+
 
         
 

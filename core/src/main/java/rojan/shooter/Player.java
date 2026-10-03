@@ -539,6 +539,10 @@ public class Player{
         }         
     }
 
+    public Vector2 getVelocity(){
+        return velocity;
+    }
+
     private void resolveVerticalCollision(float dt, Array<Rectangle> solidPlatforms){
         Rectangle activeCollider = getActiveMovementCollider();
         position.y += velocity.y * dt;

@@ -157,11 +157,54 @@ public class Enemy{
     private boolean targetNeverSeen;
     private boolean HEAVY_LOCK;
     private float HEAVY_CLOSE_ANGLE;
-    private float PORTAL_TIME;
     private float RANDOM_LIMIT = MathUtils.random(2f,7f);
     private boolean HEAVY_CLOSE_SHOT_ONCE;
     private float HEAVY_CLOSE_TIMER = 0;
     private float HEAVY_CLOSE_COOLDOWN = 2f;
+
+    private final float POISON_RADIUS = 50f;
+    private final float STUN_RADIUS = 50f;
+    private final float BOMBARDMENT_RADIUS = 50f;
+
+    private final float POISON_AREA_LIFETIME = 3.5f;
+    private final float STUN_AREA_LIFETIME = 3.5f;
+    private final float BOMBARDMENT_AREA_LIFETIME = 3.5f;
+
+    private float BOMBARDMENT_SPAWN_TIMER = 0;
+    private int BOMBARDMENT_PROJECTILES_SPAWNED;
+    private float BOMBARDMENT_SPEED = 350f;
+    private float PROJECTILE_WIDTH = 25f;
+    private float PROJECTILE_HEIGHT = 30f;
+    private float BOMBARDMENT_Y;
+    private float BOMBARDMENT_START_X;
+    private float BOMBARDMENT_END_X;
+    private Array<Rectangle> BOMBARDMENT_PROJECTILES = new Array<>();
+
+    private final float POISON_DAMAGE = 2f;
+    private final float BOMBARDMENT_DAMAGE = 15f;
+
+    private boolean PLAYER_POISIONED = false;
+    private boolean PLAYER_STUNNED = false;
+
+    private final float POISON_LINGERING_LIFETIME = 3.2f;
+    private final float STUN_LINGERING_LIFETIME = 2.3f;
+ 
+    private float POISON_LINGERING_DURATION;
+    private float STUN_LINGERING_DURATION;
+
+    private boolean HEAVY_RANGE_ATTACK_ACTIVE = false;
+    private boolean HEAVY_RANGE_ATTACK_COMPLETED = false;
+
+    private boolean PLAYER_INSIDE_POISON;
+    
+    private float HEAVY_LONG_RANGE_ATTACK_DURATION = 0f;
+    private boolean HEAVY_LEFT_TARGET = false;
+    private Vector2 HEAVY_PREDICTED_RAIN_FIRE_POSITION = new Vector2();
+    private boolean HEAVY_PORTAL_ATTACK_CHOSEN = false;
+    private int RANDOM_SELECT_ATTACK = (int) MathUtils.random(1,3);
+
+    private boolean DRONE_LOCK_SENT = false;
+
     private static final float[] RIFLEMAN_ATTACK_SOCKET_X = {380.5f,378.606761f,376.430786f,378.793841f,378.656559f,380.5f};
     private static final float[] RIFLEMAN_ATTACK_SOCKET_Y = {475.92f,476.254529f,476.767235f,476.339072f,476.128497f,475.92f};
     private static final float[] RIFLEMAN_ATTACK_MUZZLE_X = {462.66f,457.352949f,452.525160f,459.307168f,456.033003f,462.66f};
@@ -201,6 +244,8 @@ public class Enemy{
     private float DRONE_ATTACK_TIMER = 0;
     private boolean DRONE_COOLDOWN;
     private float DRONE_COOLDOWN_TIMER = 0;
+    private float HEAVY_LOCK_TIMER = 0;
+    private float RANDOM_LOCK_LIMIT = MathUtils.random(0.85f,(RANDOM_LIMIT-0.2f));
 
     private float droneBeamMagnitude;
     private float droneBeamAngleDegrees;
@@ -308,12 +353,12 @@ public class Enemy{
         healthBarFrames = splitHealthBar[0];
     }
 
-    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms,Rectangle playerHurtbox){
+    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms,Rectangle playerHurtbox, Vector2 playerVelocity){
         if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY )|| (type == EnemyType.DRILL_CRAWLER && currentState != EnemyState.DRILL)){
             resolveVerticalCollision(dt,solidPlatforms);
             ensureGrounding(getWorldHurtbox(),solidPlatforms);
         }
-        updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox);
+        updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox,playerVelocity);
         int frameIndex = 0;
         TextureRegion frame;
         if(currentState == EnemyState.DEAD){
@@ -544,7 +589,8 @@ public Rectangle getWorldHitRegion(Rectangle rect){
 
 
 
-public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms, Rectangle playerHurtbox){
+public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms, Rectangle playerHurtbox,Vector2 playerVelocity){
+    updateLingeringDamages(dt);
     stateTime+= dt;
     if(currentState == EnemyState.DEAD){
         if(!readyTobeRemoved){
@@ -569,7 +615,9 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         float playerCenterX = playerHurtbox.x + playerHurtbox.width / 2f;
         float distanceSquared = dx * dx + dy * dy;
         playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
-        playerFoundInsideAttackRadius = Math.abs(playerCenterX - headX) <= attackRange;
+        Rectangle drillerWorldHurtbox = getWorldHurtbox();
+        float drillerCenterX = drillerWorldHurtbox.x + drillerWorldHurtbox.width/2f;
+        playerFoundInsideAttackRadius = Math.abs(playerCenterX-drillerCenterX) <= drillerWorldHurtbox.width/2f + attackRange;
     }
     else{
         dx = playerPosition.x - headX;
@@ -580,7 +628,7 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     }
     
     if(type==EnemyType.HEAVY){
-        updateHeavy(playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
+        updateHeavy(playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms, playerVelocity);
     }
     else if(type==EnemyType.RIFLEMAN)
         updateRifleman(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
@@ -619,10 +667,11 @@ private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean
     velocity.x = 0;
 }
 private void drillChase(float dt,Vector2 playerPos){
+    float facingDeadZone = 2f;
     float dx = playerPos.x - position.x;
-    if(dx>0)
+    if(dx > facingDeadZone)
         facingRight = true;
-    else if(dx<0)
+    else if(dx < -facingDeadZone)
         facingRight = false;
     float dy = playerPos.y - position.y;
     float length = (float)Math.sqrt(dx*dx + dy*dy);
@@ -813,8 +862,10 @@ private void droneAttack(Rectangle playerHurtbox, float dt){
         DRONE_COOLDOWN_TIMER = 0;
         currentState = EnemyState.ATTACK;
         DRONE_ATTACK_TIMER+=dt;
-        if(DRONE_ATTACK_TIMER >= DRONE_LOCK_TIME)
+        if(DRONE_ATTACK_TIMER >= DRONE_LOCK_TIME && !DRONE_LOCK_SENT){
             HEAVY_LOCK = true;
+            DRONE_LOCK_SENT = true;
+        }
         droneDamage();
     }
     else{
@@ -824,6 +875,7 @@ private void droneAttack(Rectangle playerHurtbox, float dt){
         if(DRONE_COOLDOWN_TIMER > 2.5f){
             DRONE_COOLDOWN = false;
             DRONE_LOCK_TIME = MathUtils.random(0.5f,4f);
+            DRONE_LOCK_SENT = false;
             stateTime = 0;
         }
     }
@@ -885,7 +937,17 @@ public Array<Circle> getWorldDrillCircles(){
     return worldCircles;
 }
 
-private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangle playerHurtbox, Array<Rectangle> solidPlatforms){
+private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangle playerHurtbox, Array<Rectangle> solidPlatforms,Vector2 playerVelocity){
+    if(HEAVY_RANGE_ATTACK_ACTIVE){
+        heavyRangeAttack(playerHurtbox,dt,solidPlatforms);
+        if(HEAVY_RANGE_ATTACK_COMPLETED){
+            HEAVY_RANGE_ATTACK_ACTIVE = false;
+            HEAVY_RANGE_ATTACK_COMPLETED = false;
+            HEAVY_PORTAL_ATTACK_CHOSEN = false;
+        }
+        return;
+    }
+
     if(HEAVY_CLOSE_SHOT_ONCE){
         currentState = EnemyState.IDLE;
         HEAVY_CLOSE_TIMER += dt;
@@ -916,14 +978,7 @@ private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangl
         currentState = EnemyState.IDLE;
         return;
     }
-    openPortal(playerHurtbox);
-    PORTAL_TIME+=dt;
-
-    if(PORTAL_TIME >= RANDOM_LIMIT){
-        HEAVY_LOCK = false;
-        PORTAL_TIME = 0;
-        rainFire();
-    }
+    openPortal(playerHurtbox,dt,playerVelocity,solidPlatforms);
 }
 
 private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
@@ -942,17 +997,166 @@ private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
     HEAVY_CLOSE_SHOT_ONCE = true;
 }
 
-private void openPortal(Rectangle playerHurtbox){
+private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocity, Array<Rectangle> solidPlatforms){
+    HEAVY_LOCK_TIMER+=dt;
+    if(HEAVY_LOCK_TIMER >= RANDOM_LIMIT){
+        //remove flash target animation
+        HEAVY_LOCK = false;
+        HEAVY_LEFT_TARGET = false;
+        HEAVY_LOCK_TIMER = 0;
+        RANDOM_LIMIT = MathUtils.random(2f,7f);
+        RANDOM_LOCK_LIMIT = MathUtils.random(0.85f,(RANDOM_LIMIT-0.2f));
+        HEAVY_RANGE_ATTACK_ACTIVE = true;
+    }
+
+    if(HEAVY_RANGE_ATTACK_ACTIVE){
+        heavyRangeAttack(playerHurtbox,dt,solidPlatforms);
+        return;
+    }
+
+    if(HEAVY_LOCK_TIMER + RANDOM_LOCK_LIMIT >=  RANDOM_LIMIT && !HEAVY_LEFT_TARGET){
+        //flash super fast
+        HEAVY_LEFT_TARGET = true;
+        //display warning and animate portal at HEAVY_PREDICTED_RAIN_FIRE_POSITION
+        float TargetX = playerHurtbox.x + playerHurtbox.width/2;
+        float TargetY = playerHurtbox.y + playerHurtbox.height/2;
+        HEAVY_PREDICTED_RAIN_FIRE_POSITION.x = TargetX + (playerVelocity.x * (RANDOM_LIMIT - HEAVY_LOCK_TIMER));
+        HEAVY_PREDICTED_RAIN_FIRE_POSITION.y = TargetY + (playerVelocity.y * (RANDOM_LIMIT - HEAVY_LOCK_TIMER));
+        return;
+    }
+     //flash targetted animation at player 
+}
+
+private void heavyRangeAttack(Rectangle playerHurtbox, float dt, Array<Rectangle> solidPlatforms){
+    if(!HEAVY_PORTAL_ATTACK_CHOSEN){
+       RANDOM_SELECT_ATTACK = (int) MathUtils.random(1,3);
+       HEAVY_PORTAL_ATTACK_CHOSEN = true;
+    }
+
+    if(!HEAVY_RANGE_ATTACK_COMPLETED){
+        if(RANDOM_SELECT_ATTACK  == 1){
+            HEAVY_POISION_ATTACK(playerHurtbox, dt);
+        }
+        else if(RANDOM_SELECT_ATTACK == 2){
+            HEAVY_BOMBARDMENT_ATTACK(playerHurtbox, dt, solidPlatforms);
+        }
+        else if(RANDOM_SELECT_ATTACK == 3){
+            HEAVY_STUN_ATTACK(playerHurtbox, dt);
+        }
+    }
+}
+
+private void HEAVY_POISION_ATTACK(Rectangle playerHurtbox, float dt){
+    Circle posionCircle = new Circle(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,POISON_RADIUS);
+    if(HEAVY_LONG_RANGE_ATTACK_DURATION < POISON_AREA_LIFETIME){
+        HEAVY_LONG_RANGE_ATTACK_DURATION += dt;
+        //animate poison at HEAVY_PREDICTED_RAIN_FIRE_POSITION
+        if(Intersector.overlaps(posionCircle,playerHurtbox)){
+            PLAYER_INSIDE_POISON = true;
+            PLAYER_POISIONED = true;
+            POISON_LINGERING_DURATION = 0;
+            //hurtplayer(POISION_DAMAGE * dt);
+            return;
+        }
+        PLAYER_INSIDE_POISON = false;
+    }
+    else{
+        HEAVY_LONG_RANGE_ATTACK_DURATION = 0;
+        HEAVY_RANGE_ATTACK_COMPLETED = true;
+        PLAYER_INSIDE_POISON = false;
+    }
+}
+
+private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<Rectangle> solidPlatforms){
+    BOMBARDMENT_Y = HEAVY_PREDICTED_RAIN_FIRE_POSITION.y + 350f;
+    BOMBARDMENT_START_X = HEAVY_PREDICTED_RAIN_FIRE_POSITION.x - BOMBARDMENT_RADIUS;
+    BOMBARDMENT_END_X = HEAVY_PREDICTED_RAIN_FIRE_POSITION.x + BOMBARDMENT_RADIUS - PROJECTILE_WIDTH;
+    
+    if(HEAVY_LONG_RANGE_ATTACK_DURATION < BOMBARDMENT_AREA_LIFETIME){
+        HEAVY_LONG_RANGE_ATTACK_DURATION+=dt;
+        BOMBARDMENT_SPAWN_TIMER += dt;
+        if(BOMBARDMENT_PROJECTILES_SPAWNED < 8 && BOMBARDMENT_SPAWN_TIMER >= 0.35f){
+            Rectangle projectile = new Rectangle(MathUtils.random(BOMBARDMENT_START_X , BOMBARDMENT_END_X),BOMBARDMENT_Y,PROJECTILE_WIDTH,PROJECTILE_HEIGHT);
+            BOMBARDMENT_PROJECTILES.add(projectile);
+            BOMBARDMENT_PROJECTILES_SPAWNED++;
+            BOMBARDMENT_SPAWN_TIMER = 0;
+        }
+    }
+
+    for(int i = BOMBARDMENT_PROJECTILES.size-1;i>=0;i--){
+        Rectangle object = BOMBARDMENT_PROJECTILES.get(i);
+        object.y -= BOMBARDMENT_SPEED*dt;
+        boolean hitPlatform = false;
+
+        for(Rectangle platform : solidPlatforms){
+            if(object.overlaps(platform)){
+                hitPlatform = true;
+                break;
+            }
+        }
+
+        if(hitPlatform){
+            BOMBARDMENT_PROJECTILES.removeIndex(i);
+            continue;
+        }
+
+        if(object.overlaps(playerHurtbox)){
+            //hurtplayer(BOMBARDMENT_DAMAGE)
+            BOMBARDMENT_PROJECTILES.removeIndex(i);
+        }
+    }
+    
+    if(BOMBARDMENT_PROJECTILES_SPAWNED >= 8 && BOMBARDMENT_PROJECTILES.size == 0){
+        HEAVY_RANGE_ATTACK_COMPLETED = true;
+        BOMBARDMENT_PROJECTILES_SPAWNED = 0;
+        BOMBARDMENT_SPAWN_TIMER = 0;
+    }
 
 }
 
-private void rainFire(){
-
+private void  HEAVY_STUN_ATTACK(Rectangle playerHurtbox, float dt){
+    Circle stunCircle = new Circle(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,STUN_RADIUS);
+    if(HEAVY_LONG_RANGE_ATTACK_DURATION < STUN_AREA_LIFETIME){
+        HEAVY_LONG_RANGE_ATTACK_DURATION += dt;
+        //animate STUN at HEAVY_PREDICTED_RAIN_FIRE_POSITION
+        if(Intersector.overlaps(stunCircle,playerHurtbox)){
+            PLAYER_STUNNED = true;
+            STUN_LINGERING_DURATION = 0;
+            return;
+        }
+    }
+    else{
+        HEAVY_LONG_RANGE_ATTACK_DURATION = 0;
+        HEAVY_RANGE_ATTACK_COMPLETED = true;
+    }
 }
-
 
 private void heavyDealCloseRangeDamage(){
 
+}
+
+private void updateLingeringDamages(float dt){
+    if(!PLAYER_INSIDE_POISON  && PLAYER_POISIONED){
+        if(POISON_LINGERING_DURATION < POISON_LINGERING_LIFETIME){
+            //hurtplayer(POISION_LINGERING_DAMAGE * dt);
+            POISON_LINGERING_DURATION+=dt;
+        }
+        else{
+            POISON_LINGERING_DURATION = 0;
+            PLAYER_POISIONED= false;
+        }
+    }
+
+    if(PLAYER_STUNNED){
+        if(STUN_LINGERING_DURATION < STUN_LINGERING_LIFETIME){
+            STUN_LINGERING_DURATION+= dt;
+            //freezePlayerJetpack
+        }
+        else{
+            STUN_LINGERING_DURATION = 0;
+            PLAYER_STUNNED = false;
+        }
+    }
 }
 
 private void drawHeavyCloseRangeArm(SpriteBatch batch,float bodyX,float bodyY,float bodyWidth,float bodyHeight,int frameIndex){
@@ -968,6 +1172,7 @@ private void drawHeavyCloseRangeArm(SpriteBatch batch,float bodyX,float bodyY,fl
         socketX = new float[]{236f,236f,231.344113f,232.5058f,233.66902f,234.60054f,235.533053f,236f};
         socketY = new float[]{463f,463f,465.097084f,464.571043f,464.046175f,463.627069f,463.20878f,463f};
         baseRotation = new float[]{0f,0f,-0.649977f,-0.487478f,-0.324983f,-0.194978f,-0.064973f,0f};
+        updateHeavyMuzzlePosition(frameIndex);
     }
 
     else if(currentState == EnemyState.WALKING){
@@ -1160,7 +1365,6 @@ private void calculateWeaponMuzzle(Vector2 output,float socketX,float socketY,fl
     output.set(socketWorldX+rotatedX,socketWorldY+rotatedY);
 }
 
-
 private void updateRiflemanMuzzlePosition(int frameIndex){
     calculateWeaponMuzzle(
         RIFLEMAN_MUZZLE_POSITION,
@@ -1187,6 +1391,34 @@ public Vector2 getRiflemanMuzzlePosition(){
 
 public Vector2 getHeavyMuzzlePosition(){
     return HEAVY_MUZZLE_POSITION;
+}
+
+public boolean isHeavyLocking(){
+    return HEAVY_LOCK;
+}
+
+public boolean isHeavyLeftTarget(){
+    return HEAVY_LEFT_TARGET;
+}
+
+public boolean isHeavyRangeAttackActive(){
+    return HEAVY_RANGE_ATTACK_ACTIVE;
+}
+
+public Vector2 getHeavyPredictedRainFirePosition(){
+    return HEAVY_PREDICTED_RAIN_FIRE_POSITION;
+}
+
+public float getHeavyLockTimer(){
+    return HEAVY_LOCK_TIMER;
+}
+
+public int getHeavySelectedAttack(){
+    return RANDOM_SELECT_ATTACK;
+}
+
+public void setHeavyLock(boolean value){
+    HEAVY_LOCK = value;
 }
 
 
