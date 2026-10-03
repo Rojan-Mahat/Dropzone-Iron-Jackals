@@ -57,6 +57,9 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Enemy> enemies;
     private ShapeRenderer shapeRenderer;
 
+    private float heavyReticleFlashTimer = 0f;
+    private boolean heavyReticleWasFrozen = false;
+
 
     @Override
     public void create(){
@@ -641,31 +644,43 @@ private void transferDroneLockToHeavy(){
         drone.setHeavyLock(false);
     }
 }
-
 private void drawHeavyLockFx(){
     Rectangle playerHurtbox = player.getWorldHitbox();
     for(Enemy enemy : enemies){
         if(enemy.getType() != EnemyType.HEAVY)
             continue;
+
         if(!enemy.isHeavyLocking())
             continue;
+
         float targetX;
         float targetY;
-        float frameDuration;
         if(enemy.isHeavyLeftTarget()){
             Vector2 predicted = enemy.getHeavyPredictedRainFirePosition();
             targetX = predicted.x;
             targetY = predicted.y;
-            frameDuration = 0.012f;
+            boolean visible = ((int)(enemy.getHeavyLockTimer() * 10f) % 2) == 0;
+            if(!visible)
+                continue;
         }
         else{
             targetX = playerHurtbox.x + playerHurtbox.width/2f;
             targetY = playerHurtbox.y + playerHurtbox.height/2f;
-            frameDuration = 0.10f;
         }
-        int reticleFrame = (int)(enemy.getHeavyLockTimer()/frameDuration) % FxAssets.targetReticle.length;
-        float reticleCanvasSize = 350f;
-        batch.draw(FxAssets.targetReticle[reticleFrame],targetX-reticleCanvasSize/2f,targetY-reticleCanvasSize/2f,reticleCanvasSize,reticleCanvasSize);
+
+        int reticleFrame =
+            (int)(enemy.getHeavyLockTimer()/0.10f)
+            % FxAssets.targetReticle.length;
+
+        float size = 350f;
+
+        batch.draw(
+            FxAssets.targetReticle[reticleFrame],
+            targetX-size/2f,
+            targetY-size/2f,
+            size,
+            size
+        );
     }
 }
 

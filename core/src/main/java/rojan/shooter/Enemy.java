@@ -963,10 +963,14 @@ private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangl
         }
     }
 
+    if(HEAVY_LOCK){
+        openPortal(playerHurtbox,dt,playerVelocity,solidPlatforms);
+        return;
+    }
+
     if(playerFoundInsideAttackRadius){
         nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
         if(isPlayerInLifeofSight(playerHurtbox,solidPlatforms)){
-            HEAVY_LOCK = false;
             heavyCloseRangeAttack(playerHurtbox,dt);
             return;
         }
@@ -974,11 +978,7 @@ private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangl
         currentState = EnemyState.WALKING;
         return;
     }
-    if(!HEAVY_LOCK){
-        currentState = EnemyState.IDLE;
-        return;
-    }
-    openPortal(playerHurtbox,dt,playerVelocity,solidPlatforms);
+    currentState = EnemyState.IDLE;
 }
 
 private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
