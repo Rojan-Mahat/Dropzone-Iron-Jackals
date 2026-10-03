@@ -1,6 +1,27 @@
 package rojan.shooter;
 public final class AssetPaths {
     private AssetPaths() {}
+
+    public static final class FX{
+        private FX(){}
+        public static final String BASE = "sprites/fx/";
+
+        public static final String PHASE_BEAM = BASE + "phase_beam_";
+        public static final int PHASE_BEAM_FRAMES = 8;
+
+        public static final String EMITTER_FLASH = BASE + "emitter_flash_";
+        public static final int EMITTER_FLASH_FRAMES = 8;
+
+        public static final String BEAM_CONTACT = BASE + "beam_contact_";
+        public static final int BEAM_CONTACT_FRAMES = 8;
+
+        public static final String TARGET_RETICLE = BASE + "target_reticle_";
+        public static final int TARGET_RETICLE_FRAMES = 8;
+
+        public static final String DRONE_BURST = BASE + "drone_burst_";
+        public static final int DRONE_BURST_FRAMES = 10;
+    }
+
     public static final class Map {
         private Map() {}
         public static final String EARTH = "map/earth/map.tmx";
@@ -155,6 +176,20 @@ public final class AssetPaths {
 
                 public static final String DEATH = BASE + "explosion_";
                 public static final int DEATH_FRAMES = 12;
+
+                public static final String ARM_BASE = BASE+"arms_weapon/";
+
+                public static final String ARM_IDLE = ARM_BASE+"idle_";
+                public static final int ARM_IDLE_FRAMES = 6;
+
+                public static final String ARM_WALKING = ARM_BASE+"walking_";
+                public static final int ARM_WALKING_FRAMES = 6;
+
+                public static final String ARM_ATTACK = ARM_BASE+"attack_";
+                public static final int ARM_ATTACK_FRAMES = 6;
+
+                public static final String ARM_HURT = ARM_BASE+"hurt_";
+                public static final int ARM_HURT_FRAMES = 6;
             }
             public static final class Heavy {
                 private Heavy() {}
@@ -174,6 +209,21 @@ public final class AssetPaths {
 
                 public static final String DEATH = BASE + "explosion_";
                 public static final int DEATH_FRAMES = 12;
+
+
+                public static final String ARM_BASE = BASE+"arms_weapon/";
+
+                public static final String ARM_IDLE = ARM_BASE+"idle_";
+                public static final int ARM_IDLE_FRAMES = 12;
+
+                public static final String ARM_WALKING = ARM_BASE+"walking_";
+                public static final int ARM_WALKING_FRAMES = 12;
+
+                public static final String ARM_ATTACK = ARM_BASE+"attack_";
+                public static final int ARM_ATTACK_FRAMES = 8;
+
+                public static final String ARM_HURT = ARM_BASE+"hurt_";
+                public static final int ARM_HURT_FRAMES = 8;
             }
             public static final class HoverDrone {
                 private HoverDrone() {}

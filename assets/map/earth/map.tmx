@@ -45,7 +45,7 @@
   <image source="../background/background.png" width="4096" height="2304"/>
  </imagelayer>
  <objectgroup id="6" name="reference">
-  <object id="271" name="Camera" x="1616.93" y="894.05" width="1200" height="720"/>
+  <object id="271" name="Camera" x="556.187" y="223.152" width="2786.58" height="2016.46"/>
   <object id="422" name="forJetpack" x="1919.25" y="1253.85" width="80" height="120"/>
   <object id="424" name="jetPack" x="1902.05" y="1288.69" width="75" height="90"/>
  </objectgroup>

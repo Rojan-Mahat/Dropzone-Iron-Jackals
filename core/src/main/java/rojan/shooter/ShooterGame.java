@@ -58,8 +58,6 @@ public class ShooterGame extends ApplicationAdapter {
     private ShapeRenderer shapeRenderer;
 
 
-
-
     @Override
     public void create(){
         map = loadMap();
@@ -101,8 +99,8 @@ public class ShooterGame extends ApplicationAdapter {
         solidPlatforms = extractSolidPlatformsFromMap(map);
         bullets = new Array<>();
         bulletTexture = new Texture(AssetPaths.Bullets.BASE+ "AR_bullet.png");
-        
-        
+
+        FxAssets.loadOnce();
     }
 
     @Override
@@ -110,9 +108,7 @@ public class ShooterGame extends ApplicationAdapter {
         float dt = Gdx.graphics.getDeltaTime();
         clampCameraToPlayer();
         activateGravity(dt);
-
         Vector2 direction = new Vector2(0,0);
-
         boolean movingRight = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
         boolean movingLeft = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
         if(movingRight)
@@ -149,7 +145,6 @@ public class ShooterGame extends ApplicationAdapter {
         player.move(direction,dt,getWorldSize(),solidPlatforms);
         player.ensureGrounding(solidPlatforms);
 
-        
         Vector2 mouseWorldPosition = getMouseWorldPosition();
         boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
         boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
@@ -179,7 +174,6 @@ public class ShooterGame extends ApplicationAdapter {
             else
                 player.stand(solidPlatforms);   
         }
-
         /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
             if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
                 player.switchPlayerModeArmed();
@@ -189,7 +183,6 @@ public class ShooterGame extends ApplicationAdapter {
 
         for(Bullet bullet : bullets)
             bullet.update(dt);
-        
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.begin();
@@ -213,10 +206,10 @@ public class ShooterGame extends ApplicationAdapter {
             batch.draw(region,x,y,originX,originY,width,height,scaleX,scaleY,rotation);
         }
 
+        drawDroneBeam();
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox());
-
+            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox());  
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
         weapon.setFacingLeft(player.isFacingLeft());
@@ -225,6 +218,7 @@ public class ShooterGame extends ApplicationAdapter {
         weapon.drawWeapon(batch, grip);
         for(Bullet bullet : bullets)
             bullet.draw(batch);
+        drawDroneOverlayFx();
         bulletEnemyCollisionChecker();
         removeEnemies();
         batch.end(); 
@@ -261,7 +255,6 @@ for(Enemy enemy : enemies){
         shapeRenderer.rect(world.x,world.y,world.width,world.height);
     }
 }
-
 shapeRenderer.end();
     }  
     
@@ -275,6 +268,7 @@ shapeRenderer.end();
         weapon.disposeWeapon();
         bulletTexture.dispose();
         shapeRenderer.dispose();
+        FxAssets.dispose();
     }
 
 
@@ -583,6 +577,58 @@ shapeRenderer.end();
         return new Rectangle (DrillCrawler_HitboxRect.x - DrillCrawlerSpawnRect.x , DrillCrawler_HitboxRect.y - DrillCrawlerSpawnRect.y ,DrillCrawler_HitboxRect.width , DrillCrawler_HitboxRect.height); 
     }
 
+    private void drawDroneBeam(){
+        for(Enemy enemy : enemies){
+            if(enemy.getType() != EnemyType.HOVER_DRONE)
+                continue;
+            if(enemy.getCurrentState() != Enemy.EnemyState.ATTACK)
+                continue;
+            Vector2 center = enemy.getDroneCenter();
+            float magnitude = enemy.getDroneBeamMagnitude();
+            float angle = enemy.getDroneBeamAngleDegrees();
+            float originX = 64f;
+            float originY = 512f;
+            float drawX = center.x - originX;
+            float drawY = center.y - originY;
+            float scaleX = magnitude / 896f;
+            float scaleY = 0.45f;
+            int beamFrame = (int)(enemy.getStateTime()/0.08f) % FxAssets.phaseBeam.length;
+            batch.draw(FxAssets.phaseBeam[beamFrame],drawX,drawY,originX,originY,1024f,1024f,scaleX,scaleY,angle);
+        }
+}
+
+private void drawDroneOverlayFx(){
+    for(Enemy enemy : enemies){
+        if(enemy.getType() != EnemyType.HOVER_DRONE)
+            continue;
+        Vector2 center = enemy.getDroneCenter();
+        float magnitude = enemy.getDroneBeamMagnitude();
+        float angle = enemy.getDroneBeamAngleDegrees();
+        float targetX = center.x + MathUtils.cosDeg(angle) * magnitude;
+        float targetY = center.y + MathUtils.sinDeg(angle) * magnitude;
+        float stateTime = enemy.getStateTime();
+        if(enemy.getCurrentState() == Enemy.EnemyState.CHARGING){
+            int reticleFrame =(int)(stateTime/0.10f) % FxAssets.targetReticle.length;
+            float reticleCanvasSize = 350f;
+            batch.draw(FxAssets.targetReticle[reticleFrame], targetX - reticleCanvasSize/2f,targetY - reticleCanvasSize/2f,reticleCanvasSize,reticleCanvasSize);
+        }
+        else if(enemy.getCurrentState() == Enemy.EnemyState.ATTACK){
+            int burstFrame = (int)(stateTime/0.05f);
+            if(burstFrame < FxAssets.droneBurst.length){
+                float burstCanvasSize = 350f;
+                batch.draw(FxAssets.droneBurst[burstFrame],center.x - burstCanvasSize/2f,center.y - burstCanvasSize/2f,burstCanvasSize,burstCanvasSize);
+            }
+
+            int flashFrame =(int)(stateTime/0.08f) % FxAssets.emitterFlash.length;
+            float flashCanvasSize = 350f;
+            batch.draw(FxAssets.emitterFlash[flashFrame],center.x - flashCanvasSize/2f,center.y - flashCanvasSize/2f,flashCanvasSize,flashCanvasSize);
+            int contactFrame =(int)(stateTime/0.08f) % FxAssets.beamContact.length;
+            float contactCanvasSize = 300f;
+            batch.draw(FxAssets.beamContact[contactFrame],targetX - contactCanvasSize/2f,targetY - contactCanvasSize/2f,contactCanvasSize,contactCanvasSize);
+        }
+    }
+}
+
 
 
 
@@ -760,7 +806,6 @@ shapeRenderer.end();
                     }
                 }
             }
-
         }
     }
 
@@ -794,6 +839,7 @@ shapeRenderer.end();
         }
         return circles;
     }
+
         
 
 

@@ -1,5 +1,7 @@
 package rojan.shooter;
 
+import java.util.Vector;
+
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -52,6 +54,11 @@ public class Enemy{
         private TextureRegion[] landFrames;
         private TextureRegion[] flyFrames;
         private TextureRegion[] chargeFrames;
+
+        TextureRegion[] armIdleFrames;
+        TextureRegion[] armWalkingFrames;
+        TextureRegion[] armAttackFrames;
+        TextureRegion[] armHurtFrames;
         EnemyAnimations(EnemyType type){
             if(type == EnemyType.RIFLEMAN){
                 idleFrames  = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.IDLE, AssetPaths.Enemies.IronJackals.Rifleman.IDLE_FRAMES);
@@ -59,6 +66,11 @@ public class Enemy{
                 attackFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.ATTACK, AssetPaths.Enemies.IronJackals.Rifleman.ATTACK_FRAMES);
                 hurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.HURT, AssetPaths.Enemies.IronJackals.Rifleman.HURT_FRAMES);
                 deathFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.DEATH, AssetPaths.Enemies.IronJackals.Rifleman.DEATH_FRAMES);
+
+                armIdleFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.ARM_IDLE,AssetPaths.Enemies.IronJackals.Rifleman.ARM_IDLE_FRAMES);
+                armWalkingFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.ARM_WALKING,AssetPaths.Enemies.IronJackals.Rifleman.ARM_WALKING_FRAMES);
+                armAttackFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.ARM_ATTACK,AssetPaths.Enemies.IronJackals.Rifleman.ARM_ATTACK_FRAMES);
+                armHurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.Rifleman.ARM_HURT,AssetPaths.Enemies.IronJackals.Rifleman.ARM_HURT_FRAMES);
             }
 
             else if(type == EnemyType.HEAVY){
@@ -67,6 +79,10 @@ public class Enemy{
                 attackFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.ATTACK, AssetPaths.Enemies.IronJackals.Heavy.ATTACK_FRAMES);
                 hurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.HURT, AssetPaths.Enemies.IronJackals.Heavy.HURT_FRAMES);
                 deathFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.DEATH, AssetPaths.Enemies.IronJackals.Heavy.DEATH_FRAMES);
+                armIdleFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.ARM_IDLE,AssetPaths.Enemies.IronJackals.Heavy.ARM_IDLE_FRAMES);
+                armWalkingFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.ARM_WALKING,AssetPaths.Enemies.IronJackals.Heavy.ARM_WALKING_FRAMES);
+                armAttackFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.ARM_ATTACK,AssetPaths.Enemies.IronJackals.Heavy.ARM_ATTACK_FRAMES);
+                armHurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.Heavy.ARM_HURT,AssetPaths.Enemies.IronJackals.Heavy.ARM_HURT_FRAMES);
             }
 
             else if(type == EnemyType.HOVER_DRONE){
@@ -127,7 +143,7 @@ public class Enemy{
     private final float DEATH_FRAME_DURATION = 0.09f;
     private final float IDLE_FRAME_DURATION = 0.12f;
     private static final float DRILLER_DRAW_SCALE = 1.5f;
-    private static final float DRONE_DRAW_SCALE = 0.5f;
+    private static final float DRONE_DRAW_SCALE = 0.69f;
 
     private float detectionRadius;
     private float attackRange;
@@ -139,7 +155,23 @@ public class Enemy{
     private Vector2 nozzlePosition;
     private Array<Circle> drillCircles;
     private boolean targetNeverSeen;
-    
+    private boolean HEAVY_LOCK;
+    private float HEAVY_CLOSE_ANGLE;
+    private float PORTAL_TIME;
+    private float RANDOM_LIMIT = MathUtils.random(2f,7f);
+    private boolean HEAVY_CLOSE_SHOT_ONCE;
+    private float HEAVY_CLOSE_TIMER = 0;
+    private float HEAVY_CLOSE_COOLDOWN = 2f;
+    private static final float[] RIFLEMAN_ATTACK_SOCKET_X = {380.5f,378.606761f,376.430786f,378.793841f,378.656559f,380.5f};
+    private static final float[] RIFLEMAN_ATTACK_SOCKET_Y = {475.92f,476.254529f,476.767235f,476.339072f,476.128497f,475.92f};
+    private static final float[] RIFLEMAN_ATTACK_MUZZLE_X = {462.66f,457.352949f,452.525160f,459.307168f,456.033003f,462.66f};
+    private static final float[] RIFLEMAN_ATTACK_MUZZLE_Y = {3.96f,6.381648f,15.262032f,7.997434f,6.381578f,3.96f};
+
+    private static final float[] HEAVY_ATTACK_SOCKET_X = {236f,236f,231.344113f,232.5058f,233.66902f,234.60054f,235.533053f,236f};
+    private static final float[] HEAVY_ATTACK_SOCKET_Y = {463f,463f,465.097084f,464.571043f,464.046175f,463.627069f,463.20878f,463f};
+    private static final float[] HEAVY_ATTACK_MUZZLE_X = {568f,568f,548.000196f,555.000110f,561.000049f, 565.999881f,567.999797f, 568f};
+    private static final float[] HEAVY_ATTACK_MUZZLE_Y = {-89f,-89f,-89.000039f, -89.000022f,-89.000010f, -88.999981f,-88.999968f, -89f};
+
     private static class EnemyHitRegions{
         Array<Rectangle> headshotBoxes;
         Array<Rectangle> bodyshotBoxes;
@@ -162,7 +194,20 @@ public class Enemy{
     private boolean isChasing;
     private boolean attacking;
     private Rectangle homePlatform;
+    private float RIFLEMAN_AIM_ANGLE;
+
     private float DRILL_HEAD_OFFSET_X = 100f;
+    private float DRONE_ATTACK_DURATION_LIMIT = 3;
+    private float DRONE_ATTACK_TIMER = 0;
+    private boolean DRONE_COOLDOWN;
+    private float DRONE_COOLDOWN_TIMER = 0;
+
+    private float droneBeamMagnitude;
+    private float droneBeamAngleDegrees;
+    private float DRONE_LOCK_TIME = MathUtils.random(0.5f,4f);
+
+    private Vector2 RIFLEMAN_MUZZLE_POSITION = new Vector2();
+    private Vector2 HEAVY_MUZZLE_POSITION = new Vector2();
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
@@ -184,12 +229,11 @@ public class Enemy{
         else if(type == EnemyType.HEAVY){
             animations = heavyAnimations;
             this.hitRegions = heavyHitRegions;
-            maxHitPoints = 250;
+            maxHitPoints = 350;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 600;
-            this.attackRange = 300;
-            this.moveSpeed = 250;
-            this.maxRiseSpeed = 800;
+            this.detectionRadius = 400;
+            this.attackRange = 400;
+            this.moveSpeed = 120;
         }
         else if(type == EnemyType.HOVER_DRONE){
             animations = hoverDroneAnimations;
@@ -197,8 +241,8 @@ public class Enemy{
             maxHitPoints = 70;
             hitPoints = maxHitPoints;
             this.detectionRadius = 850;
-            this.attackRange = 200;
-            this.moveSpeed = 450;
+            this.attackRange = 550;
+            this.moveSpeed = 225;
             this.maxRiseSpeed = 500;
             this.drawWidth *= DRONE_DRAW_SCALE;
             this.drawHeight *= DRONE_DRAW_SCALE;
@@ -208,6 +252,7 @@ public class Enemy{
             hurtbox.height *= DRONE_DRAW_SCALE;
             hurtbox.x = centerX - hurtbox.width / 2f;
             hurtbox.y = centerY - hurtbox.height / 2f;
+            DRONE_COOLDOWN = false;
         }
         else if(type == EnemyType.DRILL_CRAWLER){
             animations = drillCrawlerAnimations;
@@ -269,31 +314,44 @@ public class Enemy{
             ensureGrounding(getWorldHurtbox(),solidPlatforms);
         }
         updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox);
+        int frameIndex = 0;
         TextureRegion frame;
         if(currentState == EnemyState.DEAD){
-            int frameIndex = (int)(stateTime / DEATH_FRAME_DURATION);
+            frameIndex = (int)(stateTime / DEATH_FRAME_DURATION);
             if(frameIndex >= animations.deathFrames.length)
                 frameIndex = animations.deathFrames.length-1;
-            frame = animations.deathFrames[frameIndex];
-        }     
+                frame = animations.deathFrames[frameIndex];
+            }     
         else if(currentState == EnemyState.WALKING){
-            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.walkFrames.length;
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.walkFrames.length;
             frame = animations.walkFrames[frameIndex];
         }
         else if(currentState == EnemyState.FLYING){
-            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.flyFrames.length;
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.flyFrames.length;
             frame = animations.flyFrames[frameIndex];
         }
         else if(currentState == EnemyState.DRILL){
-            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.drillFrames.length;
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.drillFrames.length;
             frame = animations.drillFrames[frameIndex];
         }
+
+        else if(currentState == EnemyState.HURT){
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.hurtFrames.length;
+            frame = animations.hurtFrames[frameIndex];
+        }
+
         else if(currentState == EnemyState.ATTACK){
-            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.attackFrames.length;
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.attackFrames.length;
             frame = animations.attackFrames[frameIndex];
         }
+
+        else if(currentState == EnemyState.CHARGING){
+            frameIndex =(int)(stateTime/0.06f) % animations.chargeFrames.length;
+            frame = animations.chargeFrames[frameIndex];
+        }
+
         else{
-            int frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.idleFrames.length;
+            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.idleFrames.length;
             frame = animations.idleFrames[frameIndex];
         }
 
@@ -318,7 +376,13 @@ public class Enemy{
 
         batch.draw(frame, drawX, drawY,rotationOriginX, rotationOriginY, drawWidth, drawHeight, renderScaleX,1f, rotation);
         drawHealthBar(batch);
+        if(type == EnemyType.HEAVY && currentState != EnemyState.DEAD && currentState != EnemyState.EXPLODING)
+            drawHeavyCloseRangeArm(batch,drawX,drawY,drawWidth,drawHeight,frameIndex);
+        
+        if(type == EnemyType.RIFLEMAN && currentState != EnemyState.DEAD && currentState != EnemyState.EXPLODING)
+              drawRiflemanArm(batch,drawX,drawY,drawWidth,drawHeight,frameIndex);
     }
+    
 
     public float getHitPoints(){
         return hitPoints;
@@ -326,6 +390,10 @@ public class Enemy{
 
     public EnemyType getType(){
         return type;
+    }
+
+    public EnemyState getCurrentState(){
+        return currentState;
     }
 
     public void enemyHurt(float damage){
@@ -488,38 +556,31 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     }
     boolean playerFoundInsideDetectionRadius;
     boolean playerFoundInsideAttackRadius;
-    if(!(type==EnemyType.HEAVY)){
-        float dx,dy;
-        float headX = position.x;
-        if(type == EnemyType.DRILL_CRAWLER){
-            if(facingRight)
-                headX = position.x + DRILL_HEAD_OFFSET_X;
-            else
-                headX = position.x - DRILL_HEAD_OFFSET_X;
+    float dx,dy;
+    float headX = position.x;
+    if(type == EnemyType.DRILL_CRAWLER){
+        if(facingRight)
+            headX = position.x + DRILL_HEAD_OFFSET_X;
+        else
+            headX = position.x - DRILL_HEAD_OFFSET_X;
 
-            dx = playerPosition.x - headX;
-            dy = playerPosition.y - position.y;
-            float playerCenterX = playerHurtbox.x + playerHurtbox.width / 2f;
-            float distanceSquared = dx * dx + dy * dy;
-            playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
-            playerFoundInsideAttackRadius = Math.abs(playerCenterX - headX) <= attackRange;
-        }
-        else{
-            dx = playerPosition.x - headX;
-            dy = playerPosition.y - position.y;
-            float distanceSquared = dx * dx + dy * dy;
-            playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
-            playerFoundInsideAttackRadius = distanceSquared <= attackRange * attackRange;
-        }
+        dx = playerPosition.x - headX;
+        dy = playerPosition.y - position.y;
+        float playerCenterX = playerHurtbox.x + playerHurtbox.width / 2f;
+        float distanceSquared = dx * dx + dy * dy;
+        playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
+        playerFoundInsideAttackRadius = Math.abs(playerCenterX - headX) <= attackRange;
     }
-
     else{
-        playerFoundInsideDetectionRadius = false;
-        playerFoundInsideAttackRadius = false;
+        dx = playerPosition.x - headX;
+        dy = playerPosition.y - position.y;
+        float distanceSquared = dx * dx + dy * dy;
+        playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
+        playerFoundInsideAttackRadius = distanceSquared <= attackRange * attackRange;
     }
+    
     if(type==EnemyType.HEAVY){
-        //updateHeavy(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
-        //need behavioral settings fixed
+        updateHeavy(playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
     }
     else if(type==EnemyType.RIFLEMAN)
         updateRifleman(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
@@ -531,17 +592,10 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt ,playerPosition , playerHurtbox, solidPlatforms);
 }
 
-private void attackPlayer(float dt ,Vector2 playerPos){
+private void riflemanDamage(float dt ,Vector2 playerPos){
     
 }
 
-private void groundChase(float dt,Vector2 playerPos ){
-
-}
-
-private void flyChase(float dt ,Vector2 playerPos){
-
-}
 
 private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos,Array<Rectangle> solidPlatforms){
     if(currentState == EnemyState.DRILL){
@@ -551,7 +605,7 @@ private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean
 
     if(playerFoundInsideAttackRadius){
         currentState = EnemyState.ATTACK;
-        attackPlayer(dt,playerPos);
+        riflemanDamage(dt,playerPos);
         return;
     }
 
@@ -616,14 +670,18 @@ private void updateRifleman(boolean playerFoundInsideDetectionRadius,boolean pla
     }
     nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
     if(playerFoundInsideDetectionRadius && isPlayerInLifeofSight(playerHurtbox,solidPlatforms))
-        if(playerFoundInsideAttackRadius)
+        if(playerFoundInsideAttackRadius){
+            Rectangle riflemanWorldHurtbox = getWorldHurtbox();
+            Vector2 diffVector = new Vector2(playerHurtbox.x + playerHurtbox.width/2,playerHurtbox.y + playerHurtbox.height/2).sub(riflemanWorldHurtbox.x + riflemanWorldHurtbox.width/2,riflemanWorldHurtbox.y + riflemanWorldHurtbox.height/2);
+            RIFLEMAN_AIM_ANGLE = diffVector.angleDeg();
             riflemanAttack(dt);
+        }
         else
             riflemanMoveTowardsPlayer(playerHurtbox,dt);
     else if(isPlayerInLifeofSight(playerHurtbox,solidPlatforms) && !scouting)
         currentState = EnemyState.IDLE;
     else
-        riflemanScout(dt);
+        Scouting(dt);
 }
 
 private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
@@ -654,7 +712,7 @@ private void riflemanAttack(float dt){
     
 }
 
-private void riflemanScout(float dt){
+private void Scouting(float dt){
     attacking = false;
     scouting = true;
     if(scouting)
@@ -679,6 +737,10 @@ private void riflemanScout(float dt){
     }
     else 
         position.x = newPos;
+}
+
+public float getStateTime(){
+    return stateTime;
 }
 
 private boolean isPlayerInLifeofSight(Rectangle playerHurtbox, Array<Rectangle>solidPlatforms){
@@ -726,7 +788,7 @@ private void droneChase(float dt,Rectangle playerHurtbox,Array<Rectangle> solidP
     if(diffVector.len() <= attackRange){
         velocity.x = 0;
         velocity.y = 0;
-        droneAttack();
+        droneAttack(playerHurtbox,dt);
         return;
     }
     currentState = EnemyState.FLYING;
@@ -738,13 +800,51 @@ private void droneChase(float dt,Rectangle playerHurtbox,Array<Rectangle> solidP
     resolveVerticalCollision(dt, solidPlatforms);
 }
 
-private void sendPlayerLocationToHeavy(){
-
+private void droneAttack(Rectangle playerHurtbox, float dt){
+    Rectangle hurtbox = getWorldHurtbox();
+    Vector2 diffVector = new Vector2(((playerHurtbox.x + playerHurtbox.width/2)-(hurtbox.x + hurtbox.width/2)), ((playerHurtbox.y+playerHurtbox.height/2) - (hurtbox.y + hurtbox.height/2)));
+    droneBeamMagnitude = diffVector.len();
+    droneBeamAngleDegrees = diffVector.angleDeg(); 
+    if(DRONE_ATTACK_TIMER > DRONE_ATTACK_DURATION_LIMIT){
+        DRONE_COOLDOWN = true; 
+        stateTime = 0;
+    }
+    if(!DRONE_COOLDOWN){
+        DRONE_COOLDOWN_TIMER = 0;
+        currentState = EnemyState.ATTACK;
+        DRONE_ATTACK_TIMER+=dt;
+        if(DRONE_ATTACK_TIMER >= DRONE_LOCK_TIME)
+            HEAVY_LOCK = true;
+        droneDamage();
+    }
+    else{
+        currentState = EnemyState.CHARGING;
+        DRONE_ATTACK_TIMER=0;
+        DRONE_COOLDOWN_TIMER += dt;
+        if(DRONE_COOLDOWN_TIMER > 2.5f){
+            DRONE_COOLDOWN = false;
+            DRONE_LOCK_TIME = MathUtils.random(0.5f,4f);
+            stateTime = 0;
+        }
+    }
 }
 
-private void droneAttack(){
-    currentState = EnemyState.ATTACK;
+private void droneDamage(){}
+
+public float getDroneBeamMagnitude(){
+    return droneBeamMagnitude;
 }
+
+public float getDroneBeamAngleDegrees(){
+    return droneBeamAngleDegrees;
+}
+
+public Vector2 getDroneCenter(){
+    Rectangle hurtbox = getWorldHurtbox();
+    return new Vector2(hurtbox.x + hurtbox.width / 2f,hurtbox.y + hurtbox.height / 2f);
+}
+
+
 
 
 private boolean overlapsAnySolid(Array<Rectangle> solidPlatforms){
@@ -785,6 +885,309 @@ public Array<Circle> getWorldDrillCircles(){
     return worldCircles;
 }
 
+private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangle playerHurtbox, Array<Rectangle> solidPlatforms){
+    if(HEAVY_CLOSE_SHOT_ONCE){
+        currentState = EnemyState.IDLE;
+        HEAVY_CLOSE_TIMER += dt;
+
+    if(HEAVY_CLOSE_TIMER < 0.8f)
+        currentState = EnemyState.ATTACK;
+    else
+        currentState = EnemyState.IDLE;
+
+        if(HEAVY_CLOSE_TIMER >= HEAVY_CLOSE_COOLDOWN){
+            HEAVY_CLOSE_SHOT_ONCE = false;
+            HEAVY_CLOSE_TIMER = 0;
+        }
+    }
+
+    if(playerFoundInsideAttackRadius){
+        nozzlePosition = setNozzle(playerHurtbox.x + playerHurtbox.width/2);
+        if(isPlayerInLifeofSight(playerHurtbox,solidPlatforms)){
+            HEAVY_LOCK = false;
+            heavyCloseRangeAttack(playerHurtbox,dt);
+            return;
+        }
+        Scouting(dt);
+        currentState = EnemyState.WALKING;
+        return;
+    }
+    if(!HEAVY_LOCK){
+        currentState = EnemyState.IDLE;
+        return;
+    }
+    openPortal(playerHurtbox);
+    PORTAL_TIME+=dt;
+
+    if(PORTAL_TIME >= RANDOM_LIMIT){
+        HEAVY_LOCK = false;
+        PORTAL_TIME = 0;
+        rainFire();
+    }
+}
+
+private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
+    Rectangle hurtbox = getWorldHurtbox();
+    Vector2 diffVector = new Vector2(playerHurtbox.x + playerHurtbox.width / 2,playerHurtbox.y + playerHurtbox.height / 2).sub(hurtbox.x + hurtbox.width/2, hurtbox.y+hurtbox.height/2);
+    HEAVY_CLOSE_ANGLE = diffVector.angleDeg(); 
+    float playerCenterX = playerHurtbox.x + playerHurtbox.width/2;
+    float heavyCenterX = hurtbox.x + hurtbox.width/2;
+    facingRight = playerCenterX >= heavyCenterX;
+    if(HEAVY_CLOSE_SHOT_ONCE){
+        return;
+    }
+    currentState = EnemyState.ATTACK;
+    stateTime = 0;
+    heavyDealCloseRangeDamage();
+    HEAVY_CLOSE_SHOT_ONCE = true;
+}
+
+private void openPortal(Rectangle playerHurtbox){
+
+}
+
+private void rainFire(){
+
+}
+
+
+private void heavyDealCloseRangeDamage(){
+
+}
+
+private void drawHeavyCloseRangeArm(SpriteBatch batch,float bodyX,float bodyY,float bodyWidth,float bodyHeight,int frameIndex){
+    TextureRegion armFrame;
+    float[] socketX;
+    float[] socketY;
+    float[] baseRotation;
+
+    if(currentState == EnemyState.ATTACK){
+        frameIndex %= animations.armAttackFrames.length;
+        armFrame = animations.armAttackFrames[frameIndex];
+
+        socketX = new float[]{236f,236f,231.344113f,232.5058f,233.66902f,234.60054f,235.533053f,236f};
+        socketY = new float[]{463f,463f,465.097084f,464.571043f,464.046175f,463.627069f,463.20878f,463f};
+        baseRotation = new float[]{0f,0f,-0.649977f,-0.487478f,-0.324983f,-0.194978f,-0.064973f,0f};
+    }
+
+    else if(currentState == EnemyState.WALKING){
+        frameIndex %= animations.armWalkingFrames.length;
+        armFrame = animations.armWalkingFrames[frameIndex];
+
+        socketX = new float[]{238.722112f,239.35505f,239.820862f,239.991687f,239.820862f,239.35505f,238.722112f,238.092013f,237.633496f,237.466209f,237.633496f,238.092013f};
+        socketY = new float[]{459.772695f,458.303841f,456.295018f,455.362951f,456.295018f,458.303841f,459.772695f,459.769945f,458.834151f,458.29484f,458.834151f,459.769945f};
+        baseRotation = new float[]{1.199976f,1.475013f,1.676313f,1.750027f,1.676313f,1.475013f,1.199976f,0.925023f,0.723665f,0.649977f,0.723665f,0.925023f};
+    }
+
+    else if(currentState == EnemyState.HURT){
+        frameIndex %= animations.armHurtFrames.length;
+        armFrame = animations.armHurtFrames[frameIndex];
+
+        socketX = new float[]{236f,233.618674f,228.333925f,224.162796f,224.162796f,228.333925f,233.618674f,236f};
+        socketY = new float[]{463f,465.385339f,470.797151f,475.186846f,475.186846f,470.797151f,465.385339f,463f};
+        baseRotation = new float[]{0f,-0.564774f,-1.833778f,-2.85147f,-2.85147f,-1.833778f,-0.564774f,0f};
+    }
+
+    else{
+        frameIndex %= animations.armIdleFrames.length;
+        armFrame = animations.armIdleFrames[frameIndex];
+
+        socketX = new float[]{236f,236.168094f,236.291391f,236.336622f,236.291391f,236.168094f,236f,235.832104f,235.709205f,235.664645f,235.709205f,235.832104f};
+        socketY = new float[]{463f,462.118061f,461.472432f,461.236673f,461.472432f,462.118061f,463f,463.882026f,464.527829f,464.764602f,464.527829f,463.882026f};
+        baseRotation = new float[]{0f,0.075f,0.12989f,0.15f,0.12989f,0.075f,0f,-0.075f,-0.12989f,-0.15f,-0.12989f,-0.075f};
+    }
+
+    float scaleX = bodyWidth/1024f;
+    float scaleY = bodyHeight/1024f;
+
+    float socketOffsetX = (socketX[frameIndex]-animations.originX)*scaleX;
+
+    float armSocketWorldX;
+
+    if(facingRight)
+        armSocketWorldX = position.x+socketOffsetX;
+    else
+        armSocketWorldX = position.x-socketOffsetX;
+
+    float armSocketWorldY =
+        position.y+
+        ((1024f-socketY[frameIndex])-animations.originY)*scaleY;
+
+    float armOriginX = 256f*scaleX;
+    float armOriginY = 512f*scaleY;
+
+    float armX = armSocketWorldX-armOriginX;
+    float armY = armSocketWorldY-armOriginY;
+
+    float armRotation;
+
+    if(currentState == EnemyState.ATTACK || HEAVY_CLOSE_SHOT_ONCE)
+        armRotation = HEAVY_CLOSE_ANGLE;
+    else if(facingRight)
+        armRotation = baseRotation[frameIndex];
+    else
+        armRotation = 180f-baseRotation[frameIndex];
+
+    float armScaleY = facingRight ? 1f : -1f;
+
+    batch.draw(
+        armFrame,
+        armX,
+        armY,
+        armOriginX,
+        armOriginY,
+        bodyWidth,
+        bodyHeight,
+        1f,
+        armScaleY,
+        armRotation
+    );
+}
+
+private void drawRiflemanArm(SpriteBatch batch,float bodyX,float bodyY,float bodyWidth,float bodyHeight,int frameIndex){
+    TextureRegion armFrame;
+    float[] socketX;
+    float[] socketY;
+    float[] baseRotation;
+
+    if(currentState == EnemyState.ATTACK){
+        frameIndex %= animations.armAttackFrames.length;
+        armFrame = animations.armAttackFrames[frameIndex];
+
+        socketX = new float[]{380.50f,378.61f,376.43f,378.79f,378.66f,380.50f};
+        socketY = new float[]{475.92f,476.25f,476.77f,476.34f,476.13f,475.92f};
+        baseRotation = new float[]{0f,-0.40f,-1.00f,-0.50f,-0.25f,0f};
+
+        updateRiflemanMuzzlePosition(frameIndex);
+    }
+
+    else if(currentState == EnemyState.WALKING){
+        frameIndex %= animations.armWalkingFrames.length;
+        armFrame = animations.armWalkingFrames[frameIndex];
+
+        socketX = new float[]{383.03f,384.49f,384.49f,383.03f,381.57f,381.57f};
+        socketY = new float[]{474.95f,471.94f,471.94f,474.95f,473.03f,473.03f};
+        baseRotation = new float[]{1.20f,1.89f,1.89f,1.20f,0.51f,0.51f};
+    }
+
+    else if(currentState == EnemyState.HURT){
+        frameIndex %= animations.armHurtFrames.length;
+        armFrame = animations.armHurtFrames[frameIndex];
+
+        socketX = new float[]{380.50f,372.23f,365.54f,370.73f,376.73f,380.50f};
+        socketY = new float[]{475.92f,479.27f,482.20f,479.91f,477.41f,475.92f};
+        baseRotation = new float[]{0f,-2.59f,-4.70f,-3.05f,-1.17f,0f};
+    }
+
+    else{
+        frameIndex %= animations.armIdleFrames.length;
+        armFrame = animations.armIdleFrames[frameIndex];
+
+        socketX = new float[]{380.50f,380.77f,380.77f,380.50f,380.23f,380.23f};
+        socketY = new float[]{475.92f,474.50f,474.50f,475.92f,477.34f,477.34f};
+        baseRotation = new float[]{0f,0.13f,0.13f,0f,-0.13f,-0.13f};
+    }
+
+    float bodyScaleX = bodyWidth/1024f;
+    float bodyScaleY = bodyHeight/1024f;
+
+    float socketOffsetX = (socketX[frameIndex]-animations.originX)*bodyScaleX;
+
+    float armSocketWorldX;
+
+    if(facingRight)
+        armSocketWorldX = position.x+socketOffsetX;
+    else
+        armSocketWorldX = position.x-socketOffsetX;
+
+    float armSocketWorldY = bodyY+(1024f-socketY[frameIndex])*bodyScaleY;
+
+    float armOriginX = 256f*bodyScaleX;
+    float armOriginY = 512f*bodyScaleY;
+
+    float armX = armSocketWorldX-armOriginX;
+    float armY = armSocketWorldY-armOriginY;
+
+    float armRotation;
+
+    if(currentState == EnemyState.ATTACK)
+        armRotation = RIFLEMAN_AIM_ANGLE;
+    else if(facingRight)
+        armRotation = baseRotation[frameIndex];
+    else
+        armRotation = 180f-baseRotation[frameIndex];
+
+    float armScaleY = facingRight ? 1f : -1f;
+
+    batch.draw(
+        armFrame,
+        armX,
+        armY,
+        armOriginX,
+        armOriginY,
+        bodyWidth,
+        bodyHeight,
+        1f,
+        armScaleY,
+        armRotation
+    );
+}
+
+private void calculateWeaponMuzzle(Vector2 output,float socketX,float socketY,float muzzleOffsetX,float muzzleOffsetY,float angleDegrees){
+    float scaleX = drawWidth/1024f;
+    float scaleY = drawHeight/1024f;
+    float socketOffsetX = (socketX-animations.originX)*scaleX;
+    float socketWorldX;
+
+    if(facingRight)
+        socketWorldX = position.x+socketOffsetX;
+    else
+        socketWorldX = position.x-socketOffsetX;
+
+    float socketWorldY =position.y+((1024f-socketY)-animations.originY)*scaleY;
+    float localX = muzzleOffsetX*scaleX;
+    float localY = muzzleOffsetY*scaleY;
+
+    if(!facingRight)
+        localY = -localY;
+
+    float cos = MathUtils.cosDeg(angleDegrees);
+    float sin = MathUtils.sinDeg(angleDegrees);
+
+    float rotatedX = localX*cos-localY*sin;
+    float rotatedY = localX*sin+localY*cos;
+
+    output.set(socketWorldX+rotatedX,socketWorldY+rotatedY);
+}
+
+
+private void updateRiflemanMuzzlePosition(int frameIndex){
+    calculateWeaponMuzzle(
+        RIFLEMAN_MUZZLE_POSITION,
+        RIFLEMAN_ATTACK_SOCKET_X[frameIndex],
+        RIFLEMAN_ATTACK_SOCKET_Y[frameIndex],
+        RIFLEMAN_ATTACK_MUZZLE_X[frameIndex],
+        RIFLEMAN_ATTACK_MUZZLE_Y[frameIndex],
+        RIFLEMAN_AIM_ANGLE);
+}
+
+private void updateHeavyMuzzlePosition(int frameIndex){
+    calculateWeaponMuzzle(
+        HEAVY_MUZZLE_POSITION,
+        HEAVY_ATTACK_SOCKET_X[frameIndex],
+        HEAVY_ATTACK_SOCKET_Y[frameIndex],
+        HEAVY_ATTACK_MUZZLE_X[frameIndex],
+        HEAVY_ATTACK_MUZZLE_Y[frameIndex],
+        HEAVY_CLOSE_ANGLE);
+}
+
+public Vector2 getRiflemanMuzzlePosition(){
+    return RIFLEMAN_MUZZLE_POSITION;
+}
+
+public Vector2 getHeavyMuzzlePosition(){
+    return HEAVY_MUZZLE_POSITION;
+}
 
 
 
