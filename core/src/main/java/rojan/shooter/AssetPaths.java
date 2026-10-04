@@ -5,11 +5,20 @@ public final class AssetPaths {
     public static class Hud{
         public static final String PLAYER_HEALTH_FRAME = "ui/hud/player_health_frame.png";
         public static final String PLAYER_HEALTH_FILL = "ui/hud/player_health_fill.png";
-        public static final String JETPACK_FRAME = "ui/hud/jetpack_frame.png";
-        public static final String JETPACK_FILL = "ui/hud/jetpack_fill.png";
+        public static final String PLAYER_HEALTH_ICON = "ui/hud/hp_icon.png";
+
+        public static final String JETPACK_FRAME = "ui/hud/jetpack_fuel_frame.png";
+        public static final String JETPACK_FILL = "ui/hud/jetpack_fuel_fill.png";
+        public static final String PLAYER_JETPACK_ICON = "ui/hud/jetpack_icon.png";
+
         public static final String AMMO_PANEL = "ui/hud/ammo_panel.png";
+        public static final String AMMO_ICON = "ui/hud/ammo_icon.png";
+        public static final String EMPTY_MAGAZINE = "ui/hud/emptyMag.png";
+        public static final String RELOAD_ICON = "ui/hud/reload_icon.png";
+
         public static final String SCOPE_OVERLAY = "ui/hud/scope_overlay.png";
-    }
+}
+    
 
     public static final class EnemyProjectile {
         private EnemyProjectile() {}
@@ -74,6 +83,37 @@ public final class AssetPaths {
 
         public static final String POISON_FIELD_END =POISON_FIELD_BASE + "poison_field_end/";
         public static final int POISON_FIELD_END_FRAMES = 8;
+
+        public static final String PLAYER_STATUS_BASE = BASE + "player_status/";
+        public static final String PLAYER_POISON_BASE = PLAYER_STATUS_BASE + "poison/";
+
+        public static final String PLAYER_POISON_START = PLAYER_POISON_BASE + "start/";
+        public static final int PLAYER_POISON_START_FRAMES = 6;
+
+        public static final String PLAYER_POISON_LINGERING = PLAYER_POISON_BASE + "lingering/";
+        public static final int PLAYER_POISON_LINGERING_FRAMES = 12;
+
+        public static final String PLAYER_POISON_END = PLAYER_POISON_BASE + "end/";
+        public static final int PLAYER_POISON_END_FRAMES = 6;
+
+        public static final String PLAYER_STUN_BASE = PLAYER_STATUS_BASE + "stun/";
+        public static final String PLAYER_STUN_START = PLAYER_STUN_BASE + "start/";
+        public static final int PLAYER_STUN_START_FRAMES = 6;
+
+        public static final String PLAYER_STUN_LINGERING = PLAYER_STUN_BASE + "lingering/";
+        public static final int PLAYER_STUN_LINGERING_FRAMES = 12;
+
+        public static final String PLAYER_STUN_END = PLAYER_STUN_BASE + "end/";
+        public static final int PLAYER_STUN_END_FRAMES = 6;
+
+        public static final String EMP_PULSE = HEAVY_PORTAL_BASE + "emp_pulse/";
+        public static final int EMP_PULSE_FRAMES = 12;
+
+        public static final String BOMBARDMENT_RAIN_BOLT = BASE + "heavy_portal/bombardment_assets/projectile/";
+        public static final int BOMBARDMENT_RAIN_BOLT_FRAMES = 6;
+
+        public static final String BOMBARDMENT_RAIN_IMPACT = BASE + "heavy_portal/bombardment_assets/impact/";
+        public static final int BOMBARDMENT_RAIN_IMPACT_FRAMES = 8;
     }
 
     public static final class Map {
@@ -160,6 +200,7 @@ public final class AssetPaths {
     public static final class JetPack {
         public static final String jetpack = "sprites/jetpack/jetPack.png";
         public static final String jetpackFlames = "sprites/jetpack/jetpackFlames.png";
+        public static final String jetpackDisabled = "sprites/jetpack/jetpack_disabled.png";
 
     }
 
@@ -359,7 +400,6 @@ public final class AssetPaths {
         private Resource() {}
 
         public static final String BASE = "sprites/resource/";
-
         public static final String enemyHealthBar = BASE + "AllHealthBar.png";
 
 

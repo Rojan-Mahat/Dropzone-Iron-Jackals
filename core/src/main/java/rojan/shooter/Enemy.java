@@ -162,13 +162,14 @@ public class Enemy{
     private float HEAVY_CLOSE_TIMER = 0;
     private float HEAVY_CLOSE_COOLDOWN = 2f;
 
-    private final float POISON_RADIUS = 50f;
-    private final float STUN_RADIUS = 50f;
+    private final float POISON_RADIUS = 80f;
+    private final float STUN_RADIUS = 80f;
     private final float BOMBARDMENT_RADIUS = 50f;
 
     private final float POISON_AREA_LIFETIME = 12f;
     private final float STUN_AREA_LIFETIME = 3.5f;
     private final float BOMBARDMENT_AREA_LIFETIME = 3.5f;
+  
 
     private float BOMBARDMENT_SPAWN_TIMER = 0;
     private int BOMBARDMENT_PROJECTILES_SPAWNED;
@@ -179,16 +180,17 @@ public class Enemy{
     private float BOMBARDMENT_START_X;
     private float BOMBARDMENT_END_X;
     private Array<Rectangle> BOMBARDMENT_PROJECTILES = new Array<>();
+    private Array<Vector2> BOMBARDMENT_IMPACT_EVENTS = new Array<>();
 
     private final float POISON_DAMAGE = 8f;
-    private final float POISON_LINGERING_DAMAGE = 3f;
+    private final float POISON_LINGERING_DAMAGE = 2.5f;
     private final float BOMBARDMENT_DAMAGE = 20f;
 
     private boolean PLAYER_POISIONED = false;
     private boolean PLAYER_STUNNED = false;
 
-    private final float POISON_LINGERING_LIFETIME = 3.2f;
-    private final float STUN_LINGERING_LIFETIME = 2.3f;
+    private final float POISON_LINGERING_LIFETIME = 7f;
+    private final float STUN_LINGERING_LIFETIME = 7f;
  
     private float POISON_LINGERING_DURATION;
     private float STUN_LINGERING_DURATION;
@@ -257,8 +259,8 @@ public class Enemy{
 
     private final float RIFLEMAN_DAMAGE = 4;
     private final float HEAVY_CLOSE_RANGE_DAMAGE = 18;
-    private final float DRONE_DAMAGE = 8;
-    private final float DRILL_DAMAGE = 14;
+    private final float DRONE_DAMAGE = 3;
+    private final float DRILL_DAMAGE = 10;
 
     private float RIFLEMAN_SHOT_TIMER;
     private final float RIFLEMAN_FIRE_INTERVAL = 0.2f;
@@ -1175,6 +1177,7 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
 
         for(Rectangle platform : solidPlatforms){
             if(object.overlaps(platform)){
+                BOMBARDMENT_IMPACT_EVENTS.add(new Vector2(object.x+object.width/2f,object.y));
                 hitPlatform = true;
                 break;
             }
@@ -1186,8 +1189,10 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
         }
 
         if(object.overlaps(playerHurtbox)){
+            BOMBARDMENT_IMPACT_EVENTS.add(new Vector2(object.x+object.width/2f,object.y));
             pendingDamage+=BOMBARDMENT_DAMAGE;
             BOMBARDMENT_PROJECTILES.removeIndex(i);
+
         }
     }
     
@@ -1197,21 +1202,34 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
         BOMBARDMENT_PROJECTILES_SPAWNED = 0;
         BOMBARDMENT_SPAWN_TIMER = 0;
     }
+}
 
+public Vector2 consumeBombardmentImpact(){
+    if(BOMBARDMENT_IMPACT_EVENTS.size == 0)
+        return null;
+    return BOMBARDMENT_IMPACT_EVENTS.removeIndex(0);
 }
 
 private void  HEAVY_STUN_ATTACK(Rectangle playerHurtbox, float dt){
-    Circle stunCircle = new Circle(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,STUN_RADIUS);
-    if(HEAVY_LONG_RANGE_ATTACK_DURATION < STUN_AREA_LIFETIME){
-        HEAVY_LONG_RANGE_ATTACK_DURATION += dt;
-        //animate STUN at HEAVY_PREDICTED_RAIN_FIRE_POSITION
-        if(Intersector.overlaps(stunCircle,playerHurtbox)){
+    float portalOpenDuration = 0.64f;
+    float chargeDuration = 0.40f;
+    float pulseDuration = 0.60f;
+    float portalCloseDuration = 0.56f;
+
+    float pulseStart = portalOpenDuration+chargeDuration;
+    float pulseEnd = pulseStart+pulseDuration;
+    float attackEnd = pulseEnd+portalCloseDuration;
+
+    HEAVY_LONG_RANGE_ATTACK_DURATION+=dt;
+
+    if(HEAVY_LONG_RANGE_ATTACK_DURATION >= pulseStart && HEAVY_LONG_RANGE_ATTACK_DURATION < pulseEnd){
+        Circle stunCircle = new Circle(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,STUN_RADIUS);
+        if(Intersector.overlaps(stunCircle,playerHurtbox) && !PLAYER_STUNNED){
             PLAYER_STUNNED = true;
             STUN_LINGERING_DURATION = 0;
-            return;
         }
     }
-    else{
+    if(HEAVY_LONG_RANGE_ATTACK_DURATION >= attackEnd){
         HEAVY_LONG_RANGE_ATTACK_DURATION = 0;
         HEAVY_RANGE_ATTACK_COMPLETED = true;
     }
@@ -1232,7 +1250,6 @@ private void updateLingeringDamages(float dt){
     if(PLAYER_STUNNED){
         if(STUN_LINGERING_DURATION < STUN_LINGERING_LIFETIME){
             STUN_LINGERING_DURATION+= dt;
-            //freezePlayerJetpack
         }
         else{
             STUN_LINGERING_DURATION = 0;
@@ -1505,6 +1522,17 @@ public static TextureRegion getHealthBarFrame(float healthRatio){
 }
 
 
+public boolean isPlayerPoisoned(){
+    return PLAYER_POISIONED;
+}
+
+public boolean isPlayerStunned(){
+    return PLAYER_STUNNED;
+}
+
+public Array<Rectangle> getBombardmentProjectiles(){
+    return BOMBARDMENT_PROJECTILES;
+}
 
 
 public static void main(String[] args){

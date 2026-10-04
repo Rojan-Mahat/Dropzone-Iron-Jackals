@@ -39,6 +39,9 @@ public class Weapon{
     private Texture ARtexture;
     private TextureRegion ARregion;
 
+    private Texture ammoPanel;
+    private Texture ammoIcon;
+
 
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
         currentWeapon = type;
@@ -49,6 +52,9 @@ public class Weapon{
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
         determineWeaponStats();
         currentAmmo = magazineSize;
+        ammoPanel = new Texture(AssetPaths.Hud.AMMO_PANEL);
+        ammoIcon = new Texture(AssetPaths.Hud.AMMO_ICON);
+
     }
 
     public void drawWeapon(SpriteBatch batch,Vector2 playerHoldingGunPosition ){
@@ -199,6 +205,14 @@ public class Weapon{
 
     public boolean isAutomatic(){
         return automatic;
+    }
+
+    public Texture getAmmoPanelTexture(){
+        return ammoPanel;
+    }
+
+    public Texture getAmmoIconTexture(){
+        return ammoIcon;
     }
 
 

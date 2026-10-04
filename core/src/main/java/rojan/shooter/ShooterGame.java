@@ -29,6 +29,8 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 import com.badlogic.gdx.maps.objects.EllipseMapObject;
 import com.badlogic.gdx.math.Ellipse;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
 //./gradlew lwjgl3:run
 
@@ -62,13 +64,38 @@ public class ShooterGame extends ApplicationAdapter {
     private boolean heavyPortalWasActive = false;
     private OrthographicCamera hudCamera;
     private Array<EnemyProjectile> enemyProjectiles = new Array<>();
-    private EnemyProjectile projectile;
 
     private Texture riflemanProjectileTexture;
     private Texture heavyProjectileTexture;
 
+    private float poisonStatusFxTimer = 0f;
+    private boolean poisonStatusWasActive = false;
+    private boolean poisonStatusEnding = false;
+
+    private float stunStatusFxTimer = 0f;
+    private boolean stunStatusWasActive = false;
+    private boolean stunStatusEnding = false;
+    private BitmapFont hudFont;
+    private Rectangle reloadButtonBounds = new Rectangle();
+
+    private static class BombardmentImpactFx{
+        Vector2 position;
+        float timer;
+        BombardmentImpactFx(Vector2 position){
+            this.position = new Vector2(position);
+            timer = 0;
+        }
+    }
+    private Array<BombardmentImpactFx> bombardmentImpactFx = new Array<>();
+
     @Override
     public void create(){
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 20;
+        hudFont = generator.generateFont(parameter);
+        generator.dispose();
+
         map = loadMap();
 
         mapRenderer = new OrthogonalTiledMapRenderer(map); 
@@ -191,6 +218,14 @@ public class ShooterGame extends ApplicationAdapter {
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.R))
             weapon.reload();
+
+        if(Gdx.input.justTouched()){
+            float mouseX = Gdx.input.getX();
+            float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+            if(reloadButtonBounds.contains(mouseX,mouseY))
+                weapon.reload();
+        }
         /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
             if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
                 player.switchPlayerModeArmed();
@@ -228,12 +263,25 @@ public class ShooterGame extends ApplicationAdapter {
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
             enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
+
+        if(player.getJetPackStatus())
+            player.consumeFuel(dt);
+        else
+            player.rechargeFuel(dt);
+
+        if(isPlayerStunned()){
+            player.emptyJetpack();
+            player.stopJetpack();
+        }
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
         weapon.setFacingLeft(player.isFacingLeft());
         Vector2 grip = player.getCurrentGripWorldPosition();
         weapon.rotateWeapon(grip, mouseWorldPosition);
         weapon.drawWeapon(batch, grip);
+        drawPlayerPoisonFx(dt);
+        drawPlayerStunFx(dt);
+
         for(Bullet bullet : bullets)
             bullet.draw(batch);
 
@@ -243,12 +291,17 @@ public class ShooterGame extends ApplicationAdapter {
         for(EnemyProjectile projectile : enemyProjectiles){
             projectile.draw(batch);
         }
+
         playerEnemyProjectileCollisionChecker();
         removeEnemyProjectiles();
         drawDroneOverlayFx();
         transferDroneLockToHeavy();
         drawHeavyLockFx();
         drawHeavyPortalFx(dt);
+        drawBombardmentProjectiles();
+        collectBombardmentImpacts();
+        drawBombardmentImpacts(dt);
+
         bulletEnemyCollisionChecker();
         communicateDamage();
         removeEnemies();
@@ -257,6 +310,10 @@ public class ShooterGame extends ApplicationAdapter {
         batch.begin();
 
         drawPlayerHealthHud();
+        drawJetpackHud();
+        drawJetpackDisabledHud();
+        drawAmmoHud();
+        draweEmptyMagazineIconHUD();
 
         batch.end();
         batch.setProjectionMatrix(camera.combined);
@@ -310,6 +367,7 @@ shapeRenderer.end();
         FxAssets.dispose();
         riflemanProjectileTexture.dispose();
         heavyProjectileTexture.dispose();
+        hudFont.dispose();
     }
     @Override
     public void resize(int width,int height){
@@ -757,6 +815,8 @@ private void drawHeavyPortalFx(float dt){
 
         float size = 350f;
         float portalY = position.y + 200f;
+        if(attackType == 2)
+            portalY = position.y + 420f;
         float x = position.x-size/2f;
         float y = portalY-size/2f;
 
@@ -794,9 +854,36 @@ private void drawHeavyPortalFx(float dt){
                 frame = FxAssets.poisonPortalClose[frameIndex];
             }
         }
+        else if(attackType == 3){
+            float chargeDuration = 0.40f;
+            float pulseDuration = 0.60f;
+
+            float chargeEnd = openDuration+chargeDuration;
+            float pulseEnd = chargeEnd+pulseDuration;
+
+            float closeFrameDuration = 0.07f;
+            float closeDuration = FxAssets.empPortalClose.length*closeFrameDuration;
+            if(heavyPortalFxTimer < chargeEnd){
+                float activeTime = heavyPortalFxTimer-openDuration;
+                int frameIndex = (int)(activeTime/0.10f) % FxAssets.empPortalActive.length;
+                frame = FxAssets.empPortalActive[frameIndex];
+            }
+
+            else if(heavyPortalFxTimer < pulseEnd){
+                float activeTime = heavyPortalFxTimer-openDuration;
+                int frameIndex =(int)(activeTime/0.10f) % FxAssets.empPortalActive.length;
+                frame = FxAssets.empPortalActive[frameIndex];
+            }
+
+            else if(heavyPortalFxTimer < pulseEnd+closeDuration){
+                float closeTime = heavyPortalFxTimer-pulseEnd;
+                int frameIndex = (int)(closeTime/closeFrameDuration);
+                frame = FxAssets.empPortalClose[frameIndex];
+            }
+        }
         else{
             float activeTime = heavyPortalFxTimer-openDuration;
-            int frameIndex = (int)(activeTime/0.08f) % activeFrames.length;
+            int frameIndex =(int)(activeTime/0.08f) % activeFrames.length;
             frame = activeFrames[frameIndex];
         }
         
@@ -832,14 +919,46 @@ private void drawHeavyPortalFx(float dt){
                 batch.draw(fieldFrame,position.x-fieldSize/2f,position.y-fieldSize/2f,fieldSize,fieldSize);
             }
         }
+        if(attackType == 3){
+            float pulseStartTime = openDuration + 0.40f;
+            float pulseFrameDuration = 0.05f;
+            float pulseDuration =FxAssets.empPulse.length * pulseFrameDuration;
+
+            if(heavyPortalFxTimer >= pulseStartTime && heavyPortalFxTimer < pulseStartTime + pulseDuration){
+                float pulseTime =heavyPortalFxTimer-pulseStartTime;
+                int frameIndex =(int)(pulseTime/pulseFrameDuration);
+                TextureRegion pulseFrame =FxAssets.empPulse[frameIndex];
+                float pulseSize = 80f*(1024f/355f);
+                batch.draw(pulseFrame,position.x-pulseSize/2f,position.y-pulseSize/2f,pulseSize,pulseSize);
+            }
+        }
+
         if(frame!=null)
             batch.draw(frame,x,y,size,size);
     }
 }
 
 
+private void drawJetpackDisabledHud(){
+    if(player.getJetpackFuel() > 0)
+        return;
 
+    float size = 175f;
 
+    float x = 5f;
+    float healthWidth = 220f;
+    float scale = healthWidth/512f;
+    float height = 80f*scale;
+    float gap = 10f;
+
+    float healthY = Gdx.graphics.getHeight()-height-24f;
+    float jetpackY = healthY-height-gap;
+
+    float iconX = x-50f;
+    float iconY = jetpackY-size*0.65f;
+
+    batch.draw(player.getJetpackDisabledTexture(),iconX,iconY,size,size);
+}
     private void activateGravity(float dt){
         player.reactToGravity(gravity, dt);
         for(Enemy enemy: enemies)
@@ -1113,30 +1232,48 @@ private void drawHeavyPortalFx(float dt){
         float fullFillWidth = 384f*scale;
         float fillWidth = fullFillWidth*ratio;
         float fillHeight = 24f*scale;
+
+        float iconX = x+20f*scale;
+        float iconY = y+16f*scale;
+        float iconSize = 50f*scale;
         
         batch.draw(FxAssets.playerHealthFrame,x,y,width,height);
          if(ratio > 0)
             batch.draw(FxAssets.playerHealthFill,fillX,fillY,fillWidth,fillHeight);
+         batch.draw(FxAssets.playerHealthIcon,iconX,iconY,iconSize,iconSize);
     }
 
-    /*private void drawJetpackHud(){
-        float ratio = player.getJetpackFuel()/player.getMaxJetpackFuel();
+    private void drawJetpackHud(){
+        float ratio = MathUtils.clamp(player.getJetpackFuel()/player.getMaxJetpackFuel(),0f,1f);
+
         float x = 24f;
-        float y = Gdx.graphics.getHeight()-108f;
         float width = 220f;
-        float height = 24f;
 
-        float fillPaddingX = 8f;
-        float fillPaddingY = 6f;
+        float scale = width/512f;
+        float height = 80f * scale;
 
-        float fillX = x + fillPaddingX;
-        float fillY = y + fillPaddingY;
-        float fillWidth = (width - fillPaddingX*2f) * ratio;
-        float fillHeight = height - fillPaddingY*2f;
+        float gap = 10f;
+        float healthY = Gdx.graphics.getHeight() - height - 24f;
+        float y = healthY - height - gap;
+    
 
-        batch.draw(FxAssets.jetpackFill,fillX,fillY,fillWidth,fillHeight);
-        batch.draw(FxAssets.jetpackFrame,x,y,width,height);
-    }*/
+        float fullFillWidth = 384 * scale;
+        float fillWidth = fullFillWidth*ratio;
+        float fillHeight = 24f * scale;
+
+        float fillX = x + 88 * scale;
+        float fillY = y + 28f * scale;
+
+        float iconX = x+20f*scale;
+        float iconY = y+16f*scale;
+        float iconSize = 50f*scale;
+
+        batch.draw(FxAssets.playerJetpackFrame,x,y,width,height);
+
+        if(ratio > 0)
+            batch.draw(FxAssets.playerJetpackFill,fillX,fillY,fillWidth,fillHeight);
+        batch.draw(FxAssets.playerJetpackIcon , iconX, iconY, iconSize , iconSize);
+    }
 
     private void createEnemyProjectile(){
         for(Enemy enemy: enemies){
@@ -1157,23 +1294,267 @@ private void drawHeavyPortalFx(float dt){
 
     }
 
-    
-    
+    private boolean isPlayerPoisoned(){
+        for(Enemy enemy : enemies){
+            if(enemy.isPlayerPoisoned())
+                return true;
+        }
+
+        return false;
+    }
+
+    private boolean isPlayerStunned(){
+        for(Enemy enemy : enemies){
+            if(enemy.isPlayerStunned())
+                return true;
+        }
+
+        return false;
+    }
 
 
+    private void drawPlayerPoisonFx(float dt){
+        boolean poisoned = isPlayerPoisoned();
+        if(poisoned && !poisonStatusWasActive){
+            poisonStatusFxTimer = 0f;
+            poisonStatusWasActive = true;
+            poisonStatusEnding = false;
+        }
+
+        if(!poisoned && poisonStatusWasActive){
+            poisonStatusFxTimer = 0f;
+            poisonStatusWasActive = false;
+            poisonStatusEnding = true;
+        }
+        TextureRegion frame = null;
+
+        if(poisoned){
+            poisonStatusFxTimer += dt;
+            float startFrameDuration = 0.05f;
+            float startDuration = FxAssets.playerPoisonStart.length * startFrameDuration;
+            if(poisonStatusFxTimer < startDuration){
+                int frameIndex = (int)(poisonStatusFxTimer/startFrameDuration);
+                frame = FxAssets.playerPoisonStart[frameIndex];
+            }
+            else{
+                float lingeringTime = poisonStatusFxTimer-startDuration;
+                int frameIndex = (int)(lingeringTime/0.10f) % FxAssets.playerPoisonLingering.length;
+                frame = FxAssets.playerPoisonLingering[frameIndex];
+            }
+        }
+        else if(poisonStatusEnding){
+            poisonStatusFxTimer += dt;
+            float endFrameDuration = 0.06f;
+            float endDuration = FxAssets.playerPoisonEnd.length * endFrameDuration;
+            if(poisonStatusFxTimer < endDuration){
+                int frameIndex = (int)(poisonStatusFxTimer/endFrameDuration);
+                frame = FxAssets.playerPoisonEnd[frameIndex];
+            }
+            else{
+                poisonStatusEnding = false;
+                poisonStatusFxTimer = 0f;
+            }
+        }
+        if(frame == null)
+            return;
+        Vector2 playerPosition = player.getPlayerPosition();
+
+        float sx = player.getPlayerWidth()/278f;
+        float sy = player.getPlayerHeight()/461f;
+
+        float drawX = playerPosition.x-61f*sx;
+        float drawY = playerPosition.y-79.5f*sy;
+
+        float drawWidth = 400f*sx;
+        float drawHeight = 620f*sy;
+
+        float lingeringScale = 2.0f;
+        float lingeringWidth = drawWidth*lingeringScale;
+        float lingeringHeight = drawHeight*lingeringScale;
+
+        float lingeringX = drawX-(lingeringWidth-drawWidth)/2f;
+        float lingeringY = drawY-(lingeringHeight-drawHeight)/2f;
+
+        batch.draw(frame,lingeringX,lingeringY,lingeringWidth,lingeringHeight);
+        
+    }
+
+
+    private void drawPlayerStunFx(float dt){
+        boolean stunned = isPlayerStunned();
+        if(stunned && !stunStatusWasActive){
+            stunStatusFxTimer = 0f;
+            stunStatusWasActive = true;
+            stunStatusEnding = false;
+        }
+        if(!stunned && stunStatusWasActive){
+            stunStatusFxTimer = 0f;
+            stunStatusWasActive = false;
+            stunStatusEnding = true;
+        }
+        TextureRegion frame = null;
+        if(stunned){
+            stunStatusFxTimer += dt;
+            float startFrameDuration = 0.05f;
+            float startDuration = FxAssets.playerStunStart.length * startFrameDuration;
+            if(stunStatusFxTimer < startDuration){
+                int frameIndex = (int)(stunStatusFxTimer/startFrameDuration);
+                frame = FxAssets.playerStunStart[frameIndex];
+            }
+            else{
+                float lingeringTime = stunStatusFxTimer-startDuration;
+                int frameIndex = (int)(lingeringTime/0.08f) % FxAssets.playerStunLingering.length;
+                frame = FxAssets.playerStunLingering[frameIndex];
+            }
+        }
+        else if(stunStatusEnding){
+            stunStatusFxTimer += dt;
+            float endFrameDuration = 0.06f;
+            float endDuration = FxAssets.playerStunEnd.length * endFrameDuration;
+            if(stunStatusFxTimer < endDuration){
+                int frameIndex = (int)(stunStatusFxTimer/endFrameDuration);
+                frame = FxAssets.playerStunEnd[frameIndex];
+            }
+            else{
+                stunStatusEnding = false;
+                stunStatusFxTimer = 0f;
+            }
+        }
+
+        if(frame == null)
+            return;
+
+        Vector2 playerPosition = player.getPlayerPosition();
+        float sx = player.getPlayerWidth()/278f;
+        float sy = player.getPlayerHeight()/461f;
+
+        float drawX = playerPosition.x-61f*sx;
+        float drawY = playerPosition.y-79.5f*sy;
+
+        float drawWidth = 400f*sx;
+        float drawHeight = 620f*sy;
+
+        float lingeringScale = 1.8f;
+        float lingeringWidth = drawWidth*lingeringScale;
+        float lingeringHeight = drawHeight*lingeringScale;
+
+        float lingeringX = drawX-(lingeringWidth-drawWidth)/2f;
+        float lingeringY = drawY-(lingeringHeight-drawHeight)/2f;
+
+        batch.draw(frame, lingeringX, lingeringY, lingeringWidth, lingeringHeight);
+    }
+
+    private void drawBombardmentProjectiles(){
+        for(Enemy enemy : enemies){
+            if(enemy.getType() != EnemyType.HEAVY)
+                continue;
+
+            int frameIndex = (int)(heavyPortalFxTimer/0.06f) % FxAssets.bombardmentRainBolt.length;
+            TextureRegion frame = FxAssets.bombardmentRainBolt[frameIndex];
+            for(Rectangle projectile : enemy.getBombardmentProjectiles()){
+                float centerX = projectile.x+projectile.width/2f;
+                float centerY = projectile.y+projectile.height/2f;
+
+                float width = 300f;
+                float height = 250f;
+
+                batch.draw(frame, centerX-width/2f, centerY-height/2f, width, height);
+            }
+        }
+    }
+
+    private void collectBombardmentImpacts(){
+        for(Enemy enemy : enemies){
+            if(enemy.getType() != EnemyType.HEAVY)
+                continue;
+            Vector2 impact;
+            while((impact = enemy.consumeBombardmentImpact()) != null)
+                bombardmentImpactFx.add(new BombardmentImpactFx(impact));
+        }
+    }
+
+
+    private void drawBombardmentImpacts(float dt){
+        for(int i=bombardmentImpactFx.size-1;i>=0;i--){
+            BombardmentImpactFx impact = bombardmentImpactFx.get(i);
+            impact.timer+=dt;
+            int frameIndex = (int)(impact.timer/0.05f);
+
+            if(frameIndex >= FxAssets.bombardmentRainImpact.length){
+                bombardmentImpactFx.removeIndex(i);
+                continue;
+            }
+            TextureRegion frame = FxAssets.bombardmentRainImpact[frameIndex];
+            float size = 140f;
+            batch.draw( frame,impact.position.x-size/2f,impact.position.y-size/2f, size,size);
+        }
+    }
+
+    private void drawAmmoHud(){
+        float width = 230f;
+        float scale = width/256f;
+        float height = 80f*scale;
+
+        float x = Gdx.graphics.getWidth()-width-24f;
+        float y = 24f;
+
+        float iconX = x+18f*scale;
+        float iconY = y+16f*scale;
+        float iconSize = 48f*scale;
+
+        batch.draw(weapon.getAmmoPanelTexture(),x,y,width,height);
+        batch.draw(weapon.getAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
+        String magazine = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
+
+        String reserve ="RES "+weapon.getReserveAmmo();
+
+        float reloadSize = 65f;
+        float reloadX = x+width-reloadSize;
+        float reloadY = y+height+2f;
+        batch.draw(FxAssets.reloadIcon,reloadX,reloadY,reloadSize,reloadSize);
+        reloadButtonBounds.set(reloadX,reloadY,reloadSize,reloadSize);
+
+        hudFont.getData().setScale(1.15f);
+        hudFont.draw(batch,magazine,x+90f*scale,y+55f*scale);
+        hudFont.getData().setScale(0.75f);
+        hudFont.draw(batch,reserve,x+90f*scale,y+30f*scale);
+    }
+
+    private void draweEmptyMagazineIconHUD(){
+        if(weapon.getCurrentAmmo() > 0)
+            return;
+        float panelWidth = 220f;
+        float panelHeight = 80f;
+        float ammoX = Gdx.graphics.getWidth()-panelWidth-24f;
+        float ammoY = 15f;
+
+        float iconSize = 60f;
+        float gap = 10f;
+
+        float iconX = ammoX-iconSize-gap;
+        float iconY = ammoY+(panelHeight-iconSize)/2f;
+
+        batch.draw(FxAssets.emptyMagazineIcon,iconX,iconY,iconSize,iconSize);
+    }   
+
+}
+
+        
+        
+
+
+
+
+
+            
+
+
+        
 
 
 
         
 
 
-    
 
 
-
-    
-
-
-
-
-}

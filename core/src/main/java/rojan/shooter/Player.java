@@ -44,8 +44,8 @@ public class Player{
     private float maxRiseSpeed = 550;
     private float maxFallSpeed = -800;
 
-    private final float fuelMileage = 10f;
-    private final float fuelPump = 12.5f;
+    private final float fuelMileage = 12.5f;
+    private final float fuelPump = 10f;
 
     private enum PlayerState{
                     IDLE,
@@ -146,6 +146,7 @@ public class Player{
     private GripPose[] jumpThrowGripPoses;
     private GripPose[] happyGripPoses;
 
+    private Texture jetpackDisabledTexture;
     private EnumMap<PlayerState, GripPose[]> gripPoseMap;
     private Rectangle jetPackDrawData;
     private Texture jetpackTexture;
@@ -255,6 +256,8 @@ public class Player{
         jetpackFlameTexture = new Texture(AssetPaths.JetPack.jetpackFlames);
         TextureRegion[][] flameSheet = TextureRegion.split(jetpackFlameTexture, jetpackFlameTexture.getWidth() / 4, jetpackFlameTexture.getHeight());
         jetpackFlameFrames = flameSheet[0];
+
+        jetpackDisabledTexture = new Texture(AssetPaths.JetPack.jetpackDisabled);
     }
 
     private TextureRegion[] loadFrames(String prefix, int frameCount){
@@ -290,7 +293,7 @@ public class Player{
             jetPackX =position.x + width - jetPackDrawData.x - jetPackDrawData.width;
         jetPackY  = position.y + jetPackDrawData.y;
 
-        if(isJetPackActive)
+        if(isJetPackActive && fuel > 0)
             drawJetpackFlame(batch,dt,jetPackX,jetPackY);
         batch.draw(jetpackSprite,jetPackX,jetPackY,jetPackDrawData.width,jetPackDrawData.height);
     
@@ -457,7 +460,6 @@ public class Player{
         batch.draw(currentFlame, flameX, flameY,flameWidth,flameHeight);
     }
 
-
     public void disposePlayer(){;
         for(Texture texture : loadedTextures)
             texture.dispose();
@@ -475,7 +477,7 @@ public class Player{
         float drawX = position.x + (width - drawWidth) / 2f;
         float drawY = position.y;
 
-         batch.draw(frame, drawX, drawY, drawWidth, drawHeight);
+        batch.draw(frame, drawX, drawY, drawWidth, drawHeight);
     }
 
     public void receivePlayerMoveBox(Rectangle moveBox){
@@ -691,10 +693,8 @@ public class Player{
     }
 
     public void reactToGravity(float gravity , float dt){
-        if(!isGrounded){
+        if(!isGrounded)
             velocity.y+= gravity * dt;
-            rechargeFuel(dt);
-        }
         else if(isGrounded){
             velocity.y = 0;
             airTime = 0;
@@ -709,7 +709,6 @@ public class Player{
         if(canFly()){
             isJetPackActive = true;
             velocity.y += thrust * dt;
-            consumeFuel(dt);
             if(velocity.y > maxRiseSpeed)
                 velocity.y = maxRiseSpeed;
         }
@@ -728,6 +727,18 @@ public class Player{
     public Vector2 getCurrentGripWorldPosition() {
         GripPose pose = getCurrentGripPose();
         return new Vector2(position.x+pose.position.x , position.y+pose.position.y);
+    }
+
+    public float getPlayerWidth(){
+        return width;
+    }
+
+    public float getPlayerHeight(){
+        return height;
+    }
+
+    public void emptyJetpack(){
+        fuel = 0;
     }
 
 
@@ -878,6 +889,18 @@ public class Player{
         fuel+=fuelPump * dt;
         if(fuel > maxFuel)
             fuel = maxFuel;
+    }
+
+    public float getJetpackFuel(){
+        return fuel;
+    }
+
+    public float getMaxJetpackFuel(){
+        return maxFuel;
+    }
+
+    public Texture getJetpackDisabledTexture(){
+        return jetpackDisabledTexture;
     }
 
 

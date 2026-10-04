@@ -31,8 +31,37 @@ public final class FxAssets{
 
     public static Texture playerHealthFrameTexture;
     public static Texture playerHealthFillTexture;
+    public static Texture playerHealthIconTexture;
     public static TextureRegion playerHealthFrame;
     public static TextureRegion playerHealthFill;
+    public static TextureRegion playerHealthIcon;
+
+
+    public static Texture playerJetpackFrameTexture;
+    public static Texture playerJetpackFillTexture;
+    public static Texture playerJetpackIconTexture;
+    public static TextureRegion playerJetpackFrame;
+    public static TextureRegion playerJetpackFill;
+    public static TextureRegion playerJetpackIcon;
+
+    public static TextureRegion[] playerPoisonStart;
+    public static TextureRegion[] playerPoisonLingering;
+    public static TextureRegion[] playerPoisonEnd;
+
+    public static TextureRegion[] playerStunStart;
+    public static TextureRegion[] playerStunLingering;
+    public static TextureRegion[] playerStunEnd;
+
+    public static TextureRegion[] empPulse;
+
+    public static TextureRegion[] bombardmentRainBolt;
+    public static TextureRegion[] bombardmentRainImpact;
+
+    public static Texture reloadIconTexture;
+    public static TextureRegion reloadIcon;
+
+    public static Texture emptyMagazineTexture;
+    public static TextureRegion emptyMagazineIcon;
 
     public static void loadOnce(){
         if(loadedTextures != null)
@@ -64,6 +93,35 @@ public final class FxAssets{
         playerHealthFillTexture = new Texture(AssetPaths.Hud.PLAYER_HEALTH_FILL);
         playerHealthFrame = new TextureRegion(playerHealthFrameTexture);
         playerHealthFill = new TextureRegion(playerHealthFillTexture);
+        playerHealthIconTexture = new Texture(AssetPaths.Hud.PLAYER_HEALTH_ICON);
+
+        playerJetpackFrameTexture = new Texture(AssetPaths.Hud.JETPACK_FRAME);
+        playerJetpackFillTexture = new Texture(AssetPaths.Hud.JETPACK_FILL);
+        playerJetpackFrame = new TextureRegion(playerJetpackFrameTexture);
+        playerJetpackFill = new TextureRegion(playerJetpackFillTexture);
+        playerJetpackIconTexture = new Texture(AssetPaths.Hud.PLAYER_JETPACK_ICON);
+
+
+        playerPoisonStart = loadFrames(AssetPaths.FX.PLAYER_POISON_START, AssetPaths.FX.PLAYER_POISON_START_FRAMES);
+        playerPoisonLingering = loadFrames(AssetPaths.FX.PLAYER_POISON_LINGERING, AssetPaths.FX.PLAYER_POISON_LINGERING_FRAMES);
+        playerPoisonEnd = loadFrames(AssetPaths.FX.PLAYER_POISON_END, AssetPaths.FX.PLAYER_POISON_END_FRAMES);
+        playerHealthIcon = new TextureRegion(playerHealthIconTexture);
+        playerJetpackIcon = new TextureRegion(playerJetpackIconTexture);
+
+        playerStunStart = loadFrames(AssetPaths.FX.PLAYER_STUN_START, AssetPaths.FX.PLAYER_STUN_START_FRAMES);
+        playerStunLingering = loadFrames(AssetPaths.FX.PLAYER_STUN_LINGERING,AssetPaths.FX.PLAYER_STUN_LINGERING_FRAMES);
+        playerStunEnd = loadFrames(AssetPaths.FX.PLAYER_STUN_END,AssetPaths.FX.PLAYER_STUN_END_FRAMES);
+
+        empPulse = loadFrames(AssetPaths.FX.EMP_PULSE,AssetPaths.FX.EMP_PULSE_FRAMES);
+
+        bombardmentRainBolt = loadFrames(AssetPaths.FX.BOMBARDMENT_RAIN_BOLT,AssetPaths.FX.BOMBARDMENT_RAIN_BOLT_FRAMES);
+        bombardmentRainImpact = loadFrames(AssetPaths.FX.BOMBARDMENT_RAIN_IMPACT,AssetPaths.FX.BOMBARDMENT_RAIN_IMPACT_FRAMES);
+
+        emptyMagazineTexture = new Texture(AssetPaths.Hud.EMPTY_MAGAZINE);
+        emptyMagazineIcon = new TextureRegion(emptyMagazineTexture);
+
+        reloadIconTexture = new Texture(AssetPaths.Hud.RELOAD_ICON);
+        reloadIcon = new TextureRegion(reloadIconTexture);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -85,5 +143,8 @@ public final class FxAssets{
         loadedTextures = null;
         playerHealthFrameTexture.dispose();
         playerHealthFillTexture.dispose();
+        playerHealthIconTexture.dispose();
+        reloadIconTexture.dispose();
+        emptyMagazineTexture.dispose();
     }
 }
