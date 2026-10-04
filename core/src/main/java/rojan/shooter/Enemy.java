@@ -654,7 +654,9 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         playerFoundInsideDetectionRadius = distanceSquared <= detectionRadius * detectionRadius;
         Rectangle drillerWorldHurtbox = getWorldHurtbox();
         float drillerCenterX = drillerWorldHurtbox.x + drillerWorldHurtbox.width/2f;
-        playerFoundInsideAttackRadius = Math.abs(playerCenterX-drillerCenterX) <= drillerWorldHurtbox.width/2f + attackRange;
+        boolean horizontalAttackRange = Math.abs(playerCenterX-drillerCenterX) <= drillerWorldHurtbox.width/2f + attackRange;
+        boolean verticalOverlap =playerHurtbox.y < drillerWorldHurtbox.y + drillerWorldHurtbox.height && playerHurtbox.y + playerHurtbox.height > drillerWorldHurtbox.y;
+        playerFoundInsideAttackRadius = horizontalAttackRange && verticalOverlap;
     }
     else{
         dx = playerPosition.x - headX;
