@@ -166,7 +166,7 @@ public class Enemy{
     private final float STUN_RADIUS = 50f;
     private final float BOMBARDMENT_RADIUS = 50f;
 
-    private final float POISON_AREA_LIFETIME = 3.5f;
+    private final float POISON_AREA_LIFETIME = 12f;
     private final float STUN_AREA_LIFETIME = 3.5f;
     private final float BOMBARDMENT_AREA_LIFETIME = 3.5f;
 
@@ -353,12 +353,12 @@ public class Enemy{
         healthBarFrames = splitHealthBar[0];
     }
 
-    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms,Rectangle playerHurtbox, Vector2 playerVelocity){
+    public void drawEnemy(SpriteBatch batch, float dt,Vector2 playerPosition,Array<Rectangle> solidPlatforms,Rectangle playerHurtbox, Vector2 playerVelocity,Rectangle heavyPortalBounds){
         if((type == EnemyType.RIFLEMAN || type == EnemyType.HEAVY )|| (type == EnemyType.DRILL_CRAWLER && currentState != EnemyState.DRILL)){
             resolveVerticalCollision(dt,solidPlatforms);
             ensureGrounding(getWorldHurtbox(),solidPlatforms);
         }
-        updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox,playerVelocity);
+        updateEnemy(dt,playerPosition,solidPlatforms,playerHurtbox,playerVelocity,heavyPortalBounds);
         int frameIndex = 0;
         TextureRegion frame;
         if(currentState == EnemyState.DEAD){
@@ -589,7 +589,7 @@ public Rectangle getWorldHitRegion(Rectangle rect){
 
 
 
-public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms, Rectangle playerHurtbox,Vector2 playerVelocity){
+public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidPlatforms, Rectangle playerHurtbox,Vector2 playerVelocity,Rectangle heavyPortalBounds){
     updateLingeringDamages(dt);
     stateTime+= dt;
     if(currentState == EnemyState.DEAD){
@@ -628,7 +628,7 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     }
     
     if(type==EnemyType.HEAVY){
-        updateHeavy(playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms, playerVelocity);
+        updateHeavy(playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms, playerVelocity,heavyPortalBounds);
     }
     else if(type==EnemyType.RIFLEMAN)
         updateRifleman(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt,playerHurtbox, solidPlatforms);
@@ -937,7 +937,7 @@ public Array<Circle> getWorldDrillCircles(){
     return worldCircles;
 }
 
-private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangle playerHurtbox, Array<Rectangle> solidPlatforms,Vector2 playerVelocity){
+private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangle playerHurtbox, Array<Rectangle> solidPlatforms,Vector2 playerVelocity,Rectangle heavyPortalBounds){
     if(HEAVY_RANGE_ATTACK_ACTIVE){
         heavyRangeAttack(playerHurtbox,dt,solidPlatforms);
         if(HEAVY_RANGE_ATTACK_COMPLETED){
@@ -964,7 +964,7 @@ private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangl
     }
 
     if(HEAVY_LOCK){
-        openPortal(playerHurtbox,dt,playerVelocity,solidPlatforms);
+        openPortal(playerHurtbox,dt,playerVelocity,solidPlatforms,heavyPortalBounds);
         return;
     }
 
@@ -997,10 +997,13 @@ private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
     HEAVY_CLOSE_SHOT_ONCE = true;
 }
 
-private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocity, Array<Rectangle> solidPlatforms){
+private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocity, Array<Rectangle> solidPlatforms,Rectangle heavyPortalBounds){
     HEAVY_LOCK_TIMER+=dt;
     if(HEAVY_LOCK_TIMER >= RANDOM_LIMIT){
         //remove flash target animation
+        HEAVY_PREDICTED_RAIN_FIRE_POSITION.x =MathUtils.clamp(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,heavyPortalBounds.x,heavyPortalBounds.x + heavyPortalBounds.width);
+        HEAVY_PREDICTED_RAIN_FIRE_POSITION.y =MathUtils.clamp(HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,heavyPortalBounds.y,heavyPortalBounds.y + heavyPortalBounds.height);
+        
         HEAVY_LOCK = false;
         HEAVY_LEFT_TARGET = false;
         HEAVY_LOCK_TIMER = 0;
@@ -1020,8 +1023,13 @@ private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocit
         //display warning and animate portal at HEAVY_PREDICTED_RAIN_FIRE_POSITION
         float TargetX = playerHurtbox.x + playerHurtbox.width/2;
         float TargetY = playerHurtbox.y + playerHurtbox.height/2;
-        HEAVY_PREDICTED_RAIN_FIRE_POSITION.x = TargetX + (playerVelocity.x * (RANDOM_LIMIT - HEAVY_LOCK_TIMER));
-        HEAVY_PREDICTED_RAIN_FIRE_POSITION.y = TargetY + (playerVelocity.y * (RANDOM_LIMIT - HEAVY_LOCK_TIMER));
+
+        float predictedX = TargetX + playerVelocity.x * (RANDOM_LIMIT-HEAVY_LOCK_TIMER);
+        float predictedY =TargetY + playerVelocity.y * (RANDOM_LIMIT-HEAVY_LOCK_TIMER);
+
+        predictedX = MathUtils.clamp(predictedX,heavyPortalBounds.x,heavyPortalBounds.x + heavyPortalBounds.width);
+        predictedY = MathUtils.clamp(predictedY,heavyPortalBounds.y,heavyPortalBounds.y + heavyPortalBounds.height);
+        HEAVY_PREDICTED_RAIN_FIRE_POSITION.set(predictedX,predictedY);
         return;
     }
      //flash targetted animation at player 
@@ -1071,21 +1079,22 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
     BOMBARDMENT_Y = HEAVY_PREDICTED_RAIN_FIRE_POSITION.y + 350f;
     BOMBARDMENT_START_X = HEAVY_PREDICTED_RAIN_FIRE_POSITION.x - BOMBARDMENT_RADIUS;
     BOMBARDMENT_END_X = HEAVY_PREDICTED_RAIN_FIRE_POSITION.x + BOMBARDMENT_RADIUS - PROJECTILE_WIDTH;
-    
-    if(HEAVY_LONG_RANGE_ATTACK_DURATION < BOMBARDMENT_AREA_LIFETIME){
-        HEAVY_LONG_RANGE_ATTACK_DURATION+=dt;
-        BOMBARDMENT_SPAWN_TIMER += dt;
-        if(BOMBARDMENT_PROJECTILES_SPAWNED < 8 && BOMBARDMENT_SPAWN_TIMER >= 0.35f){
-            Rectangle projectile = new Rectangle(MathUtils.random(BOMBARDMENT_START_X , BOMBARDMENT_END_X),BOMBARDMENT_Y,PROJECTILE_WIDTH,PROJECTILE_HEIGHT);
-            BOMBARDMENT_PROJECTILES.add(projectile);
-            BOMBARDMENT_PROJECTILES_SPAWNED++;
-            BOMBARDMENT_SPAWN_TIMER = 0;
-        }
+    HEAVY_LONG_RANGE_ATTACK_DURATION+=dt;
+    BOMBARDMENT_SPAWN_TIMER += dt;
+    if(BOMBARDMENT_PROJECTILES_SPAWNED < 8 && BOMBARDMENT_SPAWN_TIMER >= 0.35f){
+        Rectangle projectile = new Rectangle(MathUtils.random(BOMBARDMENT_START_X , BOMBARDMENT_END_X),BOMBARDMENT_Y,PROJECTILE_WIDTH,PROJECTILE_HEIGHT);
+        BOMBARDMENT_PROJECTILES.add(projectile);
+        BOMBARDMENT_PROJECTILES_SPAWNED++;
+        BOMBARDMENT_SPAWN_TIMER = 0;
     }
-
+    
     for(int i = BOMBARDMENT_PROJECTILES.size-1;i>=0;i--){
         Rectangle object = BOMBARDMENT_PROJECTILES.get(i);
         object.y -= BOMBARDMENT_SPEED*dt;
+        if(object.y + object.height < 0){
+            BOMBARDMENT_PROJECTILES.removeIndex(i);
+            continue;
+        }
         boolean hitPlatform = false;
 
         for(Rectangle platform : solidPlatforms){
@@ -1108,6 +1117,7 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
     
     if(BOMBARDMENT_PROJECTILES_SPAWNED >= 8 && BOMBARDMENT_PROJECTILES.size == 0){
         HEAVY_RANGE_ATTACK_COMPLETED = true;
+        HEAVY_LONG_RANGE_ATTACK_DURATION = 0;
         BOMBARDMENT_PROJECTILES_SPAWNED = 0;
         BOMBARDMENT_SPAWN_TIMER = 0;
     }

@@ -1,5 +1,6 @@
 package rojan.shooter;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.math.Circle;
@@ -57,8 +58,8 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Enemy> enemies;
     private ShapeRenderer shapeRenderer;
 
-    private float heavyReticleFlashTimer = 0f;
-    private boolean heavyReticleWasFrozen = false;
+    private float heavyPortalFxTimer = 0f;
+    private boolean heavyPortalWasActive = false;
 
 
     @Override
@@ -212,7 +213,7 @@ public class ShooterGame extends ApplicationAdapter {
         drawDroneBeam();
         player.drawPlayer(batch,dt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity());  
+            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
         updatePlayerFacingDirection(mouseWorldPosition); 
         weapon.setFacingLeft(player.isFacingLeft());
@@ -224,6 +225,7 @@ public class ShooterGame extends ApplicationAdapter {
         drawDroneOverlayFx();
         transferDroneLockToHeavy();
         drawHeavyLockFx();
+        drawHeavyPortalFx(dt);
         bulletEnemyCollisionChecker();
         removeEnemies();
         batch.end(); 
@@ -640,7 +642,8 @@ private void transferDroneLockToHeavy(){
             drone = enemy;
     }
     if(heavy != null && drone != null && drone.isHeavyLocking()){
-        heavy.setHeavyLock(true);
+        if(!heavy.isHeavyLocking() && !heavy.isHeavyRangeAttackActive())
+            heavy.setHeavyLock(true);
         drone.setHeavyLock(false);
     }
 }
@@ -667,20 +670,132 @@ private void drawHeavyLockFx(){
             targetX = playerHurtbox.x + playerHurtbox.width/2f;
             targetY = playerHurtbox.y + playerHurtbox.height/2f;
         }
+        int reticleFrame = (int)(enemy.getHeavyLockTimer()/0.10f) % FxAssets.targetReticle.length;
+        float size = 350f;
+        float x = targetX-size/2f;
+        float y = targetY-size/2f;
+        batch.setColor(1f,0f,1f,1f);
+        batch.draw(FxAssets.targetReticle[reticleFrame],x,y,size,size);
+        batch.setColor(Color.WHITE);
+    }
 
-        int reticleFrame =
-            (int)(enemy.getHeavyLockTimer()/0.10f)
-            % FxAssets.targetReticle.length;
+}
+
+private void drawHeavyPortalFx(float dt){
+    for(Enemy enemy : enemies){
+        if(enemy.getType() != EnemyType.HEAVY)
+            continue;
+
+        boolean active = enemy.isHeavyRangeAttackActive();
+
+        if(!active){
+            heavyPortalFxTimer = 0f;
+            heavyPortalWasActive = false;
+            continue;
+        }
+
+        if(!heavyPortalWasActive){
+            heavyPortalFxTimer = 0f;
+            heavyPortalWasActive = true;
+        }
+
+        heavyPortalFxTimer += dt;
+        Vector2 position = enemy.getHeavyPredictedRainFirePosition();
+        TextureRegion[] openFrames;
+        TextureRegion[] activeFrames;
+        int attackType = enemy.getHeavySelectedAttack();
+        if(attackType == 1){
+            openFrames = FxAssets.poisonPortalOpen;
+            activeFrames = FxAssets.poisonPortalActive;
+        }
+        else if(attackType == 2){
+            openFrames = FxAssets.bombardmentPortalOpen;
+            activeFrames = FxAssets.bombardmentPortalActive;
+        }
+        else{
+            openFrames = FxAssets.empPortalOpen;
+            activeFrames = FxAssets.empPortalActive;
+        }
 
         float size = 350f;
+        float portalY = position.y + 200f;
+        float x = position.x-size/2f;
+        float y = portalY-size/2f;
 
-        batch.draw(
-            FxAssets.targetReticle[reticleFrame],
-            targetX-size/2f,
-            targetY-size/2f,
-            size,
-            size
-        );
+        float openFrameDuration = 0.08f;
+        float openDuration = openFrames.length * openFrameDuration;
+        TextureRegion frame = null;
+
+        float releaseFrameDuration = 0.08f;
+        float releaseDuration =FxAssets.poisonPortalRelease.length * releaseFrameDuration;
+
+        if(heavyPortalFxTimer < openDuration){
+            int frameIndex =(int)(heavyPortalFxTimer/openFrameDuration);
+            frame = openFrames[frameIndex];
+        }
+        else if(attackType == 1){
+            float releaseEnd = openDuration + releaseDuration;
+            float portalActiveHoldDuration = 0.40f;
+            float closeStart = releaseEnd + portalActiveHoldDuration;
+            float closeFrameDuration = 0.08f;
+            float closeDuration = FxAssets.poisonPortalClose.length * closeFrameDuration;
+
+            if(heavyPortalFxTimer < releaseEnd){
+                float releaseTime =heavyPortalFxTimer-openDuration;
+                int frameIndex = (int)(releaseTime/releaseFrameDuration);
+                frame = FxAssets.poisonPortalRelease[frameIndex];
+            }
+            else if(heavyPortalFxTimer < closeStart){
+                float activeTime = heavyPortalFxTimer-releaseEnd;
+                int frameIndex = (int)(activeTime/0.08f) % FxAssets.poisonPortalActive.length;
+                frame = FxAssets.poisonPortalActive[frameIndex];
+            }
+            else if(heavyPortalFxTimer < closeStart + closeDuration){
+                float closeTime = heavyPortalFxTimer-closeStart;
+                int frameIndex = (int)(closeTime/closeFrameDuration);
+                frame = FxAssets.poisonPortalClose[frameIndex];
+            }
+        }
+        else{
+            float activeTime = heavyPortalFxTimer-openDuration;
+            int frameIndex = (int)(activeTime/0.08f) % activeFrames.length;
+            frame = activeFrames[frameIndex];
+        }
+        
+        if(attackType == 1){
+            float fieldSpawnTime = openDuration + 0.27f;
+            float poisonLifetime = 12f;
+            float fieldStartFrameDuration = 0.06f;
+            float fieldStartDuration = FxAssets.poisonFieldStart.length * fieldStartFrameDuration;
+            float fieldEndFrameDuration = 0.08f;
+            float fieldEndDuration = FxAssets.poisonFieldEnd.length * fieldEndFrameDuration;
+            float fieldEndStart = poisonLifetime-fieldEndDuration;
+            if(heavyPortalFxTimer >= fieldSpawnTime){
+                TextureRegion fieldFrame;
+                float fieldTime = heavyPortalFxTimer-fieldSpawnTime;
+
+                if(fieldTime < fieldStartDuration){
+                    int frameIndex = (int)(fieldTime/fieldStartFrameDuration);
+                    fieldFrame = FxAssets.poisonFieldStart[frameIndex];
+                }
+                else if(heavyPortalFxTimer < fieldEndStart){
+                    float loopTime = fieldTime-fieldStartDuration;
+                    int frameIndex = (int)(loopTime/0.10f) % FxAssets.poisonFieldLoop.length;
+                    fieldFrame = FxAssets.poisonFieldLoop[frameIndex];
+                }
+                else{
+                    float endTime = heavyPortalFxTimer-fieldEndStart;
+                    int frameIndex = (int)(endTime/fieldEndFrameDuration);
+                    if(frameIndex >= FxAssets.poisonFieldEnd.length)
+                        frameIndex = FxAssets.poisonFieldEnd.length-1;
+                    fieldFrame = FxAssets.poisonFieldEnd[frameIndex];
+                }
+                float fieldSize = 380f;
+                batch.draw(fieldFrame,position.x-fieldSize/2f,position.y-fieldSize/2f,fieldSize,fieldSize);
+            }
+        }
+        if(frame!=null)
+            batch.draw(frame,x,y,size,size);
     }
 }
 
@@ -893,6 +1008,19 @@ private void drawHeavyLockFx(){
             circles.add(new Circle(centerX - spawn.x,centerY - spawn.y,radius));
         }
         return circles;
+    }
+
+    private Rectangle getHeavyPortalBounds(){
+        float visibleWidth = camera.viewportWidth * camera.zoom;
+        float visibleHeight = camera.viewportHeight * camera.zoom;
+
+        float cameraLeft = camera.position.x-visibleWidth/2f;
+        float cameraBottom = camera.position.y-visibleHeight/2f;
+        float horizontalMargin = 200f;
+        float bottomMargin = 200f;
+        float topMargin = 350f;
+
+        return new Rectangle(cameraLeft+horizontalMargin,cameraBottom+bottomMargin,visibleWidth-horizontalMargin*2f,visibleHeight-bottomMargin-topMargin);
     }
 
 

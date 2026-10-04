@@ -20,6 +20,44 @@ public final class AssetPaths {
 
         public static final String DRONE_BURST = BASE + "drone_burst_";
         public static final int DRONE_BURST_FRAMES = 10;
+
+        public static final String HEAVY_PORTAL_BASE = BASE + "heavy_portal/";
+        public static final String BOMBARDMENT_PORTAL_BASE = HEAVY_PORTAL_BASE + "bombardment/";
+        public static final String BOMBARDMENT_PORTAL_OPEN = BOMBARDMENT_PORTAL_BASE + "open_";
+        public static final int BOMBARDMENT_PORTAL_OPEN_FRAMES = 7;
+        public static final String BOMBARDMENT_PORTAL_ACTIVE = BOMBARDMENT_PORTAL_BASE + "active_";
+        public static final int BOMBARDMENT_PORTAL_ACTIVE_FRAMES = 12;
+        public static final String BOMBARDMENT_PORTAL_CLOSE = BOMBARDMENT_PORTAL_BASE + "close_";
+        public static final int BOMBARDMENT_PORTAL_CLOSE_FRAMES = 8;
+
+        public static final String POISON_PORTAL_BASE = HEAVY_PORTAL_BASE + "poison/";
+        public static final String POISON_PORTAL_OPEN = POISON_PORTAL_BASE + "open_";
+        public static final int POISON_PORTAL_OPEN_FRAMES = 8;
+        public static final String POISON_PORTAL_ACTIVE = POISON_PORTAL_BASE + "active_";
+        public static final int POISON_PORTAL_ACTIVE_FRAMES = 12;
+        public static final String POISON_PORTAL_RELEASE = POISON_PORTAL_BASE + "release_";
+        public static final int POISON_PORTAL_RELEASE_FRAMES = 8;
+        public static final String POISON_PORTAL_CLOSE = POISON_PORTAL_BASE + "close_";
+        public static final int POISON_PORTAL_CLOSE_FRAMES = 8;
+
+        public static final String EMP_PORTAL_BASE = HEAVY_PORTAL_BASE + "emp/";
+        public static final String EMP_PORTAL_OPEN = EMP_PORTAL_BASE + "open_";
+        public static final int EMP_PORTAL_OPEN_FRAMES = 8;
+        public static final String EMP_PORTAL_ACTIVE = EMP_PORTAL_BASE + "active_";
+        public static final int EMP_PORTAL_ACTIVE_FRAMES = 12;
+        public static final String EMP_PORTAL_CLOSE = EMP_PORTAL_BASE + "close_";
+        public static final int EMP_PORTAL_CLOSE_FRAMES = 8;
+
+        public static final String POISON_FIELD_BASE =HEAVY_PORTAL_BASE + "poison_field/";
+
+        public static final String POISON_FIELD_START =POISON_FIELD_BASE + "poison_field_start/";
+        public static final int POISON_FIELD_START_FRAMES = 8;
+
+        public static final String POISON_FIELD_LOOP =POISON_FIELD_BASE + "poison_field_loop/";
+        public static final int POISON_FIELD_LOOP_FRAMES = 12;
+
+        public static final String POISON_FIELD_END =POISON_FIELD_BASE + "poison_field_end/";
+        public static final int POISON_FIELD_END_FRAMES = 8;
     }
 
     public static final class Map {
