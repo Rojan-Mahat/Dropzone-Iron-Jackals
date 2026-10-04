@@ -11,6 +11,13 @@ public final class AssetPaths {
         public static final String SCOPE_OVERLAY = "ui/hud/scope_overlay.png";
     }
 
+    public static final class EnemyProjectile {
+        private EnemyProjectile() {}
+        public static final String BASE = "sprites/enemy_projectiles/";
+        public static final String HEAVY_PROJECTILE= BASE + "heavy.png";
+        public static final String RIFLEMAN_PROJECTILE= BASE + "rifleman.png";
+    }
+
     public static final class FX{
         private FX(){}
         public static final String BASE = "sprites/fx/";

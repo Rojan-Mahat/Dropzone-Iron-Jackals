@@ -61,7 +61,11 @@ public class ShooterGame extends ApplicationAdapter {
     private float heavyPortalFxTimer = 0f;
     private boolean heavyPortalWasActive = false;
     private OrthographicCamera hudCamera;
+    private Array<EnemyProjectile> enemyProjectiles = new Array<>();
+    private EnemyProjectile projectile;
 
+    private Texture riflemanProjectileTexture;
+    private Texture heavyProjectileTexture;
 
     @Override
     public void create(){
@@ -106,6 +110,8 @@ public class ShooterGame extends ApplicationAdapter {
         solidPlatforms = extractSolidPlatformsFromMap(map);
         bullets = new Array<>();
         bulletTexture = new Texture(AssetPaths.Bullets.BASE+ "AR_bullet.png");
+        riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
+        heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
 
         FxAssets.loadOnce();
     }
@@ -230,6 +236,15 @@ public class ShooterGame extends ApplicationAdapter {
         weapon.drawWeapon(batch, grip);
         for(Bullet bullet : bullets)
             bullet.draw(batch);
+
+        createEnemyProjectile();
+        for(EnemyProjectile projectile : enemyProjectiles)
+            projectile.update(dt);
+        for(EnemyProjectile projectile : enemyProjectiles){
+            projectile.draw(batch);
+        }
+        playerEnemyProjectileCollisionChecker();
+        removeEnemyProjectiles();
         drawDroneOverlayFx();
         transferDroneLockToHeavy();
         drawHeavyLockFx();
@@ -293,6 +308,8 @@ shapeRenderer.end();
         bulletTexture.dispose();
         shapeRenderer.dispose();
         FxAssets.dispose();
+        riflemanProjectileTexture.dispose();
+        heavyProjectileTexture.dispose();
     }
     @Override
     public void resize(int width,int height){
@@ -926,7 +943,6 @@ private void drawHeavyPortalFx(float dt){
                     }
                     continue;
                 }
-
                 if((bullet.getPosition().y  - bullet.getRadius() < hurtbox.y + hurtbox.height)
                 && (bullet.getPosition().y  + bullet.getRadius() > hurtbox.y)
                 &&(bullet.getPosition().x  + bullet.getRadius() > hurtbox.x)
@@ -1000,6 +1016,27 @@ private void drawHeavyPortalFx(float dt){
         }
     }
 
+    private void playerEnemyProjectileCollisionChecker(){
+        for(EnemyProjectile projectile : enemyProjectiles){
+            Circle projectileHitbox = new Circle(projectile.getPosition().x, projectile.getPosition().y,projectile.getRadius());
+            for(Rectangle platforms : solidPlatforms){
+                if(Intersector.intersectSegmentRectangle(projectile.getPreviousPosition(),projectile.getPosition(),platforms)
+                || (Intersector.overlaps(projectileHitbox,platforms))){
+                    projectile.considerWasted();
+                    break;
+                }
+            }
+            if(projectile.isWasted())
+                continue;
+
+            if(Intersector.intersectSegmentRectangle(projectile.getPreviousPosition(),projectile.getPosition(),player.getWorldHitbox())
+                || (Intersector.overlaps(projectileHitbox,player.getWorldHitbox()))){
+                    player.takeDamage(projectile.getDamage());
+                    projectile.considerWasted();
+            }
+        }
+    }
+
     private void removeEnemies(){
         for(int i = enemies.size-1 ; i >= 0 ; i--){
             if(enemies.get(i).isReadytoBeRemoved())
@@ -1011,6 +1048,13 @@ private void drawHeavyPortalFx(float dt){
         for(int i = bullets.size-1 ; i >= 0 ; i--){
             if(bullets.get(i).isWasted())
                 bullets.removeIndex(i);        
+        }
+    }
+
+    private void removeEnemyProjectiles(){
+        for(int i = enemyProjectiles.size-1 ; i >= 0 ; i--){
+            if(enemyProjectiles.get(i).isWasted())
+                enemyProjectiles.removeIndex(i);        
         }
     }
 
@@ -1093,6 +1137,25 @@ private void drawHeavyPortalFx(float dt){
         batch.draw(FxAssets.jetpackFill,fillX,fillY,fillWidth,fillHeight);
         batch.draw(FxAssets.jetpackFrame,x,y,width,height);
     }*/
+
+    private void createEnemyProjectile(){
+        for(Enemy enemy: enemies){
+            if(enemy.isRiflemanShotReady()){
+                Vector2 spawn = new Vector2(enemy.getRiflemanMuzzlePosition());
+                Vector2 target = new Vector2(player.getPlayerCentrePosition());
+                enemyProjectiles.add(new EnemyProjectile(spawn,target,1400f,riflemanProjectileTexture,enemy.getRiflemanDamage(),20f,80,65));
+                enemy.consumeRiflemanShot();
+            }
+
+            if(enemy.isHeavyShotReady()){
+                Vector2 spawn = new Vector2(enemy.getHeavyMuzzlePosition());
+                Vector2 target = new Vector2(player.getPlayerCentrePosition());
+                enemyProjectiles.add(new EnemyProjectile(spawn,target,1350f,heavyProjectileTexture,enemy.getHeavyCloseDamage(),40f,300,350));
+                enemy.consumeHeavyShot();
+            }
+        }
+
+    }
 
     
     

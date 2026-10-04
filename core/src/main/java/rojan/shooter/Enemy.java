@@ -205,6 +205,7 @@ public class Enemy{
     private int RANDOM_SELECT_ATTACK = (int) MathUtils.random(1,3);
 
     private boolean DRONE_LOCK_SENT = false;
+    private boolean HEAVY_SHOT_READY = false;
 
     private static final float[] RIFLEMAN_ATTACK_SOCKET_X = {380.5f,378.606761f,376.430786f,378.793841f,378.656559f,380.5f};
     private static final float[] RIFLEMAN_ATTACK_SOCKET_Y = {475.92f,476.254529f,476.767235f,476.339072f,476.128497f,475.92f};
@@ -226,7 +227,6 @@ public class Enemy{
             bodyshotBoxes = new Array<>(bodyshots);
             limbshotBoxes = new Array<>(limbs);
         } 
-    
     }
     private static EnemyHitRegions riflemanHitRegions;
     private static EnemyHitRegions heavyHitRegions;
@@ -255,10 +255,14 @@ public class Enemy{
     private Vector2 RIFLEMAN_MUZZLE_POSITION = new Vector2();
     private Vector2 HEAVY_MUZZLE_POSITION = new Vector2();
 
-    private final float RIFLEMAN_DAMAGE = 12;
-    private final float HEAVY_CLOSE_RANGE_DAMAGE = 22;
+    private final float RIFLEMAN_DAMAGE = 4;
+    private final float HEAVY_CLOSE_RANGE_DAMAGE = 18;
     private final float DRONE_DAMAGE = 8;
     private final float DRILL_DAMAGE = 14;
+
+    private float RIFLEMAN_SHOT_TIMER;
+    private final float RIFLEMAN_FIRE_INTERVAL = 0.2f;
+    private boolean RIFLEMAN_SHOT_READY;
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
@@ -655,7 +659,7 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         Rectangle drillerWorldHurtbox = getWorldHurtbox();
         float drillerCenterX = drillerWorldHurtbox.x + drillerWorldHurtbox.width/2f;
         boolean horizontalAttackRange = Math.abs(playerCenterX-drillerCenterX) <= drillerWorldHurtbox.width/2f + attackRange;
-        boolean verticalOverlap =playerHurtbox.y < drillerWorldHurtbox.y + drillerWorldHurtbox.height && playerHurtbox.y + playerHurtbox.height > drillerWorldHurtbox.y;
+        boolean verticalOverlap = playerHurtbox.y < drillerWorldHurtbox.y + drillerWorldHurtbox.height && playerHurtbox.y + playerHurtbox.height > drillerWorldHurtbox.y;
         playerFoundInsideAttackRadius = horizontalAttackRange && verticalOverlap;
     }
     else{
@@ -771,6 +775,7 @@ private void updateRifleman(boolean playerFoundInsideDetectionRadius,boolean pla
 private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
     scouting = false;
     attacking = false;
+    currentState = EnemyState.IDLE;
     if(position.x + hurtbox.x < playerHurtbox.x){
         facingRight = true;
         velocity.x = moveSpeed;
@@ -782,10 +787,13 @@ private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
 
     float oldPos = position.x;
     float newPos = oldPos + velocity.x * dt;
+
     if((newPos + hurtbox.x + hurtbox.width >= homePlatform.x + homePlatform.width) || (newPos + hurtbox.x <= homePlatform.x))
         position.x = oldPos;
-    else 
+    else{
         position.x = newPos;
+        currentState = EnemyState.WALKING;
+    }
 }
 
 private void riflemanAttack(float dt){
@@ -793,9 +801,33 @@ private void riflemanAttack(float dt){
     scouting = false;
     if(attacking){
         currentState = EnemyState.ATTACK;
-        pendingDamage+=RIFLEMAN_DAMAGE * dt;
+        RIFLEMAN_SHOT_TIMER+=dt;
+
+        if(RIFLEMAN_SHOT_TIMER >= RIFLEMAN_FIRE_INTERVAL && !RIFLEMAN_SHOT_READY){
+            RIFLEMAN_SHOT_READY = true;
+            RIFLEMAN_SHOT_TIMER = 0;
+        }
     }
-    
+}
+
+public boolean isRiflemanShotReady(){
+    return RIFLEMAN_SHOT_READY;
+}
+
+public void consumeRiflemanShot(){
+    RIFLEMAN_SHOT_READY = false;
+}
+
+public Vector2 getRiflemanNozzlePosition(){
+    if(type == EnemyType.RIFLEMAN)
+        return nozzlePosition;
+    return null;
+}
+
+public Vector2 getHeavyNozzlePosition(){
+     if(type == EnemyType.HEAVY)
+        return nozzlePosition;
+    return null;
 }
 
 private void Scouting(float dt){
@@ -819,7 +851,6 @@ private void Scouting(float dt){
         position.x = oldPos;
         facingRight = true;
         velocity.x = moveSpeed;
-
     }
     else 
         position.x = newPos;
@@ -933,8 +964,6 @@ public Vector2 getDroneCenter(){
 }
 
 
-
-
 private boolean overlapsAnySolid(Array<Rectangle> solidPlatforms){
     Rectangle worldHurtbox = getWorldHurtbox();
     for(Rectangle rectangle : solidPlatforms){
@@ -1030,7 +1059,18 @@ private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
     currentState = EnemyState.ATTACK;
     stateTime = 0;
     pendingDamage += HEAVY_CLOSE_RANGE_DAMAGE;
+    HEAVY_SHOT_READY = true;
     HEAVY_CLOSE_SHOT_ONCE = true;
+
+}
+
+
+public boolean isHeavyShotReady(){
+    return HEAVY_SHOT_READY;
+}
+
+public void consumeHeavyShot(){
+    HEAVY_SHOT_READY = false;
 }
 
 private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocity, Array<Rectangle> solidPlatforms,Rectangle heavyPortalBounds){
@@ -1450,6 +1490,14 @@ public void getSpecialAttacks(){
 
 }
 
+public float getHeavyCloseDamage(){
+    return HEAVY_CLOSE_RANGE_DAMAGE;
+}
+
+public float getRiflemanDamage(){
+    return RIFLEMAN_DAMAGE;
+}
+
 public static TextureRegion getHealthBarFrame(float healthRatio){
     healthRatio = MathUtils.clamp(healthRatio,0f,1f);
     int frameIndex = 11-(int)Math.ceil(11f*healthRatio);
@@ -1457,7 +1505,10 @@ public static TextureRegion getHealthBarFrame(float healthRatio){
 }
 
 
+
+
 public static void main(String[] args){
 
     }
 }
+

@@ -488,6 +488,8 @@ sprites/enemies/iron_jackals/jackal_rifleman/walking_02.png
 sprites/enemies/iron_jackals/jackal_rifleman/walking_03.png
 sprites/enemies/iron_jackals/jackal_rifleman/walking_04.png
 sprites/enemies/iron_jackals/jackal_rifleman/walking_05.png
+sprites/enemy_projectiles/heavy.png
+sprites/enemy_projectiles/rifleman.png
 sprites/explosion/GroundExplo__000.png
 sprites/explosion/GroundExplo__001.png
 sprites/explosion/GroundExplo__002.png
