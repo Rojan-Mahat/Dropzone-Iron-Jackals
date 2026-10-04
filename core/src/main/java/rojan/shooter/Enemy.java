@@ -35,7 +35,7 @@ public class Enemy{
     private EnemyType type;
     private float hitPoints;
     private float maxHitPoints;
-    private float damage;
+    private float pendingDamage;
     private Vector2 position;
     private Vector2 velocity;
     private float moveSpeed;
@@ -180,8 +180,9 @@ public class Enemy{
     private float BOMBARDMENT_END_X;
     private Array<Rectangle> BOMBARDMENT_PROJECTILES = new Array<>();
 
-    private final float POISON_DAMAGE = 2f;
-    private final float BOMBARDMENT_DAMAGE = 15f;
+    private final float POISON_DAMAGE = 8f;
+    private final float POISON_LINGERING_DAMAGE = 3f;
+    private final float BOMBARDMENT_DAMAGE = 20f;
 
     private boolean PLAYER_POISIONED = false;
     private boolean PLAYER_STUNNED = false;
@@ -253,6 +254,11 @@ public class Enemy{
 
     private Vector2 RIFLEMAN_MUZZLE_POSITION = new Vector2();
     private Vector2 HEAVY_MUZZLE_POSITION = new Vector2();
+
+    private final float RIFLEMAN_DAMAGE = 12;
+    private final float HEAVY_CLOSE_RANGE_DAMAGE = 22;
+    private final float DRONE_DAMAGE = 8;
+    private final float DRILL_DAMAGE = 14;
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
@@ -502,12 +508,43 @@ public class Enemy{
         int frameIndex = 11 - (int)Math.ceil(11f * healthRatio);
 
         float barWidth = 90f;
+        if(type == EnemyType.HOVER_DRONE)
+            barWidth = 60f;
         float barHeight = barWidth * (48f / 256f);
-
         Rectangle worldHurtbox = getWorldHurtbox();
 
         float barX = worldHurtbox.x + worldHurtbox.width/2f - barWidth/2f;
         float barY = worldHurtbox.y + worldHurtbox.height + 10f;
+
+        if(type == EnemyType.DRILL_CRAWLER && currentState == EnemyState.DRILL){
+            float radians = drillRotation*MathUtils.degreesToRadians;
+            float cos = MathUtils.cos(radians);
+            float sin = MathUtils.sin(radians);
+
+            float left = hurtbox.x;
+            float right = hurtbox.x+hurtbox.width;
+            float bottom = hurtbox.y;
+            float top = hurtbox.y+hurtbox.height;
+
+            float x1 = left*cos-bottom*sin;
+            float y1 = left*sin+bottom*cos;
+
+            float x2 = right*cos-bottom*sin;
+            float y2 = right*sin+bottom*cos;
+
+            float x3 = right*cos-top*sin;
+            float y3 = right*sin+top*cos;
+
+            float x4 = left*cos-top*sin;
+            float y4 = left*sin+top*cos;
+
+            float minX = Math.min(Math.min(x1,x2),Math.min(x3,x4));
+            float maxX = Math.max(Math.max(x1,x2),Math.max(x3,x4));
+            float maxY = Math.max(Math.max(y1,y2),Math.max(y3,y4));
+
+            barX = position.x+(minX+maxX)/2f-barWidth/2f;
+            barY = position.y+maxY+10f;
+        }
         batch.draw(healthBarFrames[frameIndex],barX,barY,barWidth,barHeight);
     }
 
@@ -640,10 +677,6 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
         updateHoverDrone(playerFoundInsideDetectionRadius,playerFoundInsideAttackRadius,dt ,playerPosition , playerHurtbox, solidPlatforms);
 }
 
-private void riflemanDamage(float dt ,Vector2 playerPos){
-    
-}
-
 
 private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean playerFoundInsideAttackRadius,float dt,Vector2 playerPos,Array<Rectangle> solidPlatforms){
     if(currentState == EnemyState.DRILL){
@@ -653,7 +686,7 @@ private void updateDrillCrawler(boolean playerFoundInsideDetectionRadius,boolean
 
     if(playerFoundInsideAttackRadius){
         currentState = EnemyState.ATTACK;
-        riflemanDamage(dt,playerPos);
+        pendingDamage+=DRILL_DAMAGE * dt;
         return;
     }
 
@@ -756,8 +789,10 @@ private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
 private void riflemanAttack(float dt){
     attacking = true;
     scouting = false;
-    if(attacking)
+    if(attacking){
         currentState = EnemyState.ATTACK;
+        pendingDamage+=RIFLEMAN_DAMAGE * dt;
+    }
     
 }
 
@@ -866,7 +901,7 @@ private void droneAttack(Rectangle playerHurtbox, float dt){
             HEAVY_LOCK = true;
             DRONE_LOCK_SENT = true;
         }
-        droneDamage();
+        pendingDamage+=DRONE_DAMAGE * dt;
     }
     else{
         currentState = EnemyState.CHARGING;
@@ -881,7 +916,6 @@ private void droneAttack(Rectangle playerHurtbox, float dt){
     }
 }
 
-private void droneDamage(){}
 
 public float getDroneBeamMagnitude(){
     return droneBeamMagnitude;
@@ -993,7 +1027,7 @@ private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
     }
     currentState = EnemyState.ATTACK;
     stateTime = 0;
-    heavyDealCloseRangeDamage();
+    pendingDamage += HEAVY_CLOSE_RANGE_DAMAGE;
     HEAVY_CLOSE_SHOT_ONCE = true;
 }
 
@@ -1063,7 +1097,7 @@ private void HEAVY_POISION_ATTACK(Rectangle playerHurtbox, float dt){
             PLAYER_INSIDE_POISON = true;
             PLAYER_POISIONED = true;
             POISON_LINGERING_DURATION = 0;
-            //hurtplayer(POISION_DAMAGE * dt);
+            pendingDamage+=POISON_DAMAGE * dt;
             return;
         }
         PLAYER_INSIDE_POISON = false;
@@ -1110,7 +1144,7 @@ private void HEAVY_BOMBARDMENT_ATTACK(Rectangle playerHurtbox, float dt, Array<R
         }
 
         if(object.overlaps(playerHurtbox)){
-            //hurtplayer(BOMBARDMENT_DAMAGE)
+            pendingDamage+=BOMBARDMENT_DAMAGE;
             BOMBARDMENT_PROJECTILES.removeIndex(i);
         }
     }
@@ -1141,14 +1175,10 @@ private void  HEAVY_STUN_ATTACK(Rectangle playerHurtbox, float dt){
     }
 }
 
-private void heavyDealCloseRangeDamage(){
-
-}
-
 private void updateLingeringDamages(float dt){
     if(!PLAYER_INSIDE_POISON  && PLAYER_POISIONED){
         if(POISON_LINGERING_DURATION < POISON_LINGERING_LIFETIME){
-            //hurtplayer(POISION_LINGERING_DAMAGE * dt);
+            pendingDamage += POISON_LINGERING_DAMAGE * dt;
             POISON_LINGERING_DURATION+=dt;
         }
         else{
@@ -1216,7 +1246,6 @@ private void drawHeavyCloseRangeArm(SpriteBatch batch,float bodyX,float bodyY,fl
     float scaleY = bodyHeight/1024f;
 
     float socketOffsetX = (socketX[frameIndex]-animations.originX)*scaleX;
-
     float armSocketWorldX;
 
     if(facingRight)
@@ -1244,19 +1273,7 @@ private void drawHeavyCloseRangeArm(SpriteBatch batch,float bodyX,float bodyY,fl
         armRotation = 180f-baseRotation[frameIndex];
 
     float armScaleY = facingRight ? 1f : -1f;
-
-    batch.draw(
-        armFrame,
-        armX,
-        armY,
-        armOriginX,
-        armOriginY,
-        bodyWidth,
-        bodyHeight,
-        1f,
-        armScaleY,
-        armRotation
-    );
+    batch.draw(armFrame, armX, armY, armOriginX, armOriginY, bodyWidth,bodyHeight,1f,armScaleY,armRotation);
 }
 
 private void drawRiflemanArm(SpriteBatch batch,float bodyX,float bodyY,float bodyWidth,float bodyHeight,int frameIndex){
@@ -1333,19 +1350,7 @@ private void drawRiflemanArm(SpriteBatch batch,float bodyX,float bodyY,float bod
         armRotation = 180f-baseRotation[frameIndex];
 
     float armScaleY = facingRight ? 1f : -1f;
-
-    batch.draw(
-        armFrame,
-        armX,
-        armY,
-        armOriginX,
-        armOriginY,
-        bodyWidth,
-        bodyHeight,
-        1f,
-        armScaleY,
-        armRotation
-    );
+    batch.draw(armFrame, armX, armY, armOriginX, armOriginY, bodyWidth, bodyHeight, 1f, armScaleY, armRotation);
 }
 
 private void calculateWeaponMuzzle(Vector2 output,float socketX,float socketY,float muzzleOffsetX,float muzzleOffsetY,float angleDegrees){
@@ -1431,6 +1436,23 @@ public void setHeavyLock(boolean value){
     HEAVY_LOCK = value;
 }
 
+public float getPendingDamage(){
+    return pendingDamage;
+}
+
+public void resetPendingDamage(){
+    pendingDamage = 0;
+}
+
+public void getSpecialAttacks(){
+
+}
+
+public static TextureRegion getHealthBarFrame(float healthRatio){
+    healthRatio = MathUtils.clamp(healthRatio,0f,1f);
+    int frameIndex = 11-(int)Math.ceil(11f*healthRatio);
+    return healthBarFrames[frameIndex];
+}
 
 
 public static void main(String[] args){

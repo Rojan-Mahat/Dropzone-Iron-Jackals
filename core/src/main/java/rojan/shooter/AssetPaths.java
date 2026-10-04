@@ -2,6 +2,15 @@ package rojan.shooter;
 public final class AssetPaths {
     private AssetPaths() {}
 
+    public static class Hud{
+        public static final String PLAYER_HEALTH_FRAME = "ui/hud/player_health_frame.png";
+        public static final String PLAYER_HEALTH_FILL = "ui/hud/player_health_fill.png";
+        public static final String JETPACK_FRAME = "ui/hud/jetpack_frame.png";
+        public static final String JETPACK_FILL = "ui/hud/jetpack_fill.png";
+        public static final String AMMO_PANEL = "ui/hud/ammo_panel.png";
+        public static final String SCOPE_OVERLAY = "ui/hud/scope_overlay.png";
+    }
+
     public static final class FX{
         private FX(){}
         public static final String BASE = "sprites/fx/";

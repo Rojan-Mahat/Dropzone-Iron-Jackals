@@ -60,6 +60,7 @@ public class ShooterGame extends ApplicationAdapter {
 
     private float heavyPortalFxTimer = 0f;
     private boolean heavyPortalWasActive = false;
+    private OrthographicCamera hudCamera;
 
 
     @Override
@@ -69,6 +70,10 @@ public class ShooterGame extends ApplicationAdapter {
         mapRenderer = new OrthogonalTiledMapRenderer(map); 
         camera = createCameraFromMap(map);
         mapRenderer.setView(camera);
+
+        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+        hudCamera.position.set(Gdx.graphics.getWidth()/2f,Gdx.graphics.getHeight()/2f,0);
+        hudCamera.update();
 
         terrain = getTerrainObjectArray(map);
         terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
@@ -91,8 +96,6 @@ public class ShooterGame extends ApplicationAdapter {
         enemies.add(heavy);
         enemies.add(hoverDrone);
         enemies.add(drillCrawler);
-        
-
         
 
         shapeRenderer = new ShapeRenderer();
@@ -158,14 +161,16 @@ public class ShooterGame extends ApplicationAdapter {
         else
             player.setShootingFalse();
 
-        if(shootOnce){
+        if(shootOnce  && weapon.canShoot()){
             createBulletWhenFired(mouseWorldPosition);
+            weapon.consumeAmmo();
             mouseHeld = 0f;
         }
-        else if(shooting){
+        else if(shooting && weapon.isAutomatic() && weapon.canShoot()){
             mouseHeld+=dt;
             if(mouseHeld >= fireInterval){
                 createBulletWhenFired(mouseWorldPosition);
+                weapon.consumeAmmo();
                 mouseHeld-=fireInterval;
             }
         }
@@ -178,6 +183,8 @@ public class ShooterGame extends ApplicationAdapter {
             else
                 player.stand(solidPlatforms);   
         }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.R))
+            weapon.reload();
         /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
             if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
                 player.switchPlayerModeArmed();
@@ -189,6 +196,7 @@ public class ShooterGame extends ApplicationAdapter {
             bullet.update(dt);
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
+        batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
         for(TiledMapTileMapObject terrainObject : terrain){
@@ -227,8 +235,17 @@ public class ShooterGame extends ApplicationAdapter {
         drawHeavyLockFx();
         drawHeavyPortalFx(dt);
         bulletEnemyCollisionChecker();
+        communicateDamage();
         removeEnemies();
         batch.end(); 
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+
+        drawPlayerHealthHud();
+
+        batch.end();
+        batch.setProjectionMatrix(camera.combined);
+
         shapeRenderer.setProjectionMatrix(camera.combined);
 shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
@@ -276,6 +293,10 @@ shapeRenderer.end();
         bulletTexture.dispose();
         shapeRenderer.dispose();
         FxAssets.dispose();
+    }
+    @Override
+    public void resize(int width,int height){
+        hudCamera.setToOrtho(false,width,height);
     }
 
 
@@ -1022,6 +1043,61 @@ private void drawHeavyPortalFx(float dt){
 
         return new Rectangle(cameraLeft+horizontalMargin,cameraBottom+bottomMargin,visibleWidth-horizontalMargin*2f,visibleHeight-bottomMargin-topMargin);
     }
+
+    private void communicateDamage(){
+        float damage = 0;
+        for(Enemy enemy : enemies){
+            damage+= enemy.getPendingDamage();
+            enemy.resetPendingDamage();
+        }
+        player.takeDamage(damage);
+    }
+
+    private void drawPlayerHealthHud(){
+        float ratio = MathUtils.clamp(player.getHP()/player.getMaxHp(),0f,1f);
+        float x = 24f;
+        float width = 220f;
+
+        float scale = width/512f;
+        float height = 80f*scale;
+        
+        float y = Gdx.graphics.getHeight()-height-24f;
+        float fillX = x+88f*scale;
+        float fillY = y+28f*scale;
+
+
+        float fullFillWidth = 384f*scale;
+        float fillWidth = fullFillWidth*ratio;
+        float fillHeight = 24f*scale;
+        
+        batch.draw(FxAssets.playerHealthFrame,x,y,width,height);
+         if(ratio > 0)
+            batch.draw(FxAssets.playerHealthFill,fillX,fillY,fillWidth,fillHeight);
+    }
+
+    /*private void drawJetpackHud(){
+        float ratio = player.getJetpackFuel()/player.getMaxJetpackFuel();
+        float x = 24f;
+        float y = Gdx.graphics.getHeight()-108f;
+        float width = 220f;
+        float height = 24f;
+
+        float fillPaddingX = 8f;
+        float fillPaddingY = 6f;
+
+        float fillX = x + fillPaddingX;
+        float fillY = y + fillPaddingY;
+        float fillWidth = (width - fillPaddingX*2f) * ratio;
+        float fillHeight = height - fillPaddingY*2f;
+
+        batch.draw(FxAssets.jetpackFill,fillX,fillY,fillWidth,fillHeight);
+        batch.draw(FxAssets.jetpackFrame,x,y,width,height);
+    }*/
+
+    
+    
+
+
 
 
 

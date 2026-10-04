@@ -929,3 +929,17 @@ sprites/soldiers/player1/walkShoot/walkShoot_008.png
 sprites/soldiers/player1/walkShoot/walkShoot_009.png
 sprites/soldiers/player1/walkShoot/walkShoot_010.png
 sprites/soldiers/player1/walkShoot/walkShoot_011.png
+ui/hud/ammo_icon.png
+ui/hud/ammo_panel.png
+ui/hud/hp_icon.png
+ui/hud/jetpack_fuel_fill.png
+ui/hud/jetpack_fuel_frame.png
+ui/hud/jetpack_icon.png
+ui/hud/player_health_fill.png
+ui/hud/player_health_frame.png
+ui/hud/powerup_ammo.png
+ui/hud/powerup_damage_boost.png
+ui/hud/powerup_health.png
+ui/hud/powerup_jetpack_refill.png
+ui/hud/powerup_shield.png
+ui/hud/scope_overlay.png

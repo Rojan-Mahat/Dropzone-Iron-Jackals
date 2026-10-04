@@ -20,13 +20,19 @@ public class Player{
     private Vector2 position;
     private float width;
     private float height;
+    private float maxHp;
+    private float Hp;
+
+    private float maxFuel;
+    private float fuel;
+
     private Vector2 gunHoldingPositionOffset;
 
     private Vector2 velocity;
     private float moveSpeed;
 
     private boolean isRunning;
-
+    private boolean playerDead;
 
     private Rectangle movementOffset;
     private Rectangle crouchMovementOffset;
@@ -37,6 +43,9 @@ public class Player{
 
     private float maxRiseSpeed = 550;
     private float maxFallSpeed = -800;
+
+    private final float fuelMileage = 10f;
+    private final float fuelPump = 12.5f;
 
     private enum PlayerState{
                     IDLE,
@@ -153,6 +162,11 @@ public class Player{
         position = new Vector2(spawnX,spawnY);
         width = widthfromMap;
         height = heightfromMap;
+
+        maxHp = 100;
+        Hp = 100;
+        maxFuel = 100;
+        fuel = maxFuel;
 
         velocity = new Vector2(0,0);
         moveSpeed = 300f;
@@ -677,8 +691,10 @@ public class Player{
     }
 
     public void reactToGravity(float gravity , float dt){
-        if(!isGrounded)
+        if(!isGrounded){
             velocity.y+= gravity * dt;
+            rechargeFuel(dt);
+        }
         else if(isGrounded){
             velocity.y = 0;
             airTime = 0;
@@ -690,10 +706,13 @@ public class Player{
     }
 
     public void reactToJetpack(float thrust, float dt){
-        isJetPackActive = true;
-        velocity.y += thrust * dt;
-        if(velocity.y > maxRiseSpeed)
-              velocity.y = maxRiseSpeed;
+        if(canFly()){
+            isJetPackActive = true;
+            velocity.y += thrust * dt;
+            consumeFuel(dt);
+            if(velocity.y > maxRiseSpeed)
+                velocity.y = maxRiseSpeed;
+        }
     }
 
     public Vector2 getHandPosition(){
@@ -812,6 +831,54 @@ public class Player{
         isShooting = false;
     }
 
+    public void takeDamage(float mag){
+        Hp -= mag;
+        if(Hp <= 0){
+            Hp = 0;
+            playerDead();
+            return;
+        }
+    }
+
+    public boolean isDead(){
+        return playerDead;
+    }
+
+    public void playerDead(){
+        playerDead = true;
+        currentState = PlayerState.DEAD;
+    }
+
+    public void heal(float mag){
+        Hp+=mag;
+        if(Hp>=maxHp){
+            Hp = maxHp;
+        }
+    }
+
+    public float getHP(){
+        return Hp;
+    }
+
+    public float getMaxHp(){
+        return maxHp;
+    }
+
+    public boolean canFly(){
+        return fuel > 0;
+    }
+
+    public void consumeFuel(float dt){
+        fuel-= fuelMileage * dt;
+        if(fuel <= 0)
+            fuel = 0;
+    }
+
+    public void rechargeFuel(float dt){
+        fuel+=fuelPump * dt;
+        if(fuel > maxFuel)
+            fuel = maxFuel;
+    }
 
 
  

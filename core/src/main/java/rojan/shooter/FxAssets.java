@@ -28,6 +28,12 @@ public final class FxAssets{
     public static TextureRegion[] poisonFieldLoop;
     public static TextureRegion[] poisonFieldEnd;
 
+
+    public static Texture playerHealthFrameTexture;
+    public static Texture playerHealthFillTexture;
+    public static TextureRegion playerHealthFrame;
+    public static TextureRegion playerHealthFill;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -53,6 +59,11 @@ public final class FxAssets{
         poisonFieldStart = loadFrames(AssetPaths.FX.POISON_FIELD_START,AssetPaths.FX.POISON_FIELD_START_FRAMES);
         poisonFieldLoop =loadFrames(AssetPaths.FX.POISON_FIELD_LOOP,AssetPaths.FX.POISON_FIELD_LOOP_FRAMES);
         poisonFieldEnd =loadFrames(AssetPaths.FX.POISON_FIELD_END,AssetPaths.FX.POISON_FIELD_END_FRAMES);
+
+        playerHealthFrameTexture = new Texture(AssetPaths.Hud.PLAYER_HEALTH_FRAME);
+        playerHealthFillTexture = new Texture(AssetPaths.Hud.PLAYER_HEALTH_FILL);
+        playerHealthFrame = new TextureRegion(playerHealthFrameTexture);
+        playerHealthFill = new TextureRegion(playerHealthFillTexture);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -72,5 +83,7 @@ public final class FxAssets{
         for(Texture texture : loadedTextures)
             texture.dispose();
         loadedTextures = null;
+        playerHealthFrameTexture.dispose();
+        playerHealthFillTexture.dispose();
     }
 }

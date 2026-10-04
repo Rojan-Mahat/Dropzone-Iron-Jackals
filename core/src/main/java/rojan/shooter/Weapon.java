@@ -10,8 +10,10 @@ public class Weapon{
     private Vector2 offset;
     private float width;
     private float height;
-    private float damage;
-    private float fireRate = 5f;
+    private float headDamage;
+    private float bodyDamage;
+    private float limbDamage;
+    private float fireRate;
     public enum WeaponType{
         PISTOL,
         AR,
@@ -21,13 +23,21 @@ public class Weapon{
         SMG
     }
 
+    private float reloadSpeed;
+    private boolean automatic;
+    private float maxScope;
+    private int magazineSize;
+
+    private int currentAmmo;
+    private int reserveAmmo;
+
     private WeaponType currentWeapon;
+    private float angleOfRotation;
+    private boolean facingLeft;
+
+
     private Texture ARtexture;
     private TextureRegion ARregion;
-    private float angleOfRotation;
-
-    private boolean facingLeft;
-    
 
 
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
@@ -37,9 +47,8 @@ public class Weapon{
         this.width = width * weaponScale;
         this.height = height * weaponScale;
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
-
-        ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
-        ARregion = new TextureRegion(ARtexture);
+        determineWeaponStats();
+        currentAmmo = magazineSize;
     }
 
     public void drawWeapon(SpriteBatch batch,Vector2 playerHoldingGunPosition ){
@@ -80,6 +89,124 @@ public class Weapon{
     public float getAngleOfRotation(){
         return angleOfRotation;
     }
+
+    private void determineWeaponStats(){
+        if(currentWeapon == WeaponType.PISTOL){
+            magazineSize = 8;
+            reloadSpeed = 2.5f;
+            headDamage = 60;
+            bodyDamage = 30;
+            limbDamage = 20;
+            automatic = false;
+            maxScope = 2.3f;
+            fireRate = 2.5f;
+
+             reserveAmmo = 48;
+        }
+        if(currentWeapon == WeaponType.AR){
+            magazineSize = 30;
+            reloadSpeed = 3f;
+            headDamage = 50;
+            bodyDamage = 30;
+            limbDamage = 20;
+            automatic = true;
+            fireRate = 5;
+            maxScope = 4.2f;
+            reserveAmmo = 120;
+
+            ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
+            ARregion = new TextureRegion(ARtexture);
+        }
+
+        /*if(currentWeapon == WeaponType.ROCKET_LAUNCHER){
+            magazineSize = 8;
+            reloadSpeed = 2.5f;
+            headDamage = 60;
+            bodyDamage = 30;
+            limbDamage = 20;
+            automatic = false;
+            
+        }*/
+        
+        if(currentWeapon == WeaponType.SHOTGUN){
+            magazineSize = 6;
+            reloadSpeed = 3.5f;
+            headDamage = 180;
+            bodyDamage = 80;
+            limbDamage = 50;
+            automatic = false;
+            fireRate = 1.5f;
+            maxScope = 2;
+
+            reserveAmmo = 35;
+        }
+
+        if(currentWeapon == WeaponType.SMG){
+            magazineSize = 30;
+            reloadSpeed = 3f;
+            headDamage = 25;
+            bodyDamage = 18;
+            limbDamage = 10;
+            automatic = true;
+            fireRate = 9;
+            maxScope = 3;
+
+            reserveAmmo = 150;
+        }
+
+        if(currentWeapon == WeaponType.SNIPER){
+            magazineSize = 6;
+            reloadSpeed = 4f;
+            headDamage = 180;
+            bodyDamage = 80;
+            limbDamage = 50;
+            automatic = false;
+            maxScope = 8f;
+            fireRate = 1;
+
+            reserveAmmo = 24;
+        }
+    }
+
+    public boolean canShoot(){
+        return currentAmmo > 0;
+    }
+
+    public void consumeAmmo(){
+        if(canShoot())
+            currentAmmo--;
+    }
+
+    public void reload(){
+        int neededAmmo = magazineSize-currentAmmo;
+        int ammoToLoad = Math.min(neededAmmo,reserveAmmo);
+
+        currentAmmo += ammoToLoad;
+        reserveAmmo -= ammoToLoad;
+    }
+
+    public int getCurrentAmmo(){
+        return currentAmmo;
+    }
+
+    public int getReserveAmmo(){
+        return reserveAmmo;
+    }
+
+    public int getMagazineSize(){
+        return magazineSize;
+    }
+
+    public boolean isAutomatic(){
+        return automatic;
+    }
+
+
+
+
+
+
+
 
     public static void main(String[] args){
 
