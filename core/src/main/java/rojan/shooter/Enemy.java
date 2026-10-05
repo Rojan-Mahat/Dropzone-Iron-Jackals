@@ -248,6 +248,7 @@ public class Enemy{
     private boolean DRONE_COOLDOWN;
     private float DRONE_COOLDOWN_TIMER = 0;
     private float HEAVY_LOCK_TIMER = 0;
+    private float HEAVY_PORTAL_FX_TIMER = 0;
     private float RANDOM_LOCK_LIMIT = MathUtils.random(0.85f,(RANDOM_LIMIT-0.2f));
 
     private float droneBeamMagnitude;
@@ -265,6 +266,7 @@ public class Enemy{
     private float RIFLEMAN_SHOT_TIMER;
     private final float RIFLEMAN_FIRE_INTERVAL = 0.2f;
     private boolean RIFLEMAN_SHOT_READY;
+    private Vector2 enemyDeathLocation;
 
     Enemy(EnemyType type, float x, float y, float drawWidth, float drawHeight, Rectangle hitbox,Array<Circle> drillCircles){
         this.type = type;
@@ -273,6 +275,7 @@ public class Enemy{
         this.drawHeight = drawHeight * ENEMY_SCALE;
         this.hurtbox = new Rectangle(scaleRectangle(hitbox));
         velocity = new Vector2();
+        this.enemyDeathLocation = new Vector2();
         if(type == EnemyType.RIFLEMAN){
             animations = riflemanAnimations;
             this.hitRegions = riflemanHitRegions;
@@ -637,8 +640,13 @@ public void updateEnemy(float dt, Vector2 playerPosition,Array<Rectangle> solidP
     stateTime+= dt;
     if(currentState == EnemyState.DEAD){
         if(!readyTobeRemoved){
-            if(stateTime >= DEATH_FRAME_DURATION * animations.deathFrames.length)
+            if(stateTime >= DEATH_FRAME_DURATION * animations.deathFrames.length){
+                Rectangle hurtbox = getWorldHurtbox();
+                enemyDeathLocation.x = hurtbox.x + hurtbox.width/2;
+                enemyDeathLocation.y = hurtbox.y + hurtbox.height/2;
                 readyTobeRemoved = true;
+                
+            }
             return;
         }
         return;
@@ -833,6 +841,11 @@ public Vector2 getHeavyNozzlePosition(){
 }
 
 private void Scouting(float dt){
+    if(homePlatform == null){
+        velocity.x = 0;
+        currentState = EnemyState.IDLE;
+        return;
+    }
     attacking = false;
     scouting = true;
     if(scouting)
@@ -1011,6 +1024,7 @@ private void updateHeavy(boolean playerFoundInsideAttackRadius,float dt,Rectangl
             HEAVY_RANGE_ATTACK_ACTIVE = false;
             HEAVY_RANGE_ATTACK_COMPLETED = false;
             HEAVY_PORTAL_ATTACK_CHOSEN = false;
+            HEAVY_PORTAL_FX_TIMER = 0;
         }
         return;
     }
@@ -1114,6 +1128,7 @@ private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocit
 }
 
 private void heavyRangeAttack(Rectangle playerHurtbox, float dt, Array<Rectangle> solidPlatforms){
+    HEAVY_PORTAL_FX_TIMER+=dt;
     if(!HEAVY_PORTAL_ATTACK_CHOSEN){
        RANDOM_SELECT_ATTACK = (int) MathUtils.random(1,3);
        HEAVY_PORTAL_ATTACK_CHOSEN = true;
@@ -1503,8 +1518,8 @@ public void resetPendingDamage(){
     pendingDamage = 0;
 }
 
-public void getSpecialAttacks(){
-
+public float getHeavyPortalFxTimer(){
+    return HEAVY_PORTAL_FX_TIMER;
 }
 
 public float getHeavyCloseDamage(){
@@ -1542,6 +1557,10 @@ public boolean isOnPlatform(Rectangle platform){
     boolean onTop = Math.abs(enemyFeetY - (platform.y + platform.height)) < 8f;
 
     return withinX && onTop;
+}
+
+public Vector2 getEnemyDeathLocation(){
+    return enemyDeathLocation;
 }
 
 

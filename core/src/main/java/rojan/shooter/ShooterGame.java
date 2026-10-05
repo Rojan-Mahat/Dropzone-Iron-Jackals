@@ -24,6 +24,8 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rojan.shooter.Enemy.EnemyType;
+import rojan.shooter.LootCrate.CrateType;
+import rojan.shooter.Weapon.WeaponType;
 
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
@@ -60,8 +62,6 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Enemy> enemies;
     private ShapeRenderer shapeRenderer;
 
-    private float heavyPortalFxTimer = 0f;
-    private boolean heavyPortalWasActive = false;
     private OrthographicCamera hudCamera;
     private Array<EnemyProjectile> enemyProjectiles = new Array<>();
 
@@ -92,6 +92,7 @@ public class ShooterGame extends ApplicationAdapter {
     private int nextBodyshotReward = 10;
     private int nextLimbshotReward = 15;
     private int nextKillReward = 10;
+    private LootCrate activeLootCrate;
 
     private static class BombardmentImpactFx{
         Vector2 position;
@@ -133,6 +134,14 @@ public class ShooterGame extends ApplicationAdapter {
 
     private Array<Rectangle> groundEnemySpawnPoints;
     private Array<Rectangle> drillerSpawnPoints;
+    private Array<LootCrate> lootCrates;
+    private Inventory inventory;
+    private Array<Rectangle> specialCrateSpawnPoints;
+    private float SPECIAL_CRATE_TIMER = 0f;
+    //private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,75f);
+    private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
+    private final float crateWidth = 75f;
+    private final float crateHeight = 60f;
 
     @Override
     public void create(){
@@ -189,7 +198,14 @@ public class ShooterGame extends ApplicationAdapter {
         riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
         heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
 
+        inventory = new Inventory();
+        inventory.addWeapon(Weapon.WeaponType.AR);
+        inventory.addAmmo(Weapon.WeaponType.AR,120);
+        lootCrates = new Array<>();
+
         FxAssets.loadOnce();
+        LootCrate.loadAssetsOnce();
+        specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
     }
 
     @Override
@@ -266,15 +282,21 @@ public class ShooterGame extends ApplicationAdapter {
                 player.stand(solidPlatforms);   
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.R))
-            weapon.reload();
+            reloadGun();
 
         if(Gdx.input.justTouched()){
             float mouseX = Gdx.input.getX();
             float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
 
             if(reloadButtonBounds.contains(mouseX,mouseY))
-                weapon.reload();
+                reloadGun();
         }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.E))
+            openNearbyCrate();
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.Q))
+            claimActiveCrate();
         /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
             if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
                 player.switchPlayerModeArmed();
@@ -340,7 +362,13 @@ public class ShooterGame extends ApplicationAdapter {
         for(EnemyProjectile projectile : enemyProjectiles){
             projectile.draw(batch);
         }
-
+        spawnSpecialCrate(dt);
+        for(LootCrate crate : lootCrates){
+            crate.update(dt);
+            crate.drawCrate(batch,dt);
+            removeLootCrates();
+        }
+        drawLootDashboard();
         playerEnemyProjectileCollisionChecker();
         removeEnemyProjectiles();
         drawDroneOverlayFx();
@@ -365,7 +393,6 @@ public class ShooterGame extends ApplicationAdapter {
         drawJetpackDisabledHud();
         drawScoreDashboard();
         drawAmmoHud();
-        draweEmptyMagazineIconHUD();
 
         batch.end();
         batch.setProjectionMatrix(camera.combined);
@@ -832,18 +859,31 @@ private void drawDroneOverlayFx(){
 }
 
 private void transferDroneLockToHeavy(){
-    Enemy heavy = null;
-    Enemy drone = null;
-    for(Enemy enemy : enemies){
-        if(enemy.getType() == EnemyType.HEAVY)
-            heavy = enemy;
-        else if(enemy.getType() == EnemyType.HOVER_DRONE)
-            drone = enemy;
-    }
-    if(heavy != null && drone != null && drone.isHeavyLocking()){
-        if(!heavy.isHeavyLocking() && !heavy.isHeavyRangeAttackActive())
+    for(int i=0;i<enemies.size;i++){
+        Enemy drone = enemies.get(i);
+
+        if(drone.getType() != EnemyType.HOVER_DRONE)
+            continue;
+
+        if(!drone.isHeavyLocking())
+            continue;
+
+        for(int j=0;j<enemies.size;j++){
+            Enemy heavy = enemies.get(j);
+
+            if(heavy.getType() != EnemyType.HEAVY)
+                continue;
+
+            if(heavy.isHeavyLocking())
+                continue;
+
+            if(heavy.isHeavyRangeAttackActive())
+                continue;
+
             heavy.setHeavyLock(true);
-        drone.setHeavyLock(false);
+            drone.setHeavyLock(false);
+            break;
+        }
     }
 }
 private void drawHeavyLockFx(){
@@ -885,21 +925,14 @@ private void drawHeavyPortalFx(float dt){
         if(enemy.getType() != EnemyType.HEAVY)
             continue;
 
-        boolean active = enemy.isHeavyRangeAttackActive();
-
-        if(!active){
-            heavyPortalFxTimer = 0f;
-            heavyPortalWasActive = false;
+        if(!enemy.isHeavyRangeAttackActive())
             continue;
-        }
 
-        if(!heavyPortalWasActive){
-            heavyPortalFxTimer = 0f;
-            heavyPortalWasActive = true;
-        }
+        float heavyPortalFxTimer = enemy.getHeavyPortalFxTimer();
+        Vector2 position = enemy.getHeavyPredictedRainFirePosition();
 
         heavyPortalFxTimer += dt;
-        Vector2 position = enemy.getHeavyPredictedRainFirePosition();
+
         TextureRegion[] openFrames;
         TextureRegion[] activeFrames;
         int attackType = enemy.getHeavySelectedAttack();
@@ -1028,7 +1061,7 @@ private void drawHeavyPortalFx(float dt){
             float pulseDuration =FxAssets.empPulse.length * pulseFrameDuration;
 
             if(heavyPortalFxTimer >= pulseStartTime && heavyPortalFxTimer < pulseStartTime + pulseDuration){
-                float pulseTime =heavyPortalFxTimer-pulseStartTime;
+                float pulseTime = heavyPortalFxTimer-pulseStartTime;
                 int frameIndex =(int)(pulseTime/pulseFrameDuration);
                 TextureRegion pulseFrame =FxAssets.empPulse[frameIndex];
                 float pulseSize = 80f*(1024f/355f);
@@ -1282,9 +1315,7 @@ private void drawJetpackDisabledHud(){
                     pendingScore+=5;
                 }
                 TOTAL_KILL_COUNT++;
-                if(MathUtils.random(1,20) == 1){
-                    // rare crate spawn logic later
-                }
+                spawnLootCrate(enemies.get(i).getEnemyDeathLocation());
                 enemies.removeIndex(i);
             } 
         }
@@ -1818,7 +1849,7 @@ private void drawJetpackDisabledHud(){
         for(Enemy enemy : enemies){
             if(enemy.getType() != EnemyType.HEAVY)
                 continue;
-
+            float heavyPortalFxTimer = enemy.getHeavyPortalFxTimer();
             int frameIndex = (int)(heavyPortalFxTimer/0.06f) % FxAssets.bombardmentRainBolt.length;
             TextureRegion frame = FxAssets.bombardmentRainBolt[frameIndex];
             for(Rectangle projectile : enemy.getBombardmentProjectiles()){
@@ -1879,7 +1910,7 @@ private void drawJetpackDisabledHud(){
             batch.draw(weapon.getNoAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
         String magazine = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
 
-        String reserve ="RES "+weapon.getReserveAmmo();
+        String reserve ="RES "+inventory.getAmmo(weapon.getCurrentWeapon());
 
         float reloadSize = 65f;
         float reloadX = x+width-reloadSize;
@@ -1891,23 +1922,6 @@ private void drawJetpackDisabledHud(){
         hudFont.draw(batch,magazine,x+90f*scale,y+55f*scale);
         hudFont.getData().setScale(0.75f);
         hudFont.draw(batch,reserve,x+90f*scale,y+30f*scale);
-    }
-
-    private void draweEmptyMagazineIconHUD(){
-        if(weapon.getCurrentAmmo() > 0)
-            return;
-        float panelWidth = 220f;
-        float panelHeight = 80f;
-        float ammoX = Gdx.graphics.getWidth()-panelWidth-24f;
-        float ammoY = 15f;
-
-        float iconSize = 60f;
-        float gap = 10f;
-
-        float iconX = ammoX-iconSize-gap;
-        float iconY = ammoY+(panelHeight-iconSize)/2f;
-
-        batch.draw(FxAssets.emptyMagazineIcon,iconX,iconY,iconSize,iconSize);
     }
 
     private Array<Rectangle> extractGroundEnemySpawnPoints(){
@@ -1989,12 +2003,181 @@ private void drawJetpackDisabledHud(){
 
         hudFont.getData().setScale(0.8f);
 
-        hudFont.draw(batch,Integer.toString(gold),goldX+48f*scale,y+zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(gold),goldX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(currentScore),scoreX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(bestScore),bestX+48f*scale,zoneY+27f*scale);
     }
+
+
+    private void reloadGun(){
+        int neededAmmo = weapon.getMagazineSize()-weapon.getCurrentAmmo();
+        int ammoToLoad = inventory.takeAmmo(weapon.getCurrentWeapon(),neededAmmo);
+        weapon.addCurrentAmmo(ammoToLoad);
+    }
     
-    
+    private void spawnLootCrate(Vector2 enemyDeathLocation){
+        Rectangle enemyDeath = new Rectangle (enemyDeathLocation.x , enemyDeathLocation.y , crateWidth , crateHeight);
+        Rectangle spawnPlatform = findPlatformBelow(enemyDeath);
+        if(spawnPlatform == null)
+            return;
+        float crateX = enemyDeathLocation.x;
+        float crateY = spawnPlatform.y + spawnPlatform.height;
+        Rectangle crateRect = new Rectangle(crateX,crateY,crateWidth,crateHeight);
+        //int roll = MathUtils.random(1,100);
+
+
+
+        int roll = MathUtils.random(1,3);
+        if(roll == 1)
+            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+        else if(roll == 2)
+            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+        else
+            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        
+    /*if(easyMode){
+        if(roll <= 3){
+            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+        }
+        else if(roll <= 12){
+            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+        }
+        else if(roll <= 40){
+            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        }
+    }
+
+    else if(mediumMode){
+        if(roll <= 5){
+            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+        }
+        else if(roll <= 18){
+            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+        }
+        else if(roll <= 45)
+            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+    }
+
+    else if(hardMode){
+        if(roll <= 8){
+            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+        }
+        else if(roll <= 28){
+            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+        }
+        else if(roll <=50){
+            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        }
+    }
+
+    else if(impossibleMode){
+        if(roll <= 15){
+            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+        }
+        else if(roll <= 38){
+            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+        }
+        else if(roll <= 60){
+            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        }
+    }*/
+}
+
+private Array<Rectangle> extractSpecialCrateSpawnPoints(){
+    Array<Rectangle> spawnPoints = new Array<>();
+    MapLayer spawnLayer = map.getLayers().get("spawns");
+    for(RectangleMapObject object : spawnLayer.getObjects().getByType(RectangleMapObject.class)){
+        if("special_crate".equals(object.getName()))
+            spawnPoints.add(new Rectangle(object.getRectangle()));
+    }
+    return spawnPoints;
+}
+
+
+private void spawnSpecialCrate(float dt){
+    boolean specialAlreadyExists = false;
+    for(LootCrate crate : lootCrates){
+        if(crate.getType() == CrateType.SPECIAL){
+            specialAlreadyExists = true;
+            break;
+        }
+    }
+    if(specialAlreadyExists)
+        return;
+    SPECIAL_CRATE_TIMER+=dt;
+    if(SPECIAL_CRATE_TIMER < SPECIAL_CRATE_SPAWN_TIME)
+        return;
+    if(specialCrateSpawnPoints.size == 0)
+        return;
+    Rectangle spawn = specialCrateSpawnPoints.random();
+    Rectangle crateRect = new Rectangle(spawn.x,spawn.y,crateWidth,crateHeight);
+    lootCrates.add(new LootCrate(CrateType.SPECIAL,crateRect));
+    SPECIAL_CRATE_TIMER = 0f;
+    //SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,90f);
+    SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
+}
+
+
+private void openNearbyCrate(){
+    Rectangle playerHitbox = player.getWorldHitbox();
+    for(int i=0;i<lootCrates.size;i++){
+        LootCrate crate = lootCrates.get(i);
+        if(crate.isOpened())
+            continue;
+        Rectangle crateBounds = crate.getCrate();
+        Rectangle interactionZone = new Rectangle(crateBounds.x-25f,crateBounds.y-15f,crateBounds.width+50f,crateBounds.height+30f);
+        if(playerHitbox.overlaps(interactionZone)){
+            activeLootCrate = crate;
+            crate.openCrate();
+            break;
+        }
+    }
+}
+
+private void removeLootCrates(){
+    for(int i=lootCrates.size-1;i>=0;i--){
+        LootCrate crate = lootCrates.get(i);
+        if(crate.isReadyToRemove()){
+            if(crate == activeLootCrate)
+                activeLootCrate = null;
+            lootCrates.removeIndex(i);
+        }
+    }
+}
+
+private void drawLootDashboard(){
+    if(activeLootCrate == null)
+        return;
+    if(!activeLootCrate.isOpened())
+        return;
+    if(!activeLootCrate.openingFinished())
+        return;
+    Texture dashboard = activeLootCrate.getDashboardTexture();
+    Rectangle crate = activeLootCrate.getCrate();
+    float width = crate.width * 2.8f;
+    if(activeLootCrate.getType() == CrateType.SPECIAL)
+        width = crate.width * 3.2f;
+    float aspect = (float)dashboard.getHeight()/dashboard.getWidth();
+    float height = width*aspect;
+    float crateCenterX = crate.x+crate.width/2f;
+
+    float x = crateCenterX-width/2f;
+    float y = crate.y+crate.height+18f;
+
+    batch.draw(dashboard,x,y,width,height);
+}
+
+private void claimActiveCrate(){
+    if(activeLootCrate == null)
+        return;
+    if(!activeLootCrate.isOpened())
+        return;
+    if(!activeLootCrate.openingFinished())
+        return;
+    activeLootCrate.claim();
+    activeLootCrate = null;
+}
+
 
 
 

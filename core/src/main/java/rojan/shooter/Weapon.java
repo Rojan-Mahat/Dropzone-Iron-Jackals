@@ -29,7 +29,6 @@ public class Weapon{
     private int magazineSize;
 
     private int currentAmmo;
-    private int reserveAmmo;
 
     private WeaponType currentWeapon;
     private float angleOfRotation;
@@ -108,8 +107,6 @@ public class Weapon{
             automatic = false;
             maxScope = 2.3f;
             fireRate = 2.5f;
-
-             reserveAmmo = 48;
         }
         if(currentWeapon == WeaponType.AR){
             magazineSize = 30;
@@ -120,7 +117,6 @@ public class Weapon{
             automatic = true;
             fireRate = 5;
             maxScope = 4.2f;
-            reserveAmmo = 120;
 
             ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
             ARregion = new TextureRegion(ARtexture);
@@ -145,8 +141,6 @@ public class Weapon{
             automatic = false;
             fireRate = 1.5f;
             maxScope = 2;
-
-            reserveAmmo = 35;
         }
 
         if(currentWeapon == WeaponType.SMG){
@@ -159,7 +153,6 @@ public class Weapon{
             fireRate = 9;
             maxScope = 3;
 
-            reserveAmmo = 150;
         }
 
         if(currentWeapon == WeaponType.SNIPER){
@@ -171,10 +164,13 @@ public class Weapon{
             automatic = false;
             maxScope = 8f;
             fireRate = 1;
-
-            reserveAmmo = 24;
         }
     }
+
+    public WeaponType getCurrentWeapon(){
+        return currentWeapon;
+    }
+
 
     public boolean canShoot(){
         return currentAmmo > 0;
@@ -185,21 +181,14 @@ public class Weapon{
             currentAmmo--;
     }
 
-    public void reload(){
-        int neededAmmo = magazineSize-currentAmmo;
-        int ammoToLoad = Math.min(neededAmmo,reserveAmmo);
-
-        currentAmmo += ammoToLoad;
-        reserveAmmo -= ammoToLoad;
-    }
-
     public int getCurrentAmmo(){
         return currentAmmo;
     }
 
-    public int getReserveAmmo(){
-        return reserveAmmo;
+    public void addCurrentAmmo(int amount){
+        currentAmmo+=amount;
     }
+
 
     public int getMagazineSize(){
         return magazineSize;

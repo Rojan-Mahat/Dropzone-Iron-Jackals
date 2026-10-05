@@ -68,10 +68,6 @@ public final class FxAssets{
     public static Texture scoreIcon;
     public static Texture bestScoreIcon;
 
-    public static Texture regularCrate;
-    public static Texture rareCrate;
-    public static Texture superRareCrate;
-
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -126,9 +122,6 @@ public final class FxAssets{
         bombardmentRainBolt = loadFrames(AssetPaths.FX.BOMBARDMENT_RAIN_BOLT,AssetPaths.FX.BOMBARDMENT_RAIN_BOLT_FRAMES);
         bombardmentRainImpact = loadFrames(AssetPaths.FX.BOMBARDMENT_RAIN_IMPACT,AssetPaths.FX.BOMBARDMENT_RAIN_IMPACT_FRAMES);
 
-        emptyMagazineTexture = new Texture(AssetPaths.Hud.EMPTY_MAGAZINE);
-        emptyMagazineIcon = new TextureRegion(emptyMagazineTexture);
-
         reloadIconTexture = new Texture(AssetPaths.Hud.RELOAD_ICON);
         reloadIcon = new TextureRegion(reloadIconTexture);
 
@@ -136,10 +129,6 @@ public final class FxAssets{
         goldIcon = new Texture(AssetPaths.Hud.GOLD_ICON);
         scoreIcon = new Texture(AssetPaths.Hud.SCORE_ICON);
         bestScoreIcon = new Texture(AssetPaths.Hud.BEST_SCORE_ICON);
-
-        regularCrate = new Texture(AssetPaths.Hud.REGULAR_CRATE);
-        rareCrate = new Texture(AssetPaths.Hud.RARE_CRATE);
-        superRareCrate = new Texture(AssetPaths.Hud.SUPER_RARE_CRATE);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -168,9 +157,5 @@ public final class FxAssets{
         goldIcon.dispose();
         scoreIcon.dispose();
         bestScoreIcon.dispose();
-
-        regularCrate.dispose();
-        rareCrate.dispose();
-        superRareCrate.dispose();
     }
 }
