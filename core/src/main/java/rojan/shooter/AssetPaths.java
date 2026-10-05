@@ -13,10 +13,20 @@ public final class AssetPaths {
 
         public static final String AMMO_PANEL = "ui/hud/ammo_panel.png";
         public static final String AMMO_ICON = "ui/hud/ammo_icon.png";
+        public static final String NO_AMMO_ICON = "ui/hud/no_ammo_icon.png";
         public static final String EMPTY_MAGAZINE = "ui/hud/emptyMag.png";
         public static final String RELOAD_ICON = "ui/hud/reload_icon.png";
 
         public static final String SCOPE_OVERLAY = "ui/hud/scope_overlay.png";
+
+        public static final String SCORE_DASHBOARD = "ui/hud/score_dashboard_frame.png";
+        public static final String GOLD_ICON = "ui/hud/gold_icon.png";
+        public static final String SCORE_ICON = "ui/hud/score_icon.png";
+        public static final String BEST_SCORE_ICON = "ui/hud/best_score_icon.png";
+
+        public static final String REGULAR_CRATE = "ui/hud/loot_crate_regular.png";
+        public static final String RARE_CRATE = "ui/hud/loot_crate_rare.png";
+        public static final String SUPER_RARE_CRATE = "ui/hud/loot_crate_super_rare.png";
 }
     
 

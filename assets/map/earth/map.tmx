@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="12" nextobjectid="552">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="13" nextobjectid="608">
  <tileset firstgid="1" source="terrain.tsx"/>
  <layer id="1" name="Tile Layer 1" width="64" height="36" visible="0" locked="1">
   <data encoding="csv">
@@ -45,7 +45,7 @@
   <image source="../background/background.png" width="4096" height="2304"/>
  </imagelayer>
  <objectgroup id="6" name="reference">
-  <object id="271" name="Camera" x="1605.32" y="781.351" width="1200" height="780"/>
+  <object id="271" name="Camera" x="290.202" y="333.264" width="3710.02" height="1832.82"/>
   <object id="422" name="forJetpack" x="1919.25" y="1253.85" width="80" height="120"/>
   <object id="424" name="jetPack" x="1902.05" y="1288.69" width="75" height="90"/>
  </objectgroup>
@@ -331,7 +331,7 @@
   <object id="420" name="AR_origin" x="2541.8" y="1451.77" width="69.1407" height="32.7507"/>
   <object id="426" name="AR_Nozzle" x="2604.57" y="1457.16" width="8.61133" height="8.02409"/>
  </objectgroup>
- <objectgroup id="10" name="Enemies" visible="0">
+ <objectgroup id="10" name="Enemies" visible="0" locked="1">
   <object id="440" name="Rifleman_Hitbox" x="3026" y="1173" width="58" height="117.5"/>
   <object id="441" name="Rifleman_Spawn" x="3054.59" y="1289.5" width="1" height="1">
    <properties>
@@ -546,5 +546,58 @@
   <object id="551" name="Drill_Crawler_Circle_6" x="1625.1" y="454.335" width="18" height="18">
    <ellipse/>
   </object>
+ </objectgroup>
+ <objectgroup color="#0000ff" id="12" name="spawns" visible="0" locked="1">
+  <object id="554" name="heavy_1" x="1084.45" y="168.903" width="2" height="2"/>
+  <object id="555" name="rifleman_1" x="1308.74" y="93.2044" width="2" height="2"/>
+  <object id="556" name="rifleman_3" x="62.138" y="235.914" width="2" height="2"/>
+  <object id="557" name="rifleman_2" x="460.242" y="254.871"/>
+  <object id="558" name="rifleman_4" x="773.196" y="513.555" width="2" height="2"/>
+  <object id="559" name="rifleman_5" x="80.1833" y="899.198" width="2" height="2"/>
+  <object id="560" name="rifleman_6" x="544.101" y="1134.02" width="2" height="2"/>
+  <object id="561" name="rifleman_7" x="84.0015" y="1332.57" width="2" height="2"/>
+  <object id="562" name="rifleman_8" x="1095.84" y="1563.57" width="2" height="2"/>
+  <object id="563" name="rifleman_9" x="1426.12" y="1319.21" width="2" height="2"/>
+  <object id="564" name="rifleman_10" x="1200.84" y="897.289" width="2" height="2"/>
+  <object id="565" name="rifleman_11" x="1601.76" y="336.006" width="2" height="2"/>
+  <object id="566" name="rifleman_12" x="2201.22" y="460.099" width="2" height="2"/>
+  <object id="567" name="rifleman_13" x="2571.59" y="47.7281" width="2" height="2"/>
+  <object id="568" name="rifleman_14" x="3925.16" y="242.459" width="2" height="2"/>
+  <object id="569" name="rifleman_15" x="3274.15" y="475.372" width="2" height="2"/>
+  <object id="570" name="rifleman_16" x="2162.39" y="803.534" width="2" height="2"/>
+  <object id="571" name="rifleman_17" x="1964.66" y="1190.58" width="2" height="2"/>
+  <object id="572" name="rifleman_18" x="2549.43" y="1354.65" width="2" height="2"/>
+  <object id="573" name="rifleman_19" x="2932.27" y="1135.89" width="2" height="2"/>
+  <object id="574" name="rifleaman_20" x="3167.86" y="904.501" width="2" height="2"/>
+  <object id="575" name="rifleman_21" x="4007.95" y="1259.64" width="2" height="2"/>
+  <object id="577" name="rifleman_22" x="3582.37" y="1159.56"/>
+  <object id="578" name="rifleman_26" x="3379.68" y="1524.86" width="2" height="2"/>
+  <object id="579" name="rifleman_23" x="424.228" y="1972.66" width="2" height="2"/>
+  <object id="580" name="rifleman_24" x="919.161" y="2123.5" width="2" height="2"/>
+  <object id="582" name="rifleman_25" x="2984.07" y="1776.99" width="2" height="2"/>
+  <object id="583" name="drill" x="1654.22" y="1997.2" width="16.3322" height="13.9991"/>
+  <object id="584" name="drill" x="2545.5" y="2067.2" width="2" height="2"/>
+  <object id="585" name="drill" x="3511.43" y="2006.53" width="2" height="2"/>
+  <object id="586" name="drill" x="451.797" y="1999.29" width="2" height="2"/>
+  <object id="587" name="drill" x="401.992" y="1415.87" width="2" height="2"/>
+  <object id="589" name="drill" x="3227.98" y="1518.88" width="20.4858" height="8.77963"/>
+  <object id="590" name="drill" x="3722.56" y="989.172" width="17.5593" height="29.2654"/>
+  <object id="591" name="drill" x="3541.12" y="204.858" width="17.5593" height="17.5593"/>
+  <object id="592" name="drill" x="3122.62" y="588.235" width="38.0451" height="8.77963"/>
+  <object id="593" name="drill" x="61.4574" y="1448.64" width="52.6778" height="26.3389"/>
+  <object id="594" name="drill" x="134.621" y="951.127" width="17.5593" height="49.7512"/>
+  <object id="595" name="drill" x="1041.85" y="954.053" width="35.1185" height="30"/>
+  <object id="596" name="drill" x="257.536" y="216.564" width="30" height="38.0451"/>
+  <object id="597" name="drill" x="937.441" y="559.835" width="18.7864" height="35.6942"/>
+  <object id="598" name="drill" x="1328.2" y="364.456" width="58.2378" height="24.4223"/>
+  <object id="599" name="drill" x="1794.1" y="858.538" width="71.3883" height="67.631"/>
+  <object id="600" name="drill" x="2348.3" y="514.747" width="30.0582" height="26.301"/>
+  <object id="601" name="drill" x="2660.15" y="101.447" width="41.3301" height="33.8155"/>
+  <object id="602" name="drill" x="2468.53" y="1454.07" width="28.1796" height="9.3932"/>
+  <object id="603" name="dril" x="2023.3" y="1961.3" width="39.4514" height="24.4223"/>
+  <object id="604" name="drill" x="2970.13" y="2156.68" width="30.0582" height="39.4514"/>
+  <object id="605" name="drill" x="1087.73" y="1764.04" width="54.4806" height="39.4514"/>
+  <object id="606" name="drill" x="2038.32" y="1538.61" width="63.8738" height="80.7815"/>
+  <object id="607" name="drill" x="2806.69" y="1570.54" width="20.665" height="13.1505"/>
  </objectgroup>
 </map>

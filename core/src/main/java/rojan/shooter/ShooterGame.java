@@ -78,6 +78,21 @@ public class ShooterGame extends ApplicationAdapter {
     private BitmapFont hudFont;
     private Rectangle reloadButtonBounds = new Rectangle();
 
+    private int riflemanCount = 0;
+    private int heavyCount = 0;
+    private int drillerCount = 0;
+    private int droneCount = 0;
+
+    private int pendingScore= 0;
+    private int currentScore = 0;
+    private int bestScore = 0;
+    private int gold = 0;
+
+    private int nextHeadshotReward = 5;
+    private int nextBodyshotReward = 10;
+    private int nextLimbshotReward = 15;
+    private int nextKillReward = 10;
+
     private static class BombardmentImpactFx{
         Vector2 position;
         float timer;
@@ -87,6 +102,37 @@ public class ShooterGame extends ApplicationAdapter {
         }
     }
     private Array<BombardmentImpactFx> bombardmentImpactFx = new Array<>();
+
+    private  int MAX_RIFLEMEN = 3;
+    private  int MAX_DRILLERS = 3;
+    private  int MAX_DRONES = 3;
+    private  int MAX_HEAVIES = 2;
+
+    private int MAX_ACTIVE_ENEMIES = 6;
+
+    private float RIFLEMAN_RESPAWN_TIME = 12f;
+    private float HEAVY_RESPAWN_TIME = 28f;
+    private float DRILLER_RESPAWN_TIME = 22f;
+    private float DRONE_RESPAWN_TIME = 17f;
+
+    private float RIFLEMAN_RESPAWN_TIMER = 0f;
+    private float HEAVY_RESPAWN_TIMER = 0f;
+    private float DRILLER_RESPAWN_TIMER = 0f;
+    private float DRONE_RESPAWN_TIMER = 0f;
+
+    private static float HEADSHOTCOUNT = 0;
+    private static float BODYSHOTCOUNT = 0;
+    private static float LIMBSHOTCOUNT = 0;
+    private static int TOTAL_KILL_COUNT =0;
+
+    private float difficulty = 0;
+    private boolean easyMode = true;
+    private boolean mediumMode = false;
+    private boolean hardMode = false;
+    private boolean impossibleMode;
+
+    private Array<Rectangle> groundEnemySpawnPoints;
+    private Array<Rectangle> drillerSpawnPoints;
 
     @Override
     public void create(){
@@ -127,6 +173,9 @@ public class ShooterGame extends ApplicationAdapter {
         enemies.add(heavy);
         enemies.add(hoverDrone);
         enemies.add(drillCrawler);
+
+        groundEnemySpawnPoints = extractGroundEnemySpawnPoints();
+        drillerSpawnPoints = extractDrillerSpawnPoints();
         
 
         shapeRenderer = new ShapeRenderer();
@@ -305,6 +354,8 @@ public class ShooterGame extends ApplicationAdapter {
         bulletEnemyCollisionChecker();
         communicateDamage();
         removeEnemies();
+        updateGameTracks();
+        respawnEnemies(dt);
         batch.end(); 
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
@@ -312,6 +363,7 @@ public class ShooterGame extends ApplicationAdapter {
         drawPlayerHealthHud();
         drawJetpackHud();
         drawJetpackDisabledHud();
+        drawScoreDashboard();
         drawAmmoHud();
         draweEmptyMagazineIconHUD();
 
@@ -610,6 +662,18 @@ shapeRenderer.end();
         float drawHeight = RiflemanSpawnObject.getProperties().get("drawHeight", Float.class);
 
         Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, RiflemanSpawnRect.x, RiflemanSpawnRect.y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+        riflemanCount++;
+        return newRifleman;
+    }
+
+    private Enemy create_Jackal_RifleMan_FromMap(TiledMap map,float x, float y){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject RiflemanSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Rifleman_Spawn");
+        float drawWidth = RiflemanSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = RiflemanSpawnObject.getProperties().get("drawHeight", Float.class);
+
+        Enemy newRifleman = new Enemy(Enemy.EnemyType.RIFLEMAN, x, y , drawWidth, drawHeight, extract_Jackal_RifleMan_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+        riflemanCount++;
         return newRifleman;
     }
 
@@ -630,6 +694,19 @@ shapeRenderer.end();
         float drawWidth = HeavySpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = HeavySpawnObject.getProperties().get("drawHeight", Float.class);
         Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, HeavySpawnRect.x, HeavySpawnRect.y , drawWidth, drawHeight , extract_Jackal_Heavy_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        heavyCount++;
+        return newHeavy;
+    }
+
+    private Enemy create_Jackal_Heavy_FromMap(TiledMap map,float x, float y){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject HeavySpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Heavy_Spawn");
+        float drawWidth = HeavySpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = HeavySpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy newHeavy = new Enemy(Enemy.EnemyType.HEAVY, x, y , drawWidth, drawHeight , extract_Jackal_Heavy_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        heavyCount++;
         return newHeavy;
     }
 
@@ -649,6 +726,19 @@ shapeRenderer.end();
         float drawWidth = HoverDroneSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = HoverDroneSpawnObject.getProperties().get("drawHeight", Float.class);
         Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, HoverDroneSpawnRect.x, HoverDroneSpawnRect.y , drawWidth , drawHeight ,extract_Jackal_HoverDrone_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        droneCount++;
+        return HoverDrone;
+    }
+
+    private Enemy create_Jackal_HoverDrone_FromMap(TiledMap map,float x, float y){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject HoverDroneSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Hover_Drone_Spawn");
+        float drawWidth = HoverDroneSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = HoverDroneSpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy HoverDrone = new Enemy(Enemy.EnemyType.HOVER_DRONE, x, y , drawWidth , drawHeight ,extract_Jackal_HoverDrone_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        droneCount++;
         return HoverDrone;
     }
 
@@ -668,6 +758,19 @@ shapeRenderer.end();
         float drawWidth = DrillCrawlerSpawnObject.getProperties().get("drawWidth", Float.class);
         float drawHeight = DrillCrawlerSpawnObject.getProperties().get("drawHeight", Float.class);
         Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, DrillCrawlerSpawnRect.x, DrillCrawlerSpawnRect.y , drawWidth, drawHeight, extract_Jackal_DrillCrawler_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        drillerCount++;
+        return newDrillCrawler;
+    }
+
+    private Enemy create_Jackal_DrillCrawler_FromMap(TiledMap map,float x, float y){
+        MapLayer enemiesLayer = map.getLayers().get("Enemies");
+        RectangleMapObject DrillCrawlerSpawnObject = (RectangleMapObject) enemiesLayer.getObjects().get("Drill_Crawler_Spawn");
+        float drawWidth = DrillCrawlerSpawnObject.getProperties().get("drawWidth", Float.class);
+        float drawHeight = DrillCrawlerSpawnObject.getProperties().get("drawHeight", Float.class);
+        Enemy newDrillCrawler = new Enemy(Enemy.EnemyType.DRILL_CRAWLER, x, y , drawWidth, drawHeight, extract_Jackal_DrillCrawler_Hitbox_FromMap(map),extract_Jackal_DrillCrawler_Circles_FromMap(map));
+
+        drillerCount++;
         return newDrillCrawler;
     }
 
@@ -1081,6 +1184,7 @@ private void drawJetpackDisabledHud(){
                         float dy = bullet.getPosition().y - closestY;
                         if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                             headshot = true;
+                            HEADSHOTCOUNT++;
                             enemy.enemyHurt(40);
                             bullet.considerWasted();
                             break;
@@ -1101,6 +1205,7 @@ private void drawJetpackDisabledHud(){
                             float dy = bullet.getPosition().y - closestY;
                             if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                                 bodyshot = true;
+                                BODYSHOTCOUNT++;
                                 enemy.enemyHurt(20);
                                 bullet.considerWasted();
                                 break;
@@ -1122,6 +1227,7 @@ private void drawJetpackDisabledHud(){
                             float dy = bullet.getPosition().y - closestY;
                             if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                                 limbshot = true;
+                                LIMBSHOTCOUNT++;
                                 enemy.enemyHurt(10);
                                 bullet.considerWasted();
                                 break;
@@ -1158,10 +1264,274 @@ private void drawJetpackDisabledHud(){
 
     private void removeEnemies(){
         for(int i = enemies.size-1 ; i >= 0 ; i--){
-            if(enemies.get(i).isReadytoBeRemoved())
+            if(enemies.get(i).isReadytoBeRemoved()){
+                if(enemies.get(i).getType()== EnemyType.RIFLEMAN){
+                    riflemanCount--;
+                    pendingScore+=10;
+                }
+                if(enemies.get(i).getType()== EnemyType.HEAVY){
+                    heavyCount--;
+                    pendingScore+=25;
+                }
+                if(enemies.get(i).getType()== EnemyType.DRILL_CRAWLER){
+                    drillerCount--;
+                    pendingScore+=10;
+                }
+                if(enemies.get(i).getType()== EnemyType.HOVER_DRONE){
+                    droneCount--;
+                    pendingScore+=5;
+                }
+                TOTAL_KILL_COUNT++;
+                if(MathUtils.random(1,20) == 1){
+                    // rare crate spawn logic later
+                }
                 enemies.removeIndex(i);
+            } 
         }
     }
+
+    private void updateGameTracks(){
+        if(TOTAL_KILL_COUNT < 20){
+            easyMode = true;
+            mediumMode = false;
+            hardMode = false;
+            impossibleMode = false;
+
+            RIFLEMAN_RESPAWN_TIME = 12f;
+            DRONE_RESPAWN_TIME = 17f;
+            DRILLER_RESPAWN_TIME = 22f;
+            HEAVY_RESPAWN_TIME = 28f;
+            MAX_ACTIVE_ENEMIES = 6;
+
+            if(HEADSHOTCOUNT >= nextHeadshotReward){
+                pendingScore+=40;
+                gold+=5;
+                nextHeadshotReward+=5;
+            }
+
+            if(BODYSHOTCOUNT >= nextBodyshotReward){
+                pendingScore+=25;
+                gold+=3;
+                nextBodyshotReward+=10;
+            }
+
+            if(LIMBSHOTCOUNT >= nextLimbshotReward){
+                pendingScore+=15;
+                gold+=2;
+                nextLimbshotReward+=15;
+            }
+
+            if(TOTAL_KILL_COUNT >= nextKillReward){
+                pendingScore+=100;
+                gold+=10;
+                nextKillReward+=10;
+            }
+        }
+
+        else if(TOTAL_KILL_COUNT < 40){
+            easyMode = false;
+            mediumMode = true;
+            hardMode = false;
+            impossibleMode = false;
+
+            RIFLEMAN_RESPAWN_TIME = 9f;
+            DRONE_RESPAWN_TIME = 12f;
+            DRILLER_RESPAWN_TIME = 15f;
+            HEAVY_RESPAWN_TIME = 20f;
+            MAX_ACTIVE_ENEMIES = 8;
+
+            if(HEADSHOTCOUNT >= nextHeadshotReward){
+                pendingScore+=50;
+                gold+=7;
+                nextHeadshotReward+=5;
+            }
+
+            if(BODYSHOTCOUNT >= nextBodyshotReward){
+                pendingScore+=30;
+                gold+=4;
+                nextBodyshotReward+=10;
+            }
+
+            if(LIMBSHOTCOUNT >= nextLimbshotReward){
+                pendingScore+=20;
+                gold+=3;
+                nextLimbshotReward+=15;
+            }
+
+            if(TOTAL_KILL_COUNT >= nextKillReward){
+                pendingScore+=140;
+                gold+=15;
+                nextKillReward+=10;
+            }
+        }
+
+        else if(TOTAL_KILL_COUNT < 70){
+            easyMode = false;
+            mediumMode = false;
+            hardMode = true;
+            impossibleMode = false;
+
+            RIFLEMAN_RESPAWN_TIME = 6f;
+            DRONE_RESPAWN_TIME = 8f;
+            DRILLER_RESPAWN_TIME = 10f;
+            HEAVY_RESPAWN_TIME = 14f;
+            MAX_ACTIVE_ENEMIES = 10;
+
+            if(HEADSHOTCOUNT >= nextHeadshotReward){
+                pendingScore+=70;
+                gold+=10;
+                nextHeadshotReward+=5;
+            }
+
+            if(BODYSHOTCOUNT >= nextBodyshotReward){
+                pendingScore+=45;
+                gold+=6;
+                nextBodyshotReward+=10;
+            }
+
+            if(LIMBSHOTCOUNT >= nextLimbshotReward){
+                pendingScore+=30;
+                gold+=4;
+                nextLimbshotReward+=15;
+            }
+
+            if(TOTAL_KILL_COUNT >= nextKillReward){
+                pendingScore+=200;
+                gold+=20;
+                nextKillReward+=10;
+            }
+        }
+
+        else{
+            easyMode = false;
+            mediumMode = false;
+            hardMode = false;
+            impossibleMode = true;
+
+            RIFLEMAN_RESPAWN_TIME = 3.5f;
+            DRONE_RESPAWN_TIME = 5f;
+            DRILLER_RESPAWN_TIME = 6f;
+            HEAVY_RESPAWN_TIME = 9f;
+            MAX_ACTIVE_ENEMIES = 11;
+
+            if(HEADSHOTCOUNT >= nextHeadshotReward){
+                pendingScore+=100;
+                gold+=15;
+                nextHeadshotReward+=5;
+            }
+
+            if(BODYSHOTCOUNT >= nextBodyshotReward){
+                pendingScore+=60;
+                gold+=8;
+                nextBodyshotReward+=10;
+            }
+
+            if(LIMBSHOTCOUNT >= nextLimbshotReward){
+                pendingScore+=40;
+                gold+=5;
+                nextLimbshotReward+=15;
+            }
+
+            if(TOTAL_KILL_COUNT >= nextKillReward){
+                pendingScore+=300;
+                gold+=30;
+                nextKillReward+=10;
+            }
+        }
+
+        currentScore+=pendingScore;
+        if(currentScore > bestScore)
+            bestScore = currentScore;
+        pendingScore = 0;
+    }
+
+
+    private void respawnEnemies(float dt){
+        int TOTAL_ENEMY_COUNT = riflemanCount + heavyCount + drillerCount + droneCount;
+        if(TOTAL_ENEMY_COUNT < MAX_ACTIVE_ENEMIES){
+            if(riflemanCount < MAX_RIFLEMEN){
+                RIFLEMAN_RESPAWN_TIMER+=dt;
+                if(RIFLEMAN_RESPAWN_TIMER >= RIFLEMAN_RESPAWN_TIME){
+                    Array<Rectangle> legalSpawns = new Array<>();
+                    for(Rectangle rectangle : groundEnemySpawnPoints){
+                        Rectangle platform = findPlatformBelow(rectangle);
+                        if(platform != null && !isPlatformOccupied(platform))
+                            legalSpawns.add(rectangle);
+                    }
+                    if(legalSpawns.size > 0){
+                        Rectangle rectangle = legalSpawns.random();
+                        Enemy enemy = create_Jackal_RifleMan_FromMap(map,rectangle.x+rectangle.width/2,rectangle.y+rectangle.height/2);
+                        enemies.add(enemy);
+                        RIFLEMAN_RESPAWN_TIMER = 0;
+                    }
+                }
+            }
+        }
+
+        TOTAL_ENEMY_COUNT = riflemanCount + heavyCount + drillerCount + droneCount;
+        if(TOTAL_ENEMY_COUNT < MAX_ACTIVE_ENEMIES){
+            if(heavyCount < MAX_HEAVIES){
+                HEAVY_RESPAWN_TIMER+=dt;
+                if(HEAVY_RESPAWN_TIMER >= HEAVY_RESPAWN_TIME){
+                    Array<Rectangle> legalSpawns = new Array<>();
+                    for(Rectangle rectangle : groundEnemySpawnPoints){
+                        Rectangle platform = findPlatformBelow(rectangle);
+                        if(platform != null && !isPlatformOccupied(platform))
+                            legalSpawns.add(rectangle);
+                    }
+                    if(legalSpawns.size > 0){
+                        Rectangle rectangle = legalSpawns.random();
+                        Enemy enemy = create_Jackal_Heavy_FromMap( map, rectangle.x+rectangle.width/2, rectangle.y+rectangle.height/2 );
+                        enemies.add(enemy);
+                        HEAVY_RESPAWN_TIMER = 0;
+                    }
+                }
+            }
+        }
+
+        TOTAL_ENEMY_COUNT = riflemanCount + heavyCount + drillerCount + droneCount;
+        if(TOTAL_ENEMY_COUNT < MAX_ACTIVE_ENEMIES){
+            if(drillerCount < MAX_DRILLERS){
+                DRILLER_RESPAWN_TIMER+=dt;
+                if(DRILLER_RESPAWN_TIMER >= DRILLER_RESPAWN_TIME){
+                    Array<Rectangle> legalSpawns = new Array<>();
+                    for(Rectangle rectangle : drillerSpawnPoints){
+                        Rectangle platform = findPlatformBelow(rectangle);
+                        if(platform != null && !isPlatformOccupied(platform))
+                            legalSpawns.add(rectangle);
+                    }
+                    if(legalSpawns.size > 0){
+                        Rectangle rectangle = legalSpawns.random();
+                        Enemy enemy = create_Jackal_DrillCrawler_FromMap( map,rectangle.x+rectangle.width/2,rectangle.y+rectangle.height/2);
+                        enemies.add(enemy);
+                        DRILLER_RESPAWN_TIMER = 0;
+                    }
+                }
+            }
+        }
+        TOTAL_ENEMY_COUNT = riflemanCount + heavyCount + drillerCount + droneCount;
+        if(TOTAL_ENEMY_COUNT < MAX_ACTIVE_ENEMIES){
+            if(droneCount < MAX_DRONES){
+                DRONE_RESPAWN_TIMER+=dt;
+                 if(DRONE_RESPAWN_TIMER >= DRONE_RESPAWN_TIME){
+                    Array<Rectangle> legalSpawns = new Array<>();
+                    for(Rectangle rectangle : groundEnemySpawnPoints){
+                        Rectangle platform = findPlatformBelow(rectangle);
+                        if(platform != null && !isPlatformOccupied(platform))
+                            legalSpawns.add(rectangle);
+                    }
+                    if(legalSpawns.size > 0){
+                        Rectangle rectangle = legalSpawns.random();
+                        Enemy enemy = create_Jackal_HoverDrone_FromMap(map, rectangle.x+rectangle.width/2, rectangle.y+rectangle.height/2 );
+                        enemies.add(enemy);
+                        DRONE_RESPAWN_TIMER = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    
 
     private void removeBullets(){
         for(int i = bullets.size-1 ; i >= 0 ; i--){
@@ -1503,7 +1873,10 @@ private void drawJetpackDisabledHud(){
         float iconSize = 48f*scale;
 
         batch.draw(weapon.getAmmoPanelTexture(),x,y,width,height);
-        batch.draw(weapon.getAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
+        if(weapon.getCurrentAmmo()>5)
+            batch.draw(weapon.getAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
+        else
+            batch.draw(weapon.getNoAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
         String magazine = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
 
         String reserve ="RES "+weapon.getReserveAmmo();
@@ -1535,7 +1908,104 @@ private void drawJetpackDisabledHud(){
         float iconY = ammoY+(panelHeight-iconSize)/2f;
 
         batch.draw(FxAssets.emptyMagazineIcon,iconX,iconY,iconSize,iconSize);
-    }   
+    }
+
+    private Array<Rectangle> extractGroundEnemySpawnPoints(){
+        Array<Rectangle> spawnPoints = new Array<>();
+        MapLayer spawnLayer = map.getLayers().get("spawns");
+        for(RectangleMapObject object : spawnLayer.getObjects().getByType(RectangleMapObject.class)){
+            if(object.getName() != null &&
+            object.getName().startsWith("rifleman_")){
+                spawnPoints.add(new Rectangle(object.getRectangle()));
+            }
+        }
+        return spawnPoints;
+    }
+
+    private Array<Rectangle> extractDrillerSpawnPoints(){
+        Array<Rectangle> spawnPoints = new Array<>();
+        MapLayer spawnLayer = map.getLayers().get("spawns");
+        for(RectangleMapObject object : spawnLayer.getObjects().getByType(RectangleMapObject.class)){
+            if("drill".equals(object.getName())){
+                spawnPoints.add(new Rectangle(object.getRectangle()));
+            }
+        }
+        return spawnPoints;
+    }
+
+
+    private boolean isPlatformOccupied(Rectangle platform){
+        for(Enemy enemy : enemies){
+            if(enemy.getType() == EnemyType.HOVER_DRONE)
+                continue;
+            if(enemy.isOnPlatform(platform))
+                return true;
+        }
+        return false;
+    }
+
+    private Rectangle findPlatformBelow(Rectangle spawn){
+        float spawnX = spawn.x+spawn.width/2f;
+        float spawnY = spawn.y+spawn.height/2f;
+
+        Rectangle closestPlatform = null;
+        float closestDistance = Float.MAX_VALUE;
+        for(Rectangle platform : solidPlatforms){
+            float platformTop = platform.y+platform.height;
+            boolean abovePlatform = spawnX >= platform.x && spawnX <= platform.x+platform.width && platformTop <= spawnY;
+            if(abovePlatform){
+                float distance = spawnY-platformTop;
+                if(distance < closestDistance){
+                    closestDistance = distance;
+                    closestPlatform = platform;
+                }
+            }
+        }
+
+        return closestPlatform;
+    }
+
+    private void drawScoreDashboard(){
+        float width = 360f;
+        float scale = width/640f;
+        float height = 96f*scale;
+
+        float x = Gdx.graphics.getWidth()-width-24f;
+        float y = Gdx.graphics.getHeight()-height-8f;
+
+        batch.draw(FxAssets.scoreDashboard,x,y,width,height);
+
+        float zoneY = y+28f*scale;
+        float iconSize = 36f*scale;
+
+        float goldX = x+30f*scale;
+        float scoreX = x+218f*scale;
+        float bestX = x+442f*scale;
+;
+
+        batch.draw(FxAssets.goldIcon,goldX,zoneY,iconSize,iconSize);
+        batch.draw(FxAssets.scoreIcon,scoreX,zoneY,iconSize,iconSize);
+        batch.draw(FxAssets.bestScoreIcon,bestX,zoneY,iconSize,iconSize);
+
+        hudFont.getData().setScale(0.8f);
+
+        hudFont.draw(batch,Integer.toString(gold),goldX+48f*scale,y+zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(currentScore),scoreX+48f*scale,zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(bestScore),bestX+48f*scale,zoneY+27f*scale);
+    }
+    
+    
+
+
+
+
+
+
+
+
+
+
+
 
 }
 

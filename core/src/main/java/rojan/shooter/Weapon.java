@@ -41,6 +41,7 @@ public class Weapon{
 
     private Texture ammoPanel;
     private Texture ammoIcon;
+    private Texture noAmmoIcon;
 
 
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
@@ -54,6 +55,7 @@ public class Weapon{
         currentAmmo = magazineSize;
         ammoPanel = new Texture(AssetPaths.Hud.AMMO_PANEL);
         ammoIcon = new Texture(AssetPaths.Hud.AMMO_ICON);
+        noAmmoIcon = new Texture(AssetPaths.Hud.NO_AMMO_ICON);
 
     }
 
@@ -213,6 +215,10 @@ public class Weapon{
 
     public Texture getAmmoIconTexture(){
         return ammoIcon;
+    }
+
+    public Texture getNoAmmoIconTexture(){
+        return noAmmoIcon;
     }
 
 

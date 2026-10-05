@@ -63,6 +63,15 @@ public final class FxAssets{
     public static Texture emptyMagazineTexture;
     public static TextureRegion emptyMagazineIcon;
 
+    public static Texture scoreDashboard;
+    public static Texture goldIcon;
+    public static Texture scoreIcon;
+    public static Texture bestScoreIcon;
+
+    public static Texture regularCrate;
+    public static Texture rareCrate;
+    public static Texture superRareCrate;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -122,6 +131,15 @@ public final class FxAssets{
 
         reloadIconTexture = new Texture(AssetPaths.Hud.RELOAD_ICON);
         reloadIcon = new TextureRegion(reloadIconTexture);
+
+        scoreDashboard = new Texture(AssetPaths.Hud.SCORE_DASHBOARD);
+        goldIcon = new Texture(AssetPaths.Hud.GOLD_ICON);
+        scoreIcon = new Texture(AssetPaths.Hud.SCORE_ICON);
+        bestScoreIcon = new Texture(AssetPaths.Hud.BEST_SCORE_ICON);
+
+        regularCrate = new Texture(AssetPaths.Hud.REGULAR_CRATE);
+        rareCrate = new Texture(AssetPaths.Hud.RARE_CRATE);
+        superRareCrate = new Texture(AssetPaths.Hud.SUPER_RARE_CRATE);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -146,5 +164,13 @@ public final class FxAssets{
         playerHealthIconTexture.dispose();
         reloadIconTexture.dispose();
         emptyMagazineTexture.dispose();
+        scoreDashboard.dispose();
+        goldIcon.dispose();
+        scoreIcon.dispose();
+        bestScoreIcon.dispose();
+
+        regularCrate.dispose();
+        rareCrate.dispose();
+        superRareCrate.dispose();
     }
 }

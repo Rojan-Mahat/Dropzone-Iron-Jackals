@@ -1534,6 +1534,16 @@ public Array<Rectangle> getBombardmentProjectiles(){
     return BOMBARDMENT_PROJECTILES;
 }
 
+public boolean isOnPlatform(Rectangle platform){
+    Rectangle hurtbox = getWorldHurtbox();
+    float enemyFeetY = hurtbox.y;
+    float enemyCenterX = hurtbox.x + hurtbox.width/2f;
+    boolean withinX = enemyCenterX >= platform.x && enemyCenterX <= platform.x + platform.width;
+    boolean onTop = Math.abs(enemyFeetY - (platform.y + platform.height)) < 8f;
+
+    return withinX && onTop;
+}
+
 
 public static void main(String[] args){
 
