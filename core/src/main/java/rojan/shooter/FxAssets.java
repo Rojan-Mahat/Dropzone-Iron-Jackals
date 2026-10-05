@@ -3,6 +3,7 @@ package rojan.shooter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 public final class FxAssets{
     private FxAssets(){}
@@ -68,6 +69,19 @@ public final class FxAssets{
     public static Texture scoreIcon;
     public static Texture bestScoreIcon;
 
+    public static Texture goldRewardIcon;
+    public static Texture scoreRewardIcon;
+    public static Texture ammoRewardIcon;
+
+    public static Texture jackpotIcon;
+    public static Texture biggerJackpotIcon;
+    public static Texture godModeIcon;
+
+    public static ObjectMap<Powerup.PowerupType,Texture> powerupIcons;
+    public static ObjectMap<Powerup.SpicyType,Texture> spicyIcons;
+    public static ObjectMap<Powerup.MoreSpicyType,Texture> moreSpicyIcons;
+    public static ObjectMap<Weapon.WeaponType,Texture> weaponRewardIcons;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -106,7 +120,6 @@ public final class FxAssets{
         playerJetpackFill = new TextureRegion(playerJetpackFillTexture);
         playerJetpackIconTexture = new Texture(AssetPaths.Hud.PLAYER_JETPACK_ICON);
 
-
         playerPoisonStart = loadFrames(AssetPaths.FX.PLAYER_POISON_START, AssetPaths.FX.PLAYER_POISON_START_FRAMES);
         playerPoisonLingering = loadFrames(AssetPaths.FX.PLAYER_POISON_LINGERING, AssetPaths.FX.PLAYER_POISON_LINGERING_FRAMES);
         playerPoisonEnd = loadFrames(AssetPaths.FX.PLAYER_POISON_END, AssetPaths.FX.PLAYER_POISON_END_FRAMES);
@@ -129,6 +142,45 @@ public final class FxAssets{
         goldIcon = new Texture(AssetPaths.Hud.GOLD_ICON);
         scoreIcon = new Texture(AssetPaths.Hud.SCORE_ICON);
         bestScoreIcon = new Texture(AssetPaths.Hud.BEST_SCORE_ICON);
+
+        String reward = "loot/lootIcons/icons/64/";
+        String guns = "loot/lootIcons/guns/64/";
+
+        goldRewardIcon = new Texture(reward+"gold.png");
+        scoreRewardIcon = new Texture(reward+"score.png");
+        ammoRewardIcon = new Texture(reward+"ammo.png");
+        jackpotIcon = new Texture(reward+"jackpot.png");
+        biggerJackpotIcon = new Texture(reward+"bigger_jackpot.png");
+        godModeIcon = new Texture(reward+"god_mode.png");
+
+        powerupIcons = new ObjectMap<>();
+        powerupIcons.put(Powerup.PowerupType.HEALTH,new Texture(reward+"health.png"));
+        powerupIcons.put(Powerup.PowerupType.SHIELD,new Texture(reward+"shield.png"));
+        powerupIcons.put(Powerup.PowerupType.JETPACK,new Texture(reward+"jetpack_boost.png"));
+        powerupIcons.put(Powerup.PowerupType.FIRE_RATE,new Texture(reward+"fire_rate_boost.png"));
+
+        spicyIcons = new ObjectMap<>();
+        spicyIcons.put(Powerup.SpicyType.OVERDRIVE,new Texture(reward+"overdrive.png"));
+        spicyIcons.put(Powerup.SpicyType.RAPID_MOBILITY,new Texture(reward+"rapid_mobility.png"));
+        spicyIcons.put(Powerup.SpicyType.BOTTOMLESS_MAG, new Texture(reward+"bottomless_mag.png"));
+        spicyIcons.put(Powerup.SpicyType.DAMAGE_SURGE, new Texture(reward+"damage_surge.png"));
+        spicyIcons.put(Powerup.SpicyType.GOLD_RUSH,new Texture(reward+"gold_rush.png"));
+        spicyIcons.put(Powerup.SpicyType.SCORE_FRENZY,new Texture(reward+"score_frenzy.png"));
+
+        moreSpicyIcons = new ObjectMap<>();
+        moreSpicyIcons.put(Powerup.MoreSpicyType.BERSERK,new Texture(reward+"berserk.png"));
+        moreSpicyIcons.put(Powerup.MoreSpicyType.INFINITE_ASSAULT,new Texture(reward+"infinite_assault.png"));
+        moreSpicyIcons.put(Powerup.MoreSpicyType.HYPERDRIVE,new Texture(reward+"hyperdrive.png"));
+        moreSpicyIcons.put(Powerup.MoreSpicyType.FORTRESS,new Texture(reward+"fortress.png"));
+        moreSpicyIcons.put(Powerup.MoreSpicyType.DOUBLE_FORTUNE,new Texture(reward+"double_fortune.png"));
+
+        weaponRewardIcons = new ObjectMap<>();
+        weaponRewardIcons.put(Weapon.WeaponType.AR,new Texture(guns+"ar.png"));
+        weaponRewardIcons.put(Weapon.WeaponType.PISTOL,new Texture(guns+"pistol.png"));
+        weaponRewardIcons.put(Weapon.WeaponType.SMG,new Texture(guns+"smg.png"));
+        weaponRewardIcons.put(Weapon.WeaponType.SHOTGUN,new Texture(guns+"shotgun.png"));
+        weaponRewardIcons.put(Weapon.WeaponType.SNIPER,new Texture(guns+"sniper.png"));
+        weaponRewardIcons.put(Weapon.WeaponType.ROCKET_LAUNCHER,new Texture(guns+"rocket_launcher.png"));
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){

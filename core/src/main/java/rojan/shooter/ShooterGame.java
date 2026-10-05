@@ -143,6 +143,18 @@ public class ShooterGame extends ApplicationAdapter {
     private final float crateWidth = 75f;
     private final float crateHeight = 60f;
 
+    private static class LootVisual{
+        Texture icon;
+        String value;
+
+        LootVisual(Texture icon,String text){
+            this.icon = icon;
+            this.value = text;
+        }
+    }
+    private static final float[][] SLOT_3 = {{0.10046729f,0.33088235f,0.1728972f,0.5441176f},{0.4135514f,0.33088235f,0.1728972f,0.5441176f},{0.7266355f,0.33088235f,0.1728972f,0.5441176f}};
+
+
     @Override
     public void create(){
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
@@ -366,8 +378,8 @@ public class ShooterGame extends ApplicationAdapter {
         for(LootCrate crate : lootCrates){
             crate.update(dt);
             crate.drawCrate(batch,dt);
-            removeLootCrates();
         }
+        removeLootCrates();
         drawLootDashboard();
         playerEnemyProjectileCollisionChecker();
         removeEnemyProjectiles();
@@ -2154,18 +2166,21 @@ private void drawLootDashboard(){
         return;
     Texture dashboard = activeLootCrate.getDashboardTexture();
     Rectangle crate = activeLootCrate.getCrate();
-    float width = crate.width * 2.8f;
-    if(activeLootCrate.getType() == CrateType.SPECIAL)
-        width = crate.width * 3.2f;
-    float aspect = (float)dashboard.getHeight()/dashboard.getWidth();
-    float height = width*aspect;
+
+    float height = 66f;
+    float width = height * ((float)dashboard.getWidth()/dashboard.getHeight());
     float crateCenterX = crate.x+crate.width/2f;
 
     float x = crateCenterX-width/2f;
-    float y = crate.y+crate.height+18f;
+    float y = crate.y+crate.height+28f;
+
 
     batch.draw(dashboard,x,y,width,height);
-}
+
+    Array<LootVisual> rewards = getLootVisuals(activeLootCrate);
+    for(int i=0;i<rewards.size;i++)
+        drawRegularReward(rewards.get(i),i,x,y,width,height,dashboard);
+    }
 
 private void claimActiveCrate(){
     if(activeLootCrate == null)
@@ -2178,6 +2193,35 @@ private void claimActiveCrate(){
     activeLootCrate = null;
 }
 
+private Array<LootVisual> getLootVisuals(LootCrate crate){
+    Array<LootVisual> rewards = new Array<>();
+    LootCrate.Contents contents = crate.getContents();
+    if(crate.getType() == CrateType.SPECIAL)
+        return rewards;
+
+    rewards.add(new LootVisual(FxAssets.goldRewardIcon, "+"+contents.getGold()));
+    rewards.add(new LootVisual(FxAssets.scoreRewardIcon,"+"+contents.getScore()));
+    rewards.add(new LootVisual(FxAssets.ammoRewardIcon,"+"+contents.getAmmoReward()+"%"));
+    return rewards;
+}
+
+private void drawRegularReward(LootVisual reward,int slot,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    float sourceWidth = dashboard.getWidth();
+    float sourceHeight = dashboard.getHeight();
+
+    float sourceX = 86f + 268f*slot;
+    float sourceY = 90f;
+
+    float sourceW = 148f;
+    float sourceH = 148f;
+
+    float x = dashboardX + sourceX/sourceWidth*dashboardWidth;
+    float y = dashboardY + sourceY/sourceHeight*dashboardHeight;
+    float w = sourceW/sourceWidth*dashboardWidth;
+    float h = sourceH/sourceHeight*dashboardHeight;
+
+    batch.draw(reward.icon,x,y,w,h);
+}
 
 
 

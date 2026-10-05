@@ -30,6 +30,8 @@ public class LootCrate{
     private static Texture dashboard5;
     private static Texture dashboard6;
     private static Texture dashboardSpecial5;
+    private static Texture dashboard5NoWeapon;
+    private static Texture dashboard6NoWeapon;
 
     private static Animation<TextureRegion> commonOpening;
     private static Animation<TextureRegion> rareOpening;
@@ -56,8 +58,8 @@ public class LootCrate{
         private Array<Powerup.PowerupType> powerups;;
         private Array<Weapon.WeaponType> weapons;
 
-        private boolean spicy;
-        private boolean moreSpicy;
+        private Powerup.SpicyType spicy;
+        private Powerup.MoreSpicyType moreSpicy;
         private boolean jackpot;
         private boolean biggerJackpot;
         private boolean godMode;
@@ -77,7 +79,7 @@ public class LootCrate{
                 if(roll == 9){
                     count = 5;
                     addRandomPowerUp();
-                    spicy = true;
+                    addRandomSpicy();
                 }
                 gold = MathUtils.random(5,15);
                 score =  MathUtils.random(25,75);
@@ -93,13 +95,13 @@ public class LootCrate{
                 }
                 else if(roll > 5 && roll < 9){
                     count = 5;
-                    spicy = true;
+                    addRandomSpicy();
                 }
                 else{
                     count = 5;
                     int chance = MathUtils.random(1,5);
                     if(chance<4){
-                        moreSpicy = true;
+                        addRandomMoreSpicy();
                     }
                     else if(chance ==4){
                         addRandomGun();
@@ -115,7 +117,7 @@ public class LootCrate{
             if(type == CrateType.SUPER_RARE){
                 hpBoost = 70;
                 addRandomPowerUp();
-                spicy = true;
+                addRandomSpicy();
                 int roll = MathUtils.random(1, 15);
                 if(roll <= 5 || roll > 9){
                     count = 5;
@@ -131,7 +133,7 @@ public class LootCrate{
                         addRandomGun();
                     }
                     else if(chance ==4){
-                       moreSpicy = true;
+                       addRandomMoreSpicy();
                     }
                     else{
                         biggerJackpot = true;
@@ -146,7 +148,7 @@ public class LootCrate{
                 hpBoost = 100;
                 count = 5;
                 addRandomGun();
-                moreSpicy = true;
+                addRandomMoreSpicy();
                 addRandomGun();
                 biggerJackpot = true;
                 godMode = true;
@@ -178,6 +180,37 @@ public class LootCrate{
                 weapons.add(Weapon.WeaponType.ROCKET_LAUNCHER);
         }
 
+        private void addRandomSpicy(){
+            int roll = MathUtils.random(1,6);
+            if(roll == 1)
+                spicy = Powerup.SpicyType.OVERDRIVE;
+            else if(roll == 2)
+                spicy = Powerup.SpicyType.RAPID_MOBILITY;
+            else if(roll == 3)
+                spicy = Powerup.SpicyType.BOTTOMLESS_MAG;
+            else if(roll == 4)
+                spicy = Powerup.SpicyType.DAMAGE_SURGE;
+            else if(roll == 5)
+                spicy = Powerup.SpicyType.GOLD_RUSH;
+            else
+                spicy = Powerup.SpicyType.SCORE_FRENZY;
+        }
+        
+        private void addRandomMoreSpicy(){
+            int roll = MathUtils.random(1,5);
+            if(roll == 1)
+                moreSpicy = Powerup.MoreSpicyType.BERSERK;
+            else if(roll == 2)
+                moreSpicy = Powerup.MoreSpicyType.INFINITE_ASSAULT;
+            else if(roll == 3)
+                moreSpicy = Powerup.MoreSpicyType.HYPERDRIVE;
+            else if(roll == 4)
+                moreSpicy = Powerup.MoreSpicyType.FORTRESS;
+            else
+                moreSpicy = Powerup.MoreSpicyType.DOUBLE_FORTUNE;
+        }
+
+
         public int getCount(){
             return count;
         }
@@ -202,14 +235,6 @@ public class LootCrate{
             return weapons;
         }
 
-        public boolean hasSpicy(){
-            return spicy;
-        }
-
-        public boolean hasMoreSpicy(){
-            return moreSpicy;
-        }
-
         public boolean hasJackpot(){
             return jackpot;
         }
@@ -225,6 +250,15 @@ public class LootCrate{
         public int getHpBoost(){
             return hpBoost;
         }
+
+        public Powerup.SpicyType getSpicy(){
+            return spicy;
+        }
+
+        public Powerup.MoreSpicyType getMoreSpicy(){
+            return moreSpicy;
+        }
+  
     }
     private Contents contents;
     LootCrate(CrateType type, Rectangle crate ){
@@ -275,6 +309,8 @@ public class LootCrate{
         dashboard5 = new Texture("loot/dashboard/5slot.png");
         dashboard6 = new Texture("loot/dashboard/6slot.png");
         dashboardSpecial5 = new Texture("loot/dashboard/5slot_special.png");
+        dashboard5NoWeapon = new Texture("loot/dashboard/5slot_no_weapon.png");
+        dashboard6NoWeapon = new Texture("loot/dashboard/6slot_no_weapon.png");
 
         commonOpening = createAnimation(commonSheet);
         rareOpening = createAnimation(rareSheet);
@@ -359,16 +395,27 @@ public boolean isReadyToRemove(){
 }
 
 public Texture getDashboardTexture(){
-    if(type == CrateType.SPECIAL)
+     if(type == CrateType.SPECIAL)
         return dashboardSpecial5;
     int count = contents.getCount();
+    boolean hasWeapon = contents.getWeapons().size > 0;
     if(count == 3)
         return dashboard3;
     if(count == 4)
         return dashboard4;
-    if(count == 5)
-        return dashboard5;
-    return dashboard6;
+    if(count == 5){
+        if(hasWeapon)
+            return dashboard5;
+        else
+            return dashboard5NoWeapon;
+    }
+    if(count == 6){
+        if(hasWeapon)
+            return dashboard6;
+        else
+            return dashboard6NoWeapon;
+    }
+    return dashboard6NoWeapon;
 }
 
 public void claim(){
@@ -380,9 +427,7 @@ public void claim(){
 
 public boolean isClaimed(){
     return claimed;
-}
-
-    
+}  
 
 
 
