@@ -9,14 +9,14 @@ public class Powerup{
         JETPACK,
         FIRE_RATE
     }
-        public enum SpicyType{
-            OVERDRIVE,
-            RAPID_MOBILITY,
-            BOTTOMLESS_MAG,
-            DAMAGE_SURGE,
-            GOLD_RUSH,
-            SCORE_FRENZY
-        }
+    public enum SpicyType{
+        OVERDRIVE,
+        RAPID_MOBILITY,
+        BOTTOMLESS_MAG,
+        DAMAGE_SURGE,
+        GOLD_RUSH,
+        SCORE_FRENZY
+    }
 
     public enum MoreSpicyType{
         BERSERK,
@@ -27,6 +27,8 @@ public class Powerup{
     }
 
     private PowerupType type;
+    private SpicyType spicytype;
+    private  MoreSpicyType moreSpicyType;
 
     Powerup(PowerupType type){
         this.type = type;
@@ -34,6 +36,12 @@ public class Powerup{
 
     public PowerupType getType(){
         return type;
+    }
+    public SpicyType getSpicyType(){
+        return spicytype;
+    }
+    public MoreSpicyType getMoreSpicyType(){
+        return moreSpicyType;
     }
 
    

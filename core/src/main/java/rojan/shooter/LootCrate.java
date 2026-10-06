@@ -7,8 +7,6 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
-import rojan.shooter.LootCrate.Contents;
-
 public class LootCrate{
     private Rectangle crate;
     public enum CrateType{
@@ -209,7 +207,6 @@ public class LootCrate{
                 moreSpicy = Powerup.MoreSpicyType.DOUBLE_FORTUNE;
         }
 
-
         public int getCount(){
             return count;
         }
@@ -257,6 +254,7 @@ public class LootCrate{
         public Powerup.MoreSpicyType getMoreSpicy(){
             return moreSpicy;
         }
+
   
     }
     private Contents contents;
@@ -264,19 +262,6 @@ public class LootCrate{
         this.crate = new Rectangle(crate);
         this.type = type;
         this.contents = new Contents(type);
-        if(type == CrateType.COMMON){
-            
-        }
-        if(type == CrateType.RARE){
-
-        }
-        if(type == CrateType.SUPER_RARE){
-
-        }
-
-        if(type == CrateType.SPECIAL){
-
-        }
         opened = false;
     }
 
@@ -369,64 +354,68 @@ public class LootCrate{
         batch.draw(frame,drawX,drawY,drawSize,drawSize);
 }
 
-public boolean isOpened(){
-    return opened;
-}
-
-public boolean openingFinished(){
-    return opened && getOpeningAnimation().isAnimationFinished(openingTime);
-}
-
-public Rectangle getCrate(){
-    return crate;
-}
-
-public void update(float dt){
-    if(!claimed)
-        return;
-    claimedTimer+=dt;
-    if(claimedTimer >= CLAIMED_LIFETIME)
-        readyToRemove = true;
-}
-
-public boolean isReadyToRemove(){
-    return readyToRemove;
-}
-
-public Texture getDashboardTexture(){
-     if(type == CrateType.SPECIAL)
-        return dashboardSpecial5;
-    int count = contents.getCount();
-    boolean hasWeapon = contents.getWeapons().size > 0;
-    if(count == 3)
-        return dashboard3;
-    if(count == 4)
-        return dashboard4;
-    if(count == 5){
-        if(hasWeapon)
-            return dashboard5;
-        else
-            return dashboard5NoWeapon;
+    public boolean isOpened(){
+        return opened;
     }
-    if(count == 6){
-        if(hasWeapon)
-            return dashboard6;
-        else
-            return dashboard6NoWeapon;
-    }
-    return dashboard6NoWeapon;
-}
 
-public void claim(){
-    if(!claimed){
+    public boolean openingFinished(){
+        return opened && getOpeningAnimation().isAnimationFinished(openingTime);
+    }
+
+    public Rectangle getCrate(){
+        return crate;
+    }
+
+    public void update(float dt){
+        if(!claimed)
+            return;
+        claimedTimer+=dt;
+        if(claimedTimer >= CLAIMED_LIFETIME)
+            readyToRemove = true;
+    }
+
+    public boolean isReadyToRemove(){
+        return readyToRemove;
+    }
+
+    public Texture getDashboardTexture(){
+        if(type == CrateType.SPECIAL)
+            return dashboardSpecial5;
+        int count = contents.getCount();
+        boolean hasWeapon = contents.getWeapons().size > 0;
+        if(count == 3)
+            return dashboard3;
+        if(count == 4)
+            return dashboard4;
+        if(count == 5){
+            if(hasWeapon)
+                return dashboard5;
+            else
+                return dashboard5NoWeapon;
+        }
+        if(count == 6){
+            if(hasWeapon)
+                return dashboard6;
+            else
+                return dashboard6NoWeapon;
+        }
+        return dashboard6NoWeapon;
+    }
+
+    public Contents claim(){
+        if(claimed)
+            return null;
+
         claimed = true;
         claimedTimer = 0f;
+        
+        return contents;
+       
     }
-}
 
-public boolean isClaimed(){
-    return claimed;
-}  
+    public boolean isClaimed(){
+        return claimed;
+    }  
 
 
 

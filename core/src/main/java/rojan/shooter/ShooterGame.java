@@ -89,13 +89,14 @@ public class ShooterGame extends ApplicationAdapter {
     private int pendingScore= 0;
     private int currentScore = 0;
     private int bestScore = 0;
-    private int gold = 0;
 
     private int nextHeadshotReward = 5;
     private int nextBodyshotReward = 10;
     private int nextLimbshotReward = 15;
     private int nextKillReward = 10;
     private LootCrate activeLootCrate;
+
+    private final int WEAPON_INITIAL_CAPACITY =5;
 
     private static class BombardmentImpactFx{
         Vector2 position;
@@ -149,6 +150,7 @@ public class ShooterGame extends ApplicationAdapter {
     private BitmapFont lootCountFont;
     private final GlyphLayout lootValueLayout = new GlyphLayout();
     private final ObjectMap<Texture,TextureRegion> lootIconRegions = new ObjectMap<>();
+    private LootCrate.Contents pendingLoot;
 
     private static class LootVisual{
         Texture icon;
@@ -236,10 +238,12 @@ public class ShooterGame extends ApplicationAdapter {
         heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
 
         inventory = new Inventory();
-        inventory.addWeapon(Weapon.WeaponType.AR);
-        inventory.addAmmo(Weapon.WeaponType.AR,120);
+        int roll = MathUtils.random(1,1);
+        if(roll == 1){
+            inventory.addWeapon(weapon.getCurrentWeapon());
+            inventory.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY* weapon.getMagazineSize());
+        }
         lootCrates = new Array<>();
-
         FxAssets.loadOnce();
         LootCrate.loadAssetsOnce();
         specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
@@ -1375,25 +1379,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=40;
-                gold+=5;
+                inventory.addGold(5);
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=25;
-                gold+=3;
+                inventory.addGold(3);
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=15;
-                gold+=2;
+                inventory.addGold(2);
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=100;
-                gold+=10;
+                inventory.addGold(10);
                 nextKillReward+=10;
             }
         }
@@ -1412,25 +1416,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=50;
-                gold+=7;
+                inventory.addGold(7);
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=30;
-                gold+=4;
+                inventory.addGold(4);
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=20;
-                gold+=3;
+                inventory.addGold(3);
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=140;
-                gold+=15;
+                inventory.addGold(15);
                 nextKillReward+=10;
             }
         }
@@ -1449,25 +1453,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=70;
-                gold+=10;
+                inventory.addGold(10);
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=45;
-                gold+=6;
+                inventory.addGold(6);
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=30;
-                gold+=4;
+                inventory.addGold(4);
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=200;
-                gold+=20;
+                inventory.addGold(20);
                 nextKillReward+=10;
             }
         }
@@ -1486,25 +1490,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=100;
-                gold+=15;
+                inventory.addGold(15);
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=60;
-                gold+=8;
+                inventory.addGold(8);
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=40;
-                gold+=5;
+                inventory.addGold(15);
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=300;
-                gold+=30;
+                inventory.addGold(30);
                 nextKillReward+=10;
             }
         }
@@ -2042,7 +2046,7 @@ private void drawJetpackDisabledHud(){
 
         hudFont.getData().setScale(0.8f);
 
-        hudFont.draw(batch,Integer.toString(gold),goldX+48f*scale,zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(inventory.getGold()),goldX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(currentScore),scoreX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(bestScore),bestX+48f*scale,zoneY+27f*scale);
     }
@@ -2210,8 +2214,40 @@ private void claimActiveCrate(){
         return;
     if(!activeLootCrate.openingFinished())
         return;
-    activeLootCrate.claim();
+    updatePendingLoot(activeLootCrate.claim());
     activeLootCrate = null;
+}
+
+private void updatePendingLoot(LootCrate.Contents loot){
+    currentScore+=loot.getScore();
+    if(currentScore > bestScore)
+        bestScore = currentScore;
+    inventory.addGold(loot.getGold());
+    inventory.addAmmo(weapon.getCurrentWeapon(), (loot.getAmmoReward()* WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize())/100);
+    inventory.addPowerupFromArray(loot.getPowerups());
+    inventory.addWeaponFromArray(loot.getWeapons(),WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize());
+    if(loot.hasJackpot()){
+        int goldCount = MathUtils.random(200,350);
+        inventory.addGold(goldCount);
+    }
+    if(loot.hasBiggerJackpot()){
+        int goldCount = MathUtils.random(600,800);
+        inventory.addGold(goldCount);
+    }
+    player.heal(loot.getHpBoost());
+    
+    if(loot.getSpicy() != null){
+        inventory.addSpicy(loot.getSpicy(),1);
+    }
+
+    if(loot.getMoreSpicy()!=null){
+        inventory.addMoreSpicy(loot.getMoreSpicy(),1);
+    }
+
+    if(loot.hasGodMode()){
+        //
+    }
+     
 }
 
 private Array<LootVisual> getLootVisuals(LootCrate crate){
@@ -2311,12 +2347,7 @@ private void drawWeaponReward(Weapon.WeaponType weapon,float dashboardX,float da
 
     float sourceX = dashboard.getWidth()-520f;
 
-    drawContain(
-        FxAssets.weaponRewardIcons.get(weapon),
-        dashboardX+sourceX*sx,
-        dashboardY+96f*sy,
-        464f*sx,136f*sy
-    );
+    drawContain(FxAssets.weaponRewardIcons.get(weapon),dashboardX+sourceX*sx,dashboardY+96f*sy,464f*sx,136f*sy);
 
     drawLootQuantity("x1",dashboardX+(sourceX-4f)*sx,dashboardY+34f*sy,472f*sx,34f*sy);
 }
@@ -2412,7 +2443,6 @@ private TextureRegion getLootRegion(Texture texture){
                     bottom = Math.max(bottom,py);
                 }
             }
-
             if(right >= left){
                 // Keep two source pixels around the visible artwork.
                 left = Math.max(0,left-2);
