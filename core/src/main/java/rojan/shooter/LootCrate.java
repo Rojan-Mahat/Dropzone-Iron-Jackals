@@ -47,7 +47,6 @@ public class LootCrate{
     private boolean claimed = false;
     private float claimedTimer = 0f;
     private final float CLAIMED_LIFETIME = 8f;
-
     public class Contents{
         private int count;
         private int gold;

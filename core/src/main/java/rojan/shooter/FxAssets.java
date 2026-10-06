@@ -143,8 +143,8 @@ public final class FxAssets{
         scoreIcon = new Texture(AssetPaths.Hud.SCORE_ICON);
         bestScoreIcon = new Texture(AssetPaths.Hud.BEST_SCORE_ICON);
 
-        String reward = "loot/lootIcons/icons/64/";
-        String guns = "loot/lootIcons/guns/64/";
+        String reward = "loot/lootIcons/icons/1024/";
+        String guns = "loot/lootIcons/guns/1024/";
 
         goldRewardIcon = new Texture(reward+"gold.png");
         scoreRewardIcon = new Texture(reward+"score.png");

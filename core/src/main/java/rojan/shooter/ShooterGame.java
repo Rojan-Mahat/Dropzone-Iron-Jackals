@@ -2,6 +2,7 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
@@ -19,7 +20,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.graphics.Texture;
-
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -28,10 +29,12 @@ import rojan.shooter.LootCrate.CrateType;
 import rojan.shooter.Weapon.WeaponType;
 
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 import com.badlogic.gdx.maps.objects.EllipseMapObject;
 import com.badlogic.gdx.math.Ellipse;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
 //./gradlew lwjgl3:run
@@ -142,6 +145,10 @@ public class ShooterGame extends ApplicationAdapter {
     private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
     private final float crateWidth = 75f;
     private final float crateHeight = 60f;
+    private BitmapFont lootFont;
+    private BitmapFont lootCountFont;
+    private final GlyphLayout lootValueLayout = new GlyphLayout();
+    private final ObjectMap<Texture,TextureRegion> lootIconRegions = new ObjectMap<>();
 
     private static class LootVisual{
         Texture icon;
@@ -162,6 +169,24 @@ public class ShooterGame extends ApplicationAdapter {
         parameter.size = 20;
         hudFont = generator.generateFont(parameter);
         generator.dispose();
+
+        FreeTypeFontGenerator lootGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter lootParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        lootParameter.size = 48;
+        lootParameter.minFilter = Texture.TextureFilter.Linear;
+        lootParameter.magFilter = Texture.TextureFilter.Linear;
+        lootFont = lootGenerator.generateFont(lootParameter);
+        lootGenerator.dispose();
+
+
+        FreeTypeFontGenerator lootCountGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter lootCountParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        lootCountParameter.size = 26;
+        lootCountParameter.minFilter = Texture.TextureFilter.Linear;
+        lootCountParameter.magFilter = Texture.TextureFilter.Linear;
+        lootCountFont = lootCountGenerator.generateFont(lootCountParameter);
+        lootCountGenerator.dispose();
+        lootCountFont.setUseIntegerPositions(false);
 
         map = loadMap();
 
@@ -459,6 +484,8 @@ shapeRenderer.end();
         riflemanProjectileTexture.dispose();
         heavyProjectileTexture.dispose();
         hudFont.dispose();
+        lootFont.dispose();
+        lootIconRegions.clear();
     }
     @Override
     public void resize(int width,int height){
@@ -2169,18 +2196,12 @@ private void drawLootDashboard(){
 
     float height = 66f;
     float width = height * ((float)dashboard.getWidth()/dashboard.getHeight());
-    float crateCenterX = crate.x+crate.width/2f;
-
-    float x = crateCenterX-width/2f;
-    float y = crate.y+crate.height+28f;
-
-
-    batch.draw(dashboard,x,y,width,height);
-
-    Array<LootVisual> rewards = getLootVisuals(activeLootCrate);
-    for(int i=0;i<rewards.size;i++)
-        drawRegularReward(rewards.get(i),i,x,y,width,height,dashboard);
-    }
+    float crateCenterX =crate.x+crate.width/2f;
+    float x =crateCenterX-width/2f;
+    float y =crate.y+crate.height+30f;
+    batch.draw( dashboard, x, y, width, height);
+    drawLootRewards(x,y,width,height,dashboard);
+}
 
 private void claimActiveCrate(){
     if(activeLootCrate == null)
@@ -2202,28 +2223,217 @@ private Array<LootVisual> getLootVisuals(LootCrate crate){
     rewards.add(new LootVisual(FxAssets.goldRewardIcon, "+"+contents.getGold()));
     rewards.add(new LootVisual(FxAssets.scoreRewardIcon,"+"+contents.getScore()));
     rewards.add(new LootVisual(FxAssets.ammoRewardIcon,"+"+contents.getAmmoReward()+"%"));
+
+    for(Powerup.PowerupType powerup : contents.getPowerups())
+        rewards.add(new LootVisual( FxAssets.powerupIcons.get(powerup), ""));
+
+    if(contents.getSpicy() != null)
+        rewards.add(new LootVisual(FxAssets.spicyIcons.get(contents.getSpicy()),""));
+
+    if(contents.getMoreSpicy() != null)
+        rewards.add(new LootVisual(FxAssets.moreSpicyIcons.get(contents.getMoreSpicy()),""));
+
+    if(contents.hasJackpot())
+        rewards.add(new LootVisual(FxAssets.jackpotIcon,""));
+    
+    if(contents.hasBiggerJackpot())
+        rewards.add(new LootVisual(FxAssets.biggerJackpotIcon,""));
+    
+    if(contents.hasGodMode())
+        rewards.add(new LootVisual(FxAssets.godModeIcon,""));
+    
     return rewards;
 }
 
 private void drawRegularReward(LootVisual reward,int slot,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
-    float sourceWidth = dashboard.getWidth();
-    float sourceHeight = dashboard.getHeight();
+    float sx = dashboardWidth/dashboard.getWidth();
+    float sy = dashboardHeight/dashboard.getHeight();
 
-    float sourceX = 86f + 268f*slot;
-    float sourceY = 90f;
+    float x = dashboardX+(86f+268f*slot)*sx;
+    float y = dashboardY+90f*sy;
 
-    float sourceW = 148f;
-    float sourceH = 148f;
+    drawContain(reward.icon,x,y,148f*sx,148f*sy);
 
-    float x = dashboardX + sourceX/sourceWidth*dashboardWidth;
-    float y = dashboardY + sourceY/sourceHeight*dashboardHeight;
-    float w = sourceW/sourceWidth*dashboardWidth;
-    float h = sourceH/sourceHeight*dashboardHeight;
+    drawLootValue(reward.value,slot,dashboardX,dashboardY,dashboardWidth,dashboardHeight,dashboard);
+}
 
-    batch.draw(reward.icon,x,y,w,h);
+private void drawLootQuantity(String text,float x,float y,float width,float height){
+    if(width <= 0f || height <= 0f)
+        return;
+
+    if(text == null || text.isEmpty())
+        text = "x1";
+
+    lootCountFont.getData().setScale(1f);
+    lootValueLayout.setText(lootCountFont,text);
+
+    float scale = Math.min(
+        width*0.90f/Math.max(lootValueLayout.width,1f),
+        height*0.85f/Math.max(lootValueLayout.height,1f)
+    );
+
+    lootCountFont.getData().setScale(scale);
+    lootValueLayout.setText(lootCountFont,text);
+
+    float textX = x+(width-lootValueLayout.width)/2f;
+    float textY = y+(height+lootValueLayout.height)/2f;
+
+    lootCountFont.draw(batch,lootValueLayout,textX,textY);
 }
 
 
+private void drawLootValue(String text,int slot,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    float sx = dashboardWidth/dashboard.getWidth();
+    float sy = dashboardHeight/dashboard.getHeight();
+
+    float x = dashboardX+(52f+268f*slot)*sx;
+    float y = dashboardY+34f*sy;
+
+    drawLootQuantity(text,x,y,216f*sx,34f*sy);
+}
+
+private void drawContain(Texture texture,float x,float y,float width,float height){
+    if(width <= 0f || height <= 0f)
+        return;
+    TextureRegion region = getLootRegion(texture);
+
+    float scale = Math.min(width/region.getRegionWidth(),height/region.getRegionHeight())*0.95f;
+
+    float w = region.getRegionWidth()*scale;
+    float h = region.getRegionHeight()*scale;
+
+    batch.draw(region,x+(width-w)/2f,y+(height-h)/2f,w,h);
+}
+
+private void drawWeaponReward(Weapon.WeaponType weapon,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    float sx = dashboardWidth/dashboard.getWidth();
+    float sy = dashboardHeight/dashboard.getHeight();
+
+    float sourceX = dashboard.getWidth()-520f;
+
+    drawContain(
+        FxAssets.weaponRewardIcons.get(weapon),
+        dashboardX+sourceX*sx,
+        dashboardY+96f*sy,
+        464f*sx,136f*sy
+    );
+
+    drawLootQuantity("x1",dashboardX+(sourceX-4f)*sx,dashboardY+34f*sy,472f*sx,34f*sy);
+}
+
+private void drawLootRewards(float x,float y,float width,float height,Texture dashboard){
+    if(activeLootCrate == null)
+        return;
+
+    if(activeLootCrate.getType() == LootCrate.CrateType.SPECIAL){
+        drawSpecialLootRewards(x,y,width,height,dashboard);
+        return;
+    }
+
+    Array<LootVisual> rewards = getLootVisuals(activeLootCrate);
+    Array<Weapon.WeaponType> weapons = activeLootCrate.getContents().getWeapons();
+
+    for(int i=0;i<rewards.size;i++)
+        drawRegularReward(rewards.get(i),i,x,y,width,height,dashboard);
+
+    if(weapons.size > 0)
+        drawWeaponReward(weapons.first(),x,y,width,height,dashboard);
+    
+}
+
+private void drawSpecialWeapon(Weapon.WeaponType weapon,int index,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    float sx = dashboardWidth/dashboard.getWidth();
+    float sy = dashboardHeight/dashboard.getHeight();
+
+    float sourceX = 56f+524f*index;
+
+    drawContain(FxAssets.weaponRewardIcons.get(weapon),dashboardX+sourceX*sx,dashboardY+96f*sy,464f*sx,136f*sy);
+
+    drawLootQuantity("x1",dashboardX+(sourceX-4f)*sx,dashboardY+34f*sy,472f*sx,34f*sy);
+}
+
+private void drawSpecialReward(Texture icon,int index,float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    float sx = dashboardWidth/dashboard.getWidth();
+    float sy = dashboardHeight/dashboard.getHeight();
+
+    float sourceX = 1134f+268f*index;
+
+    drawContain(icon,dashboardX+sourceX*sx,dashboardY+90f*sy,148f*sx,148f*sy);
+
+    drawLootQuantity("x1",dashboardX+(sourceX-34f)*sx,dashboardY+34f*sy,216f*sx,34f*sy);
+}
+
+private void drawSpecialLootRewards(float dashboardX,float dashboardY,float dashboardWidth,float dashboardHeight,Texture dashboard){
+    LootCrate.Contents contents = activeLootCrate.getContents();
+    Array<Weapon.WeaponType> weapons = contents.getWeapons();
+
+    if(weapons.size > 0)
+        drawSpecialWeapon(weapons.get(0),0,dashboardX,dashboardY,dashboardWidth,dashboardHeight,dashboard);
+    
+    if(weapons.size > 1)
+        drawSpecialWeapon(weapons.get(1),1,dashboardX,dashboardY,dashboardWidth,dashboardHeight,dashboard);
+
+    if(contents.getMoreSpicy() != null)
+        drawSpecialReward(FxAssets.moreSpicyIcons.get(contents.getMoreSpicy()),0,dashboardX,dashboardY,dashboardWidth,dashboardHeight,dashboard);
+
+    drawSpecialReward( FxAssets.biggerJackpotIcon, 1, dashboardX,dashboardY,dashboardWidth,dashboardHeight,dashboard);
+    drawSpecialReward(FxAssets.godModeIcon,2, dashboardX,dashboardY, dashboardWidth,dashboardHeight, dashboard);
+}
+
+private TextureRegion getLootRegion(Texture texture){
+    if(texture == null)
+        throw new IllegalArgumentException("Missing loot icon texture");
+
+    TextureRegion cached = lootIconRegions.get(texture);
+    if(cached != null)
+        return cached;
+
+    TextureRegion region = new TextureRegion(texture);
+    TextureData data = texture.getTextureData();
+
+    if(data.getType() == TextureData.TextureDataType.Pixmap){
+        if(!data.isPrepared())
+            data.prepare();
+
+        Pixmap pixmap = data.consumePixmap();
+
+        try{
+            int left = pixmap.getWidth(),top = pixmap.getHeight();
+            int right = -1,bottom = -1;
+
+            for(int py=0;py<pixmap.getHeight();py++){
+                for(int px=0;px<pixmap.getWidth();px++){
+                    if((pixmap.getPixel(px,py)&255) == 0)
+                        continue;
+
+                    left = Math.min(left,px);
+                    right = Math.max(right,px);
+                    top = Math.min(top,py);
+                    bottom = Math.max(bottom,py);
+                }
+            }
+
+            if(right >= left){
+                // Keep two source pixels around the visible artwork.
+                left = Math.max(0,left-2);
+                top = Math.max(0,top-2);
+                right = Math.min(pixmap.getWidth()-1,right+2);
+                bottom = Math.min(pixmap.getHeight()-1,bottom+2);
+
+                region = new TextureRegion(
+                    texture,left,top,right-left+1,bottom-top+1
+                );
+            }
+        }
+        finally{
+            if(data.disposePixmap())
+                pixmap.dispose();
+        }
+    }
+
+    lootIconRegions.put(texture,region);
+    return region;
+}
 
 
 
