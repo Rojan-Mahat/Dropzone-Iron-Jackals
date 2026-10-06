@@ -23,6 +23,69 @@ public class Weapon{
         SMG
     }
 
+    //PISTOL BASE STATS
+    private final int BASE_MAGAZINE_PISTOL = 8;
+    private final float BASE_RELOAD_PISTOL = 2.5f;
+    private final float BASE_HEAD_DAMAGE_PISTOL = 60f;
+    private final float BASE_BODY_DAMAGE_PISTOL = 30f;
+    private final float BASE_LIMB_DAMAGE_PISTOL = 20f;
+    private final float BASE_FIRE_RATE_PISTOL = 2.5f;
+    private final float BASE_SCOPE_PISTOL = 2.3f;
+    private final boolean BASE_AUTOMATIC_PISTOL = false;
+
+
+    //AR BASE STATS
+    private final int BASE_MAGAZINE_AR = 30;
+    private final float BASE_RELOAD_AR = 3f;
+    private final float BASE_HEAD_DAMAGE_AR = 50f;
+    private final float BASE_BODY_DAMAGE_AR = 30f;
+    private final float BASE_LIMB_DAMAGE_AR = 20f;
+    private final float BASE_FIRE_RATE_AR = 5f;
+    private final float BASE_SCOPE_AR = 4.2f;
+    private final boolean BASE_AUTOMATIC_AR = true;
+
+
+    //SHOTGUN BASE STATS
+    private final int BASE_MAGAZINE_SHOTGUN = 6;
+    private final float BASE_RELOAD_SHOTGUN = 3.5f;
+    private final float BASE_HEAD_DAMAGE_SHOTGUN = 180f;
+    private final float BASE_BODY_DAMAGE_SHOTGUN = 80f;
+    private final float BASE_LIMB_DAMAGE_SHOTGUN = 50f;
+    private final float BASE_FIRE_RATE_SHOTGUN = 1.5f;
+    private final float BASE_SCOPE_SHOTGUN = 2f;
+    private final boolean BASE_AUTOMATIC_SHOTGUN = false;
+
+
+    //SMG BASE STATS
+    private final int BASE_MAGAZINE_SMG = 30;
+    private final float BASE_RELOAD_SMG = 3f;
+    private final float BASE_HEAD_DAMAGE_SMG = 25f;
+    private final float BASE_BODY_DAMAGE_SMG = 18f;
+    private final float BASE_LIMB_DAMAGE_SMG = 10f;
+    private final float BASE_FIRE_RATE_SMG = 9f;
+    private final float BASE_SCOPE_SMG = 3f;
+    private final boolean BASE_AUTOMATIC_SMG = true;
+
+
+    //SNIPER BASE STATS
+    private final int BASE_MAGAZINE_SNIPER = 6;
+    private final float BASE_RELOAD_SNIPER = 4f;
+    private final float BASE_HEAD_DAMAGE_SNIPER = 180f;
+    private final float BASE_BODY_DAMAGE_SNIPER = 80f;
+    private final float BASE_LIMB_DAMAGE_SNIPER = 50f;
+    private final float BASE_FIRE_RATE_SNIPER = 1f;
+    private final float BASE_SCOPE_SNIPER = 8f;
+    private final boolean BASE_AUTOMATIC_SNIPER = false;
+
+
+    //ROCKET LAUNCHER BASE STATS
+    private final int BASE_MAGAZINE_ROCKET = 8;
+    private final float BASE_RELOAD_ROCKET = 2.5f;
+    private final float BASE_HEAD_DAMAGE_ROCKET = 60f;
+    private final float BASE_BODY_DAMAGE_ROCKET = 30f;
+    private final float BASE_LIMB_DAMAGE_ROCKET = 20f;
+    private final boolean BASE_AUTOMATIC_ROCKET = false;
+
     private float reloadSpeed;
     private boolean automatic;
     private float maxScope;
@@ -99,76 +162,78 @@ public class Weapon{
 
     private void determineWeaponStats(){
         if(currentWeapon == WeaponType.PISTOL){
-            magazineSize = 8;
-            reloadSpeed = 2.5f;
-            headDamage = 60;
-            bodyDamage = 30;
-            limbDamage = 20;
-            automatic = false;
-            maxScope = 2.3f;
-            fireRate = 2.5f;
+            magazineSize = BASE_MAGAZINE_PISTOL;
+            reloadSpeed = BASE_RELOAD_PISTOL;
+            headDamage = BASE_HEAD_DAMAGE_PISTOL;
+            bodyDamage = BASE_BODY_DAMAGE_PISTOL;
+            limbDamage = BASE_LIMB_DAMAGE_PISTOL;
+            automatic = BASE_AUTOMATIC_PISTOL;
+            maxScope = BASE_SCOPE_PISTOL;
+            fireRate = BASE_FIRE_RATE_PISTOL;
         }
+
         if(currentWeapon == WeaponType.AR){
-            magazineSize = 30;
-            reloadSpeed = 3f;
-            headDamage = 50;
-            bodyDamage = 30;
-            limbDamage = 20;
-            automatic = true;
-            fireRate = 5;
-            maxScope = 4.2f;
+            magazineSize = BASE_MAGAZINE_AR;
+            reloadSpeed = BASE_RELOAD_AR;
+            headDamage = BASE_HEAD_DAMAGE_AR;
+            bodyDamage = BASE_BODY_DAMAGE_AR;
+            limbDamage = BASE_LIMB_DAMAGE_AR;
+            automatic = BASE_AUTOMATIC_AR;
+            fireRate = BASE_FIRE_RATE_AR;
+            maxScope = BASE_SCOPE_AR;
 
             ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
             ARregion = new TextureRegion(ARtexture);
         }
 
-        /*if(currentWeapon == WeaponType.ROCKET_LAUNCHER){
-            magazineSize = 8;
-            reloadSpeed = 2.5f;
-            headDamage = 60;
-            bodyDamage = 30;
-            limbDamage = 20;
-            automatic = false;
-            
-        }*/
-        
         if(currentWeapon == WeaponType.SHOTGUN){
-            magazineSize = 6;
-            reloadSpeed = 3.5f;
-            headDamage = 180;
-            bodyDamage = 80;
-            limbDamage = 50;
-            automatic = false;
-            fireRate = 1.5f;
-            maxScope = 2;
+            magazineSize = BASE_MAGAZINE_SHOTGUN;
+            reloadSpeed = BASE_RELOAD_SHOTGUN;
+            headDamage = BASE_HEAD_DAMAGE_SHOTGUN;
+            bodyDamage = BASE_BODY_DAMAGE_SHOTGUN;
+            limbDamage = BASE_LIMB_DAMAGE_SHOTGUN;
+            automatic = BASE_AUTOMATIC_SHOTGUN;
+            fireRate = BASE_FIRE_RATE_SHOTGUN;
+            maxScope = BASE_SCOPE_SHOTGUN;
         }
 
         if(currentWeapon == WeaponType.SMG){
-            magazineSize = 30;
-            reloadSpeed = 3f;
-            headDamage = 25;
-            bodyDamage = 18;
-            limbDamage = 10;
-            automatic = true;
-            fireRate = 9;
-            maxScope = 3;
-
+            magazineSize = BASE_MAGAZINE_SMG;
+            reloadSpeed = BASE_RELOAD_SMG;
+            headDamage = BASE_HEAD_DAMAGE_SMG;
+            bodyDamage = BASE_BODY_DAMAGE_SMG;
+            limbDamage = BASE_LIMB_DAMAGE_SMG;
+            automatic = BASE_AUTOMATIC_SMG;
+            fireRate = BASE_FIRE_RATE_SMG;
+            maxScope = BASE_SCOPE_SMG;
         }
 
         if(currentWeapon == WeaponType.SNIPER){
-            magazineSize = 6;
-            reloadSpeed = 4f;
-            headDamage = 180;
-            bodyDamage = 80;
-            limbDamage = 50;
-            automatic = false;
-            maxScope = 8f;
-            fireRate = 1;
+            magazineSize = BASE_MAGAZINE_SNIPER;
+            reloadSpeed = BASE_RELOAD_SNIPER;
+            headDamage = BASE_HEAD_DAMAGE_SNIPER;
+            bodyDamage = BASE_BODY_DAMAGE_SNIPER;
+            limbDamage = BASE_LIMB_DAMAGE_SNIPER;
+            automatic = BASE_AUTOMATIC_SNIPER;
+            fireRate = BASE_FIRE_RATE_SNIPER;
+            maxScope = BASE_SCOPE_SNIPER;
         }
     }
 
     public WeaponType getCurrentWeapon(){
         return currentWeapon;
+    }
+
+    public float getHeadDamage(){
+        return headDamage;
+    }
+
+    public float getBodyDamage(){
+        return bodyDamage;
+    }
+
+    public float getLimbDamage(){
+        return limbDamage;
     }
 
 
@@ -210,6 +275,62 @@ public class Weapon{
         return noAmmoIcon;
     }
 
+    public void setFireRate(float mag){
+       fireRate *= mag;
+    }
+    public void resetFireRate(){
+        if(currentWeapon == WeaponType.AR)
+            fireRate = BASE_FIRE_RATE_AR;
+        if(currentWeapon == WeaponType.SMG)
+            fireRate = BASE_FIRE_RATE_SMG;
+        if(currentWeapon == WeaponType.PISTOL)
+            fireRate = BASE_FIRE_RATE_PISTOL;
+        if(currentWeapon == WeaponType.SNIPER)
+            fireRate = BASE_FIRE_RATE_SNIPER;
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER){}
+            //fireRate = BASE_FIRE_RATE_ROCKET_LAUNCHER
+        if(currentWeapon == WeaponType.SHOTGUN)
+            fireRate = BASE_FIRE_RATE_SHOTGUN;
+    }
+
+    public void setDamage(float mag){
+        headDamage *= mag;
+        bodyDamage *= mag;
+        limbDamage *= mag;
+    }
+
+    public void resetDamage(){
+        if(currentWeapon == WeaponType.AR){
+            headDamage = BASE_HEAD_DAMAGE_AR;
+            bodyDamage = BASE_BODY_DAMAGE_AR;
+            limbDamage = BASE_LIMB_DAMAGE_AR;
+        }
+        else if(currentWeapon == WeaponType.SMG){
+            headDamage = BASE_HEAD_DAMAGE_SMG;
+            bodyDamage = BASE_BODY_DAMAGE_SMG;
+            limbDamage = BASE_LIMB_DAMAGE_SMG;
+        }
+        else if(currentWeapon == WeaponType.PISTOL){
+            headDamage = BASE_HEAD_DAMAGE_PISTOL;
+            bodyDamage = BASE_BODY_DAMAGE_PISTOL;
+            limbDamage = BASE_LIMB_DAMAGE_PISTOL;
+        }
+        else if(currentWeapon == WeaponType.SNIPER){
+            headDamage = BASE_HEAD_DAMAGE_SNIPER;
+            bodyDamage = BASE_BODY_DAMAGE_SNIPER;
+            limbDamage = BASE_LIMB_DAMAGE_SNIPER;
+        }
+        else if(currentWeapon == WeaponType.ROCKET_LAUNCHER){
+            headDamage = BASE_HEAD_DAMAGE_ROCKET;
+            bodyDamage = BASE_BODY_DAMAGE_ROCKET;
+            limbDamage = BASE_LIMB_DAMAGE_ROCKET;
+        }
+        else if(currentWeapon == WeaponType.SHOTGUN){
+            headDamage = BASE_HEAD_DAMAGE_SHOTGUN;
+            bodyDamage = BASE_BODY_DAMAGE_SHOTGUN;
+            limbDamage = BASE_LIMB_DAMAGE_SHOTGUN;
+        }
+    }
 
 
 

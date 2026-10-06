@@ -53,7 +53,8 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Bullet> bullets;
 
     private float gravity = -1200.f;
-    private float jetpackThrust= 2200.f;
+    private float BASE_JETPACK_THRUST = 2200.f;
+    private float jetpackThrust= BASE_JETPACK_THRUST;
 
     private Texture bulletTexture;
 
@@ -151,6 +152,83 @@ public class ShooterGame extends ApplicationAdapter {
     private final GlyphLayout lootValueLayout = new GlyphLayout();
     private final ObjectMap<Texture,TextureRegion> lootIconRegions = new ObjectMap<>();
     private LootCrate.Contents pendingLoot;
+
+    private boolean FIRE_RATE_ACTIVE = false;
+    private float FIRE_RATE_TIMER = 0f;
+    private final float FIRE_RATE_DURATION = 5f;
+    private final float FIRE_RATE_MULTIPLIER = 2f;
+
+    private boolean SHIELD_ACTIVE = false;
+    private float SHIELD_AMOUNT = 0f;
+    private final float SHIELD_CAPACITY = 60f;
+
+
+    private boolean OVERDRIVE_ACTIVE = false;
+    private float OVERDRIVE_TIMER = 0f;
+    private final float OVERDRIVE_DURATION = 12f;
+    private final float OVERDRIVE_DAMAGE_MULTIPLIER = 1.4f;
+    private final float OVERDRIVE_FIRE_RATE_MULTIPLIER = 1.4f;
+
+    private boolean RAPID_MOBILITY_ACTIVE = false;
+    private float RAPID_MOBILITY_TIMER = 0f;
+    private final float RAPID_MOBILITY_DURATION = 12f;
+    private final float RAPID_MOBILITY_SPEED_MULTIPLIER = 1.5f;
+    private final float RAPID_MOBILITY_JETPACK_MULTIPLIER = 1.5f;
+
+    private boolean BOTTOMLESS_MAG_ACTIVE = false;
+    private float BOTTOMLESS_MAG_TIMER = 0f;
+    private final float BOTTOMLESS_MAG_DURATION = 10f;
+
+    private boolean DAMAGE_SURGE_ACTIVE = false;
+    private float DAMAGE_SURGE_TIMER = 0f;
+    private final float DAMAGE_SURGE_DURATION = 10f;
+    private final float DAMAGE_SURGE_MULTIPLIER = 2f;
+
+    private boolean GOLD_RUSH_ACTIVE = false;
+    private float GOLD_RUSH_TIMER = 0f;
+    private final float GOLD_RUSH_DURATION = 15f;
+    private final float GOLD_RUSH_MULTIPLIER = 2f;
+
+    private boolean SCORE_FRENZY_ACTIVE = false;
+    private float SCORE_FRENZY_TIMER = 0f;
+    private final float SCORE_FRENZY_DURATION = 15f;
+    private final float SCORE_FRENZY_MULTIPLIER = 2f;
+
+
+    private boolean BERSERK_ACTIVE = false;
+    private float BERSERK_TIMER = 0f;
+    private final float BERSERK_DURATION = 12f;
+    private final float BERSERK_DAMAGE_MULTIPLIER = 2f;
+    private final float BERSERK_FIRE_RATE_MULTIPLIER = 1.6f;
+    private final float BERSERK_INCOMING_DAMAGE_MULTIPLIER = 1.25f;
+
+    private boolean INFINITE_ASSAULT_ACTIVE = false;
+    private float INFINITE_ASSAULT_TIMER = 0f;
+    private final float INFINITE_ASSAULT_DURATION = 15f;
+    private final float INFINITE_ASSAULT_FIRE_RATE_MULTIPLIER = 1.4f;
+
+    private boolean HYPERDRIVE_ACTIVE = false;
+    private float HYPERDRIVE_TIMER = 0f;
+    private final float HYPERDRIVE_DURATION = 12f;
+    private final float HYPERDRIVE_SPEED_MULTIPLIER = 1.75f;
+
+    private boolean FORTRESS_ACTIVE = false;
+    private float FORTRESS_TIMER = 0f;
+    private final float FORTRESS_DURATION = 15f;
+    private final float FORTRESS_SHIELD = 100f;
+    private final float FORTRESS_DAMAGE_REDUCTION = 0.50f;
+
+    private boolean DOUBLE_FORTUNE_ACTIVE = false;
+    private float DOUBLE_FORTUNE_TIMER = 0f;
+    private final float DOUBLE_FORTUNE_DURATION = 20f;
+    private final float DOUBLE_FORTUNE_GOLD_MULTIPLIER = 2f;
+    private final float DOUBLE_FORTUNE_SCORE_MULTIPLIER = 2f;
+
+    private boolean GOD_MODE_ACTIVE = false;
+    private float GOD_MODE_TIMER = 0f;
+    private final float GOD_MODE_DURATION = 8f;
+    private final float GOD_MODE_DAMAGE_MULTIPLIER = 2f;
+    private final float GOD_MODE_FIRE_RATE_MULTIPLIER = 2f;
 
     private static class LootVisual{
         Texture icon;
@@ -252,6 +330,7 @@ public class ShooterGame extends ApplicationAdapter {
     @Override
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
+        updatePowerups(dt);
         clampCameraToPlayer();
         activateGravity(dt);
         Vector2 direction = new Vector2(0,0);
@@ -300,16 +379,18 @@ public class ShooterGame extends ApplicationAdapter {
         else
             player.setShootingFalse();
 
-        if(shootOnce  && weapon.canShoot()){
+        if(shootOnce  && (weapon.canShoot() || infiniteMagazineActive())){
             createBulletWhenFired(mouseWorldPosition);
-            weapon.consumeAmmo();
+            if(!infiniteMagazineActive())
+                weapon.consumeAmmo();
             mouseHeld = 0f;
         }
-        else if(shooting && weapon.isAutomatic() && weapon.canShoot()){
+        else if(shooting && weapon.isAutomatic() && (weapon.canShoot() || infiniteMagazineActive())){
             mouseHeld+=dt;
             if(mouseHeld >= fireInterval){
                 createBulletWhenFired(mouseWorldPosition);
-                weapon.consumeAmmo();
+                if(!infiniteMagazineActive())
+                    weapon.consumeAmmo();
                 mouseHeld-=fireInterval;
             }
         }
@@ -376,11 +457,13 @@ public class ShooterGame extends ApplicationAdapter {
         for(Enemy enemy: enemies)
             enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
 
-        if(player.getJetPackStatus())
-            player.consumeFuel(dt);
-        else
+        if(player.getJetPackStatus()){
+            if(!infiniteJetpackActive())
+                player.consumeFuel(dt);
+        }
+        else{
             player.rechargeFuel(dt);
-
+        }
         if(isPlayerStunned()){
             player.emptyJetpack();
             player.stopJetpack();
@@ -1234,7 +1317,7 @@ private void drawJetpackDisabledHud(){
                     Circle bulletCircle = new Circle(bullet.getPosition().x,bullet.getPosition().y,bullet.getRadius());
                     for(Circle circle : enemy.getWorldDrillCircles()){
                         if(Intersector.overlaps(bulletCircle,circle)){
-                            enemy.enemyHurt(20);
+                            enemy.enemyHurt(weapon.getLimbDamage()+ weapon.getBodyDamage()/2);
                             bullet.considerWasted();
                             break;
                         }
@@ -1261,7 +1344,7 @@ private void drawJetpackDisabledHud(){
                         if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                             headshot = true;
                             HEADSHOTCOUNT++;
-                            enemy.enemyHurt(40);
+                            enemy.enemyHurt(weapon.getHeadDamage());
                             bullet.considerWasted();
                             break;
                         }
@@ -1282,7 +1365,7 @@ private void drawJetpackDisabledHud(){
                             if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                                 bodyshot = true;
                                 BODYSHOTCOUNT++;
-                                enemy.enemyHurt(20);
+                                enemy.enemyHurt(weapon.getBodyDamage());
                                 bullet.considerWasted();
                                 break;
                             }
@@ -1304,7 +1387,7 @@ private void drawJetpackDisabledHud(){
                             if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
                                 limbshot = true;
                                 LIMBSHOTCOUNT++;
-                                enemy.enemyHurt(10);
+                                enemy.enemyHurt(weapon.getLimbDamage());
                                 bullet.considerWasted();
                                 break;
                             }
@@ -1332,7 +1415,7 @@ private void drawJetpackDisabledHud(){
 
             if(Intersector.intersectSegmentRectangle(projectile.getPreviousPosition(),projectile.getPosition(),player.getWorldHitbox())
                 || (Intersector.overlaps(projectileHitbox,player.getWorldHitbox()))){
-                    player.takeDamage(projectile.getDamage());
+                    damagePlayer(projectile.getDamage());
                     projectile.considerWasted();
             }
         }
@@ -1379,25 +1462,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=40;
-                inventory.addGold(5);
+                inventory.addGold(modifyGoldReward(5));
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=25;
-                inventory.addGold(3);
+                inventory.addGold(modifyGoldReward(3));
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=15;
-                inventory.addGold(2);
+                inventory.addGold(modifyGoldReward(2));
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=100;
-                inventory.addGold(10);
+                inventory.addGold(modifyGoldReward(10));
                 nextKillReward+=10;
             }
         }
@@ -1416,25 +1499,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=50;
-                inventory.addGold(7);
+                inventory.addGold(modifyGoldReward(7));
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=30;
-                inventory.addGold(4);
+                inventory.addGold(modifyGoldReward(4));
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=20;
-                inventory.addGold(3);
+                inventory.addGold(modifyGoldReward(3));
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=140;
-                inventory.addGold(15);
+                inventory.addGold(modifyGoldReward(15));
                 nextKillReward+=10;
             }
         }
@@ -1453,25 +1536,25 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=70;
-                inventory.addGold(10);
+                inventory.addGold(modifyGoldReward(10));
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=45;
-                inventory.addGold(6);
+                inventory.addGold(modifyGoldReward(6));
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=30;
-                inventory.addGold(4);
+                inventory.addGold(modifyGoldReward(4));
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=200;
-                inventory.addGold(20);
+                inventory.addGold(modifyGoldReward(20));
                 nextKillReward+=10;
             }
         }
@@ -1490,30 +1573,30 @@ private void drawJetpackDisabledHud(){
 
             if(HEADSHOTCOUNT >= nextHeadshotReward){
                 pendingScore+=100;
-                inventory.addGold(15);
+                inventory.addGold(modifyGoldReward(15));
                 nextHeadshotReward+=5;
             }
 
             if(BODYSHOTCOUNT >= nextBodyshotReward){
                 pendingScore+=60;
-                inventory.addGold(8);
+                inventory.addGold(modifyGoldReward(8));
                 nextBodyshotReward+=10;
             }
 
             if(LIMBSHOTCOUNT >= nextLimbshotReward){
                 pendingScore+=40;
-                inventory.addGold(15);
+                inventory.addGold(modifyGoldReward(15));
                 nextLimbshotReward+=15;
             }
 
             if(TOTAL_KILL_COUNT >= nextKillReward){
                 pendingScore+=300;
-                inventory.addGold(30);
+                inventory.addGold(modifyGoldReward(30));
                 nextKillReward+=10;
             }
         }
 
-        currentScore+=pendingScore;
+        currentScore += modifyScoreReward(pendingScore);
         if(currentScore > bestScore)
             bestScore = currentScore;
         pendingScore = 0;
@@ -1657,7 +1740,7 @@ private void drawJetpackDisabledHud(){
             damage+= enemy.getPendingDamage();
             enemy.resetPendingDamage();
         }
-        player.takeDamage(damage);
+        damagePlayer(damage);
     }
 
     private void drawPlayerHealthHud(){
@@ -2219,20 +2302,20 @@ private void claimActiveCrate(){
 }
 
 private void updatePendingLoot(LootCrate.Contents loot){
-    currentScore+=loot.getScore();
+    currentScore+= modifyScoreReward(loot.getScore());
     if(currentScore > bestScore)
         bestScore = currentScore;
-    inventory.addGold(loot.getGold());
+    inventory.addGold(modifyGoldReward(loot.getGold()));
     inventory.addAmmo(weapon.getCurrentWeapon(), (loot.getAmmoReward()* WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize())/100);
     inventory.addPowerupFromArray(loot.getPowerups());
     inventory.addWeaponFromArray(loot.getWeapons(),WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize());
     if(loot.hasJackpot()){
         int goldCount = MathUtils.random(200,350);
-        inventory.addGold(goldCount);
+        inventory.addGold(modifyGoldReward(goldCount));
     }
     if(loot.hasBiggerJackpot()){
         int goldCount = MathUtils.random(600,800);
-        inventory.addGold(goldCount);
+        inventory.addGold(modifyGoldReward(goldCount));
     }
     player.heal(loot.getHpBoost());
     
@@ -2245,7 +2328,7 @@ private void updatePendingLoot(LootCrate.Contents loot){
     }
 
     if(loot.hasGodMode()){
-        //
+        inventory.addGodMode(1);
     }
      
 }
@@ -2466,9 +2549,446 @@ private TextureRegion getLootRegion(Texture texture){
 }
 
 
+private void consumePowerup(Powerup.PowerupType type){
+    if(!inventory.usePowerup(type))
+        return;
+
+    if(type == Powerup.PowerupType.HEALTH){
+        player.heal(player.getMaxHp()*0.80f);
+        return;
+    }
+
+    if(type == Powerup.PowerupType.JETPACK){
+        player.setJetpackFuel(player.getMaxJetpackFuel());
+        return;
+    }
+
+    if(type == Powerup.PowerupType.SHIELD){
+        if(FORTRESS_ACTIVE)
+            return;
+        SHIELD_ACTIVE = true;
+        SHIELD_AMOUNT = SHIELD_CAPACITY;
+        return;
+    }
+
+    if(type == Powerup.PowerupType.FIRE_RATE){
+        if(FIRE_RATE_ACTIVE || OVERDRIVE_ACTIVE || BERSERK_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE)
+            return;
+
+        FIRE_RATE_ACTIVE = true;
+        FIRE_RATE_TIMER = 0f;
+        refreshWeaponPowerupStats();
+    }
+}
+
+private void consumePowerup(Powerup.SpicyType type){
+    if(!inventory.useSpicy(type))
+        return;
+
+    if(type == Powerup.SpicyType.OVERDRIVE){
+        if(OVERDRIVE_ACTIVE ||
+           DAMAGE_SURGE_ACTIVE ||
+           BERSERK_ACTIVE ||
+           INFINITE_ASSAULT_ACTIVE ||
+           GOD_MODE_ACTIVE)
+            return;
+
+        if(FIRE_RATE_ACTIVE){
+            FIRE_RATE_ACTIVE = false;
+            FIRE_RATE_TIMER = 0f;
+        }
+
+        OVERDRIVE_ACTIVE = true;
+        OVERDRIVE_TIMER = 0f;
+        refreshWeaponPowerupStats();
+        return;
+    }
+
+    if(type == Powerup.SpicyType.RAPID_MOBILITY){
+        if(RAPID_MOBILITY_ACTIVE || HYPERDRIVE_ACTIVE)
+            return;
+
+        RAPID_MOBILITY_ACTIVE = true;
+        RAPID_MOBILITY_TIMER = 0f;
+        player.setMovementSpeed(RAPID_MOBILITY_SPEED_MULTIPLIER);
+        jetpackThrust = BASE_JETPACK_THRUST * RAPID_MOBILITY_JETPACK_MULTIPLIER;
+        return;
+    }
+
+    if(type == Powerup.SpicyType.BOTTOMLESS_MAG){
+        if(BOTTOMLESS_MAG_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE)
+            return;
+        BOTTOMLESS_MAG_ACTIVE = true;
+        BOTTOMLESS_MAG_TIMER = 0f;
+        return;
+    }
+
+    if(type == Powerup.SpicyType.DAMAGE_SURGE){
+        if(DAMAGE_SURGE_ACTIVE || OVERDRIVE_ACTIVE || BERSERK_ACTIVE || GOD_MODE_ACTIVE)
+            return;
+        DAMAGE_SURGE_ACTIVE = true;
+        DAMAGE_SURGE_TIMER = 0f;
+        refreshWeaponPowerupStats();
+        return;
+    }
+
+    if(type == Powerup.SpicyType.GOLD_RUSH){
+        if(GOLD_RUSH_ACTIVE || DOUBLE_FORTUNE_ACTIVE)
+            return;
+        GOLD_RUSH_ACTIVE = true;
+        GOLD_RUSH_TIMER = 0f;
+        return;
+    }
+
+    if(type == Powerup.SpicyType.SCORE_FRENZY){
+        if(SCORE_FRENZY_ACTIVE || DOUBLE_FORTUNE_ACTIVE)
+            return;
+        SCORE_FRENZY_ACTIVE = true;
+        SCORE_FRENZY_TIMER = 0f;
+    }
+}
+
+
+private void consumePowerup(Powerup.MoreSpicyType type){
+    if(!inventory.useMoreSpicy(type))
+        return;
+
+    if(type == Powerup.MoreSpicyType.BERSERK){
+        if(BERSERK_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE)
+            return;
+
+        FIRE_RATE_ACTIVE = false;
+        FIRE_RATE_TIMER = 0f;
+
+        OVERDRIVE_ACTIVE = false;
+        OVERDRIVE_TIMER = 0f;
+
+        DAMAGE_SURGE_ACTIVE = false;
+        DAMAGE_SURGE_TIMER = 0f;
+
+        BERSERK_ACTIVE = true;
+        BERSERK_TIMER = 0f;
+
+        refreshWeaponPowerupStats();
+        return;
+    }
+
+    if(type == Powerup.MoreSpicyType.INFINITE_ASSAULT){
+        if(INFINITE_ASSAULT_ACTIVE || BERSERK_ACTIVE || GOD_MODE_ACTIVE)
+            return;
+
+        FIRE_RATE_ACTIVE = false;
+        FIRE_RATE_TIMER = 0f;
+
+        OVERDRIVE_ACTIVE = false;
+        OVERDRIVE_TIMER = 0f;
+
+        BOTTOMLESS_MAG_ACTIVE = false;
+        BOTTOMLESS_MAG_TIMER = 0f;
+
+        INFINITE_ASSAULT_ACTIVE = true;
+        INFINITE_ASSAULT_TIMER = 0f;
+
+        refreshWeaponPowerupStats();
+        return;
+    }
+
+    if(type == Powerup.MoreSpicyType.HYPERDRIVE){
+        if(HYPERDRIVE_ACTIVE)
+            return;
+
+        if(RAPID_MOBILITY_ACTIVE){
+            RAPID_MOBILITY_ACTIVE = false;
+            RAPID_MOBILITY_TIMER = 0f;
+
+            player.resetMovementSpeed();
+            jetpackThrust = BASE_JETPACK_THRUST;
+        }
+
+        HYPERDRIVE_ACTIVE = true;
+        HYPERDRIVE_TIMER = 0f;
+        player.setMovementSpeed(HYPERDRIVE_SPEED_MULTIPLIER);
+        player.setJetpackFuel(player.getMaxJetpackFuel());
+        return;
+    }
+
+    if(type == Powerup.MoreSpicyType.FORTRESS){
+        if(FORTRESS_ACTIVE)
+            return;
+
+        FORTRESS_ACTIVE = true;
+        FORTRESS_TIMER = 0f;
+
+        SHIELD_ACTIVE = true;
+        SHIELD_AMOUNT = Math.max(SHIELD_AMOUNT,FORTRESS_SHIELD);
+        return;
+    }
+
+    if(type == Powerup.MoreSpicyType.DOUBLE_FORTUNE){
+        if(DOUBLE_FORTUNE_ACTIVE)
+            return;
+
+        GOLD_RUSH_ACTIVE = false;
+        GOLD_RUSH_TIMER = 0f;
+
+        SCORE_FRENZY_ACTIVE = false;
+        SCORE_FRENZY_TIMER = 0f;
+
+        DOUBLE_FORTUNE_ACTIVE = true;
+        DOUBLE_FORTUNE_TIMER = 0f;
+    }
+}
+
+private void consumeGodMode(){
+    if(!inventory.useGodMode())
+        return;
+
+    if(GOD_MODE_ACTIVE)
+        return;
+
+    FIRE_RATE_ACTIVE = false;
+    FIRE_RATE_TIMER = 0f;
+
+    OVERDRIVE_ACTIVE = false;
+    OVERDRIVE_TIMER = 0f;
+
+    DAMAGE_SURGE_ACTIVE = false;
+    DAMAGE_SURGE_TIMER = 0f;
+
+    BERSERK_ACTIVE = false;
+    BERSERK_TIMER = 0f;
+
+    INFINITE_ASSAULT_ACTIVE = false;
+    INFINITE_ASSAULT_TIMER = 0f;
+
+    BOTTOMLESS_MAG_ACTIVE = false;
+    BOTTOMLESS_MAG_TIMER = 0f;
+
+    GOD_MODE_ACTIVE = true;
+    GOD_MODE_TIMER = 0f;
+
+    player.setJetpackFuel(player.getMaxJetpackFuel());
+    refreshWeaponPowerupStats();
+}
+
+private void refreshWeaponPowerupStats(){
+    weapon.resetFireRate();
+    weapon.resetDamage();
+
+    if(GOD_MODE_ACTIVE){
+        weapon.setFireRate(GOD_MODE_FIRE_RATE_MULTIPLIER);
+        weapon.setDamage(GOD_MODE_DAMAGE_MULTIPLIER);
+        return;
+    }
+
+    if(BERSERK_ACTIVE){
+        weapon.setFireRate(BERSERK_FIRE_RATE_MULTIPLIER);
+        weapon.setDamage(BERSERK_DAMAGE_MULTIPLIER);
+        return;
+    }
+
+    if(OVERDRIVE_ACTIVE){
+        weapon.setFireRate(OVERDRIVE_FIRE_RATE_MULTIPLIER);
+        weapon.setDamage(OVERDRIVE_DAMAGE_MULTIPLIER);
+        return;
+    }
+
+    if(INFINITE_ASSAULT_ACTIVE)
+        weapon.setFireRate(INFINITE_ASSAULT_FIRE_RATE_MULTIPLIER);
+
+    else if(FIRE_RATE_ACTIVE)
+        weapon.setFireRate(FIRE_RATE_MULTIPLIER);
+
+    if(DAMAGE_SURGE_ACTIVE)
+        weapon.setDamage(DAMAGE_SURGE_MULTIPLIER);
+}
+
+
+private void updatePowerups(float dt){
+    boolean refreshWeapon = false;
+    if(FIRE_RATE_ACTIVE){
+        FIRE_RATE_TIMER += dt;
+
+        if(FIRE_RATE_TIMER >= FIRE_RATE_DURATION){
+            FIRE_RATE_ACTIVE = false;
+            FIRE_RATE_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+
+    if(OVERDRIVE_ACTIVE){
+        OVERDRIVE_TIMER += dt;
+        if(OVERDRIVE_TIMER >= OVERDRIVE_DURATION){
+            OVERDRIVE_ACTIVE = false;
+            OVERDRIVE_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+
+
+    if(RAPID_MOBILITY_ACTIVE){
+        RAPID_MOBILITY_TIMER += dt;
+        if(RAPID_MOBILITY_TIMER >= RAPID_MOBILITY_DURATION){
+            RAPID_MOBILITY_ACTIVE = false;
+            RAPID_MOBILITY_TIMER = 0f;
+            player.resetMovementSpeed();
+            jetpackThrust = BASE_JETPACK_THRUST;
+        }
+    }
+
+
+    if(BOTTOMLESS_MAG_ACTIVE){
+        BOTTOMLESS_MAG_TIMER += dt;
+        if(BOTTOMLESS_MAG_TIMER >= BOTTOMLESS_MAG_DURATION){
+            BOTTOMLESS_MAG_ACTIVE = false;
+            BOTTOMLESS_MAG_TIMER = 0f;
+        }
+    }
+
+
+    if(DAMAGE_SURGE_ACTIVE){
+        DAMAGE_SURGE_TIMER += dt;
+        if(DAMAGE_SURGE_TIMER >= DAMAGE_SURGE_DURATION){
+            DAMAGE_SURGE_ACTIVE = false;
+            DAMAGE_SURGE_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+
+
+    if(GOLD_RUSH_ACTIVE){
+        GOLD_RUSH_TIMER += dt;
+        if(GOLD_RUSH_TIMER >= GOLD_RUSH_DURATION){
+            GOLD_RUSH_ACTIVE = false;
+            GOLD_RUSH_TIMER = 0f;
+        }
+    }
+
+
+    if(SCORE_FRENZY_ACTIVE){
+        SCORE_FRENZY_TIMER += dt;
+        if(SCORE_FRENZY_TIMER >= SCORE_FRENZY_DURATION){
+            SCORE_FRENZY_ACTIVE = false;
+            SCORE_FRENZY_TIMER = 0f;
+        }
+    }
+
+
+    if(BERSERK_ACTIVE){
+        BERSERK_TIMER += dt;
+        if(BERSERK_TIMER >= BERSERK_DURATION){
+            BERSERK_ACTIVE = false;
+            BERSERK_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+
+
+    if(INFINITE_ASSAULT_ACTIVE){
+        INFINITE_ASSAULT_TIMER += dt;
+        if(INFINITE_ASSAULT_TIMER >= INFINITE_ASSAULT_DURATION){
+            INFINITE_ASSAULT_ACTIVE = false;
+            INFINITE_ASSAULT_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+
+
+    if(HYPERDRIVE_ACTIVE){
+        HYPERDRIVE_TIMER += dt;
+        if(HYPERDRIVE_TIMER >= HYPERDRIVE_DURATION){
+            HYPERDRIVE_ACTIVE = false;
+            HYPERDRIVE_TIMER = 0f;
+            player.resetMovementSpeed();
+        }
+    }
+
+
+    if(FORTRESS_ACTIVE){
+        FORTRESS_TIMER += dt;
+        if(FORTRESS_TIMER >= FORTRESS_DURATION){
+            FORTRESS_ACTIVE = false;
+            FORTRESS_TIMER = 0f;
+        }
+    }
+
+
+    if(DOUBLE_FORTUNE_ACTIVE){
+        DOUBLE_FORTUNE_TIMER += dt;
+        if(DOUBLE_FORTUNE_TIMER >= DOUBLE_FORTUNE_DURATION){
+            DOUBLE_FORTUNE_ACTIVE = false;
+            DOUBLE_FORTUNE_TIMER = 0f;
+        }
+    }
+
+
+    if(GOD_MODE_ACTIVE){
+        GOD_MODE_TIMER += dt;
+        if(GOD_MODE_TIMER >= GOD_MODE_DURATION){
+            GOD_MODE_ACTIVE = false;
+            GOD_MODE_TIMER = 0f;
+            refreshWeapon = true;
+        }
+    }
+    if(refreshWeapon)
+        refreshWeaponPowerupStats();
+}
+
+
+private int modifyGoldReward(int amount){
+    if(DOUBLE_FORTUNE_ACTIVE)
+        return amount*2;
+    if(GOLD_RUSH_ACTIVE)
+        return amount*2;
+    return amount;
+}
+
+private int modifyScoreReward(int amount){
+    if(DOUBLE_FORTUNE_ACTIVE)
+        return amount*2;
+    if(SCORE_FRENZY_ACTIVE)
+        return amount*2;
+    return amount;
+}
+
+private void damagePlayer(float damage){
+    if(GOD_MODE_ACTIVE)
+        return;
+    float finalDamage = damage;
+    if(FORTRESS_ACTIVE)
+        finalDamage *= 1f-FORTRESS_DAMAGE_REDUCTION;
+
+    if(BERSERK_ACTIVE)
+        finalDamage *= BERSERK_INCOMING_DAMAGE_MULTIPLIER;
+
+    if(SHIELD_ACTIVE && SHIELD_AMOUNT > 0f){
+        float absorbed = Math.min(SHIELD_AMOUNT,finalDamage);
+        SHIELD_AMOUNT -= absorbed;
+        finalDamage -= absorbed;
+        if(SHIELD_AMOUNT <= 0f){
+            SHIELD_AMOUNT = 0f;
+            SHIELD_ACTIVE = false;
+        }
+    }
+    if(finalDamage > 0f)
+        player.takeDamage(finalDamage);
+}
+
+private boolean infiniteMagazineActive(){
+    return BOTTOMLESS_MAG_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE;
+}
+
+private boolean infiniteJetpackActive(){
+    return HYPERDRIVE_ACTIVE || GOD_MODE_ACTIVE;
+}
+
+private boolean playerInvulnerable(){
+    return GOD_MODE_ACTIVE;
+}
 
 
 
+ 
 
 
 

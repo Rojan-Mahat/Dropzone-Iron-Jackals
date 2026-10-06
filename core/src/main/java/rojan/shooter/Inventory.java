@@ -12,6 +12,7 @@ public class Inventory{
     private ObjectIntMap<Powerup.PowerupType> powerups;
     private ObjectIntMap<Powerup.SpicyType> spicy;
     private ObjectIntMap<Powerup.MoreSpicyType> moreSpicy;
+    private int godMode = 0;
 
     Inventory(){
         ownedWeapons = new Array<>();
@@ -127,6 +128,21 @@ public class Inventory{
             return false;
 
         moreSpicy.put(type,current-1);
+        return true;
+    }
+    public void addGodMode(int amount){
+        godMode += amount;
+    }
+
+    public int getGodModeAmount(){
+        return godMode;
+    }
+
+    public boolean useGodMode(){
+        if(godMode <= 0)
+            return false;
+
+        godMode--;
         return true;
     }
 

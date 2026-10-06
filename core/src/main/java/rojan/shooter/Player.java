@@ -30,6 +30,7 @@ public class Player{
 
     private Vector2 velocity;
     private float moveSpeed;
+    private float baseMoveSpeed = 300f;
 
     private boolean isRunning;
     private boolean playerDead;
@@ -170,7 +171,7 @@ public class Player{
         fuel = maxFuel;
 
         velocity = new Vector2(0,0);
-        moveSpeed = 300f;
+        moveSpeed = baseMoveSpeed;
         isCrouching = false;
         currentState = PlayerState.IDLE;
         previousState = PlayerState.IDLE;
@@ -903,7 +904,21 @@ public class Player{
         return jetpackDisabledTexture;
     }
 
+    public void setJetpackFuel(float mag){
+        fuel = mag;
+        if(fuel > maxFuel)
+            fuel = maxFuel;
+    }
 
+    public void setMovementSpeed(float mag){
+        moveSpeed = baseMoveSpeed*mag;
+    }
+
+    public void resetMovementSpeed(){
+        moveSpeed = baseMoveSpeed;
+    }
+
+   
  
 
     public static void main(String[] args){
