@@ -152,10 +152,13 @@ public final class AssetPaths {
         public static String powerAuraBack(String id){
             return POWER_AURA_BASE+id+"/back.png";
         }
-
         public static String powerAuraFront(String id){
             return POWER_AURA_BASE+id+"/front.png";
         }
+
+        public static final String RELOAD_LOCK_BASE = BASE+"reload_lock/";
+        public static final String RELOAD_RECEIVER = RELOAD_LOCK_BASE+"receiver_2x.png";
+        public static final String RELOAD_MUZZLE = RELOAD_LOCK_BASE+"muzzle_2x.png";
     }
 
     public static final class Map {
@@ -440,6 +443,148 @@ public final class AssetPaths {
 
 
     }
+    public static final class Audio{
+        private Audio(){}
+
+        public static final String BASE = "audio/";
+
+        public static final String MUSIC = BASE+"music/";
+        public static final String WEAPONS = BASE+"sfx/weapons/";
+        public static final String POWERS = BASE+"sfx/powers/";
+        public static final String PLAYER = BASE+"sfx/player/";
+        public static final String JETPACK = BASE+"sfx/jetpack/";
+        public static final String COMBAT = BASE+"sfx/combat/";
+        public static final String ENEMIES = BASE+"sfx/enemies/";
+        public static final String WORLD = BASE+"sfx/world/";
+        public static final String UI = BASE+"sfx/ui/";
+
+        public static final String GAMEPLAY_TACTICAL = MUSIC+"gameplay_tactical_loop.ogg";
+        public static final String GAMEPLAY_ASSAULT = MUSIC+"gameplay_assault_loop.ogg";
+        public static final String MENU_ARMORY = MUSIC+"menu_armory_loop.ogg";
+
+        public static String weapon(String id){
+            return WEAPONS+id+".wav";
+        }
+
+        public static String power(String id){
+            return POWERS+id+".wav";
+        }
+
+        public static String player(String id){
+            return PLAYER+id+".wav";
+        }
+
+        public static String jetpack(String id){
+            return JETPACK+id+".wav";
+        }
+
+        public static String combat(String id){
+            return COMBAT+id+".wav";
+        }
+
+        public static String enemy(String id){
+            return ENEMIES+id+".wav";
+        }
+
+        public static String world(String id){
+            return WORLD+id+".wav";
+        }
+
+        public static String ui(String id){
+            return UI+id+".wav";
+        }
+    }
+
+    public static final class Pause{
+        private Pause(){}
+
+        public static final String BASE = "ui/pause/";
+
+        public static final String SHELL = BASE+"pause_shell.png";
+
+        public static final String RESUME_NORMAL = BASE+"resume_normal.png";
+        public static final String RESUME_HOVER = BASE+"resume_hover.png";
+        public static final String RESUME_PRESSED = BASE+"resume_pressed.png";
+        public static final String RESUME_DISABLED = BASE+"resume_disabled.png";
+
+        public static final String RESTART_NORMAL = BASE+"restart_run_normal.png";
+        public static final String RESTART_HOVER = BASE+"restart_run_hover.png";
+        public static final String RESTART_PRESSED = BASE+"restart_run_pressed.png";
+        public static final String RESTART_DISABLED = BASE+"restart_run_disabled.png";
+
+        public static final String SETTINGS_NORMAL = BASE+"settings_normal.png";
+        public static final String SETTINGS_HOVER = BASE+"settings_hover.png";
+        public static final String SETTINGS_PRESSED = BASE+"settings_pressed.png";
+        public static final String SETTINGS_DISABLED = BASE+"settings_disabled.png";
+
+        public static final String MAIN_MENU_NORMAL = BASE+"main_menu_normal.png";
+        public static final String MAIN_MENU_HOVER = BASE+"main_menu_hover.png";
+        public static final String MAIN_MENU_PRESSED = BASE+"main_menu_pressed.png";
+        public static final String MAIN_MENU_DISABLED = BASE+"main_menu_disabled.png";
+    }
+
+    public static final class RunSummary{
+        private RunSummary(){}
+
+        public static final String BASE = "ui/run_summary/";
+
+        public static final String SHELL = BASE+"run_summary_shell.png";
+
+        public static final String RESTART_NORMAL = BASE+"restart_run_normal.png";
+        public static final String RESTART_HOVER = BASE+"restart_run_hover.png";
+        public static final String RESTART_PRESSED = BASE+"restart_run_pressed.png";
+
+        public static final String ARMORY_NORMAL = BASE+"return_to_armory_normal.png";
+        public static final String ARMORY_HOVER = BASE+"return_to_armory_hover.png";
+        public static final String ARMORY_PRESSED = BASE+"return_to_armory_pressed.png";
+
+        public static final String MAIN_MENU_NORMAL = BASE+"main_menu_normal.png";
+        public static final String MAIN_MENU_HOVER = BASE+"main_menu_hover.png";
+        public static final String MAIN_MENU_PRESSED = BASE+"main_menu_pressed.png";
+    }
+
+    public static final class MainMenu{
+        private MainMenu(){}
+
+        public static final String BASE = "ui/main_menu/";
+
+        public static final String SHELL = BASE+"main_menu_shell.png";
+
+        public static final String START_NORMAL = BASE+"start_run_normal.png";
+        public static final String START_HOVER = BASE+"start_run_hover.png";
+        public static final String START_PRESSED = BASE+"start_run_pressed.png";
+        public static final String START_DISABLED = BASE+"start_run_disabled.png";
+
+        public static final String ARMORY_NORMAL = BASE+"armory_normal.png";
+        public static final String ARMORY_HOVER = BASE+"armory_hover.png";
+        public static final String ARMORY_PRESSED = BASE+"armory_pressed.png";
+        public static final String ARMORY_DISABLED = BASE+"armory_disabled.png";
+
+        public static final String SETTINGS_NORMAL = BASE+"settings_normal.png";
+        public static final String SETTINGS_HOVER = BASE+"settings_hover.png";
+        public static final String SETTINGS_PRESSED = BASE+"settings_pressed.png";
+        public static final String SETTINGS_DISABLED = BASE+"settings_disabled.png";
+
+        public static final String EXIT_NORMAL = BASE+"exit_normal.png";
+        public static final String EXIT_HOVER = BASE+"exit_hover.png";
+        public static final String EXIT_PRESSED = BASE+"exit_pressed.png";
+        public static final String EXIT_DISABLED = BASE+"exit_disabled.png";
+    }
+
+    public static final class Armory{
+        private Armory(){}
+        public static final String BASE = "ui/armory/";
+        public static final String SHELL = BASE+"armory_shell.png";
+        public static final String WEAPONS_GRID = BASE+"weapons_grid.png";
+        public static final String CLOSE_NORMAL = BASE+"close_normal.png";
+        public static final String CLOSE_HOVER = BASE+"close_hover.png";
+        public static final String CLOSE_PRESSED = BASE+"close_pressed.png";
+        public static final String CATEGORY_HOVER = BASE+"category_hover.png";
+        public static final String CATEGORY_SELECTED = BASE+"category_selected.png";
+        public static final String WEAPON_CARD_HOVER = BASE+"weapon_card_hover.png";
+        public static final String WEAPON_CARD_SELECTED = BASE+"weapon_card_selected.png";
+        public static final String ACTION_UNAVAILABLE = BASE+"action_unavailable.png";
+}
 
 
 

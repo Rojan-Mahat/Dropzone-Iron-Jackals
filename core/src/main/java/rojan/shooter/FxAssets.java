@@ -95,6 +95,28 @@ public final class FxAssets{
     public static Texture shopIcon;
     public static Texture keyIcon;
 
+
+    public static Texture pauseShell;
+    public static Texture pauseResumeNormal;
+    public static Texture pauseResumeHover;
+    public static Texture pauseResumePressed;
+    public static Texture pauseResumeDisabled;
+
+    public static Texture pauseRestartNormal;
+    public static Texture pauseRestartHover;
+    public static Texture pauseRestartPressed;
+    public static Texture pauseRestartDisabled;
+
+    public static Texture pauseSettingsNormal;
+    public static Texture pauseSettingsHover;
+    public static Texture pauseSettingsPressed;
+    public static Texture pauseSettingsDisabled;
+
+    public static Texture pauseMainMenuNormal;
+    public static Texture pauseMainMenuHover;
+    public static Texture pauseMainMenuPressed;
+    public static Texture pauseMainMenuDisabled;
+
     public static class PowerAuraAnimation{
         Texture backTexture;
         Texture frontTexture;
@@ -133,6 +155,58 @@ public final class FxAssets{
     public static Texture scopeButtonHover;
     public static Texture scopeButtonPressed;
     public static Texture killBadge;
+
+    public static Texture reloadReceiverTexture;
+    public static Texture reloadMuzzleTexture;
+    public static TextureRegion[] reloadReceiverEnter;
+    public static TextureRegion[] reloadReceiverService;
+    public static TextureRegion[] reloadReceiverReady;
+    public static TextureRegion[] reloadReceiverCancel;
+    public static TextureRegion[] reloadMuzzleEnter;
+    public static TextureRegion[] reloadMuzzleService;
+    public static TextureRegion[] reloadMuzzleReady;
+    public static TextureRegion[] reloadMuzzleCancel;
+
+    public static Texture runSummaryShell;
+    public static Texture runRestartNormal;
+    public static Texture runRestartHover;
+    public static Texture runRestartPressed;
+    public static Texture runArmoryNormal;
+    public static Texture runArmoryHover;
+    public static Texture runArmoryPressed;
+    public static Texture runMainMenuNormal;
+    public static Texture runMainMenuHover;
+    public static Texture runMainMenuPressed;
+
+
+    public static Texture mainMenuShell;
+    public static Texture mainStartNormal;
+    public static Texture mainStartHover;
+    public static Texture mainStartPressed;
+    public static Texture mainStartDisabled;
+    public static Texture mainArmoryNormal;
+    public static Texture mainArmoryHover;
+    public static Texture mainArmoryPressed;
+    public static Texture mainArmoryDisabled;
+    public static Texture mainSettingsNormal;
+    public static Texture mainSettingsHover;
+    public static Texture mainSettingsPressed;
+    public static Texture mainSettingsDisabled;
+    public static Texture mainExitNormal;
+    public static Texture mainExitHover;
+    public static Texture mainExitPressed;
+    public static Texture mainExitDisabled;
+
+    public static Texture armoryShell;
+    public static Texture armoryWeaponsGrid;
+    public static Texture armoryCloseNormal;
+    public static Texture armoryCloseHover;
+    public static Texture armoryClosePressed;
+    public static Texture armoryCategoryHover;
+    public static Texture armoryCategorySelected;
+    public static Texture armoryWeaponCardHover;
+    public static Texture armoryWeaponCardSelected;
+    public static Texture armoryActionUnavailable;
 
     public static void loadOnce(){
         if(loadedTextures != null)
@@ -261,6 +335,81 @@ public final class FxAssets{
         keyIcon = new Texture(AssetPaths.Hud.KEY_ICON);
         shopIcon.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
         keyIcon.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+
+        reloadReceiverTexture = new Texture(AssetPaths.FX.RELOAD_RECEIVER);
+        reloadMuzzleTexture = new Texture(AssetPaths.FX.RELOAD_MUZZLE);
+
+        reloadReceiverTexture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+        reloadMuzzleTexture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+
+        reloadReceiverEnter = loadReloadAtlasFrames(reloadReceiverTexture,0,6,384,224,388,228);
+        reloadReceiverService = loadReloadAtlasFrames(reloadReceiverTexture,6,37,384,224,388,228);
+        reloadReceiverReady = loadReloadAtlasFrames(reloadReceiverTexture,43,8,384,224,388,228);
+        reloadReceiverCancel = loadReloadAtlasFrames(reloadReceiverTexture,51,5,384,224,388,228);
+
+        reloadMuzzleEnter = loadReloadAtlasFrames(reloadMuzzleTexture,0,6,64,96,68,100);
+        reloadMuzzleService = loadReloadAtlasFrames(reloadMuzzleTexture,6,37,64,96,68,100);
+        reloadMuzzleReady = loadReloadAtlasFrames(reloadMuzzleTexture,43,8,64,96,68,100);
+        reloadMuzzleCancel = loadReloadAtlasFrames(reloadMuzzleTexture,51,5,64,96,68,100);
+
+        pauseShell = loadUiTexture(AssetPaths.Pause.SHELL);
+        pauseResumeNormal = loadUiTexture(AssetPaths.Pause.RESUME_NORMAL);
+        pauseResumeHover = loadUiTexture(AssetPaths.Pause.RESUME_HOVER);
+        pauseResumePressed = loadUiTexture(AssetPaths.Pause.RESUME_PRESSED);
+        pauseResumeDisabled = loadUiTexture(AssetPaths.Pause.RESUME_DISABLED);
+        pauseRestartNormal = loadUiTexture(AssetPaths.Pause.RESTART_NORMAL);
+        pauseRestartHover = loadUiTexture(AssetPaths.Pause.RESTART_HOVER);
+        pauseRestartPressed = loadUiTexture(AssetPaths.Pause.RESTART_PRESSED);
+        pauseRestartDisabled = loadUiTexture(AssetPaths.Pause.RESTART_DISABLED);
+        pauseSettingsNormal = loadUiTexture(AssetPaths.Pause.SETTINGS_NORMAL);
+        pauseSettingsHover = loadUiTexture(AssetPaths.Pause.SETTINGS_HOVER);
+        pauseSettingsPressed = loadUiTexture(AssetPaths.Pause.SETTINGS_PRESSED);
+        pauseSettingsDisabled = loadUiTexture(AssetPaths.Pause.SETTINGS_DISABLED);
+        pauseMainMenuNormal = loadUiTexture(AssetPaths.Pause.MAIN_MENU_NORMAL);
+        pauseMainMenuHover = loadUiTexture(AssetPaths.Pause.MAIN_MENU_HOVER);
+        pauseMainMenuPressed = loadUiTexture(AssetPaths.Pause.MAIN_MENU_PRESSED);
+        pauseMainMenuDisabled = loadUiTexture(AssetPaths.Pause.MAIN_MENU_DISABLED);
+
+
+        runSummaryShell = loadUiTexture(AssetPaths.RunSummary.SHELL);
+        runRestartNormal = loadUiTexture(AssetPaths.RunSummary.RESTART_NORMAL);
+        runRestartHover = loadUiTexture(AssetPaths.RunSummary.RESTART_HOVER);
+        runRestartPressed = loadUiTexture(AssetPaths.RunSummary.RESTART_PRESSED);
+        runArmoryNormal = loadUiTexture(AssetPaths.RunSummary.ARMORY_NORMAL);
+        runArmoryHover = loadUiTexture(AssetPaths.RunSummary.ARMORY_HOVER);
+        runArmoryPressed = loadUiTexture(AssetPaths.RunSummary.ARMORY_PRESSED);
+        runMainMenuNormal = loadUiTexture(AssetPaths.RunSummary.MAIN_MENU_NORMAL);
+        runMainMenuHover = loadUiTexture(AssetPaths.RunSummary.MAIN_MENU_HOVER);
+        runMainMenuPressed = loadUiTexture(AssetPaths.RunSummary.MAIN_MENU_PRESSED);
+
+        mainMenuShell = loadUiTexture(AssetPaths.MainMenu.SHELL);
+        mainStartNormal = loadUiTexture(AssetPaths.MainMenu.START_NORMAL);
+        mainStartHover = loadUiTexture(AssetPaths.MainMenu.START_HOVER);
+        mainStartPressed = loadUiTexture(AssetPaths.MainMenu.START_PRESSED);
+        mainStartDisabled = loadUiTexture(AssetPaths.MainMenu.START_DISABLED);
+        mainArmoryNormal = loadUiTexture(AssetPaths.MainMenu.ARMORY_NORMAL);
+        mainArmoryHover = loadUiTexture(AssetPaths.MainMenu.ARMORY_HOVER);
+        mainArmoryPressed = loadUiTexture(AssetPaths.MainMenu.ARMORY_PRESSED);
+        mainArmoryDisabled = loadUiTexture(AssetPaths.MainMenu.ARMORY_DISABLED);
+        mainSettingsNormal = loadUiTexture(AssetPaths.MainMenu.SETTINGS_NORMAL);
+        mainSettingsHover = loadUiTexture(AssetPaths.MainMenu.SETTINGS_HOVER);
+        mainSettingsPressed = loadUiTexture(AssetPaths.MainMenu.SETTINGS_PRESSED);
+        mainSettingsDisabled = loadUiTexture(AssetPaths.MainMenu.SETTINGS_DISABLED);
+        mainExitNormal = loadUiTexture(AssetPaths.MainMenu.EXIT_NORMAL);
+        mainExitHover = loadUiTexture(AssetPaths.MainMenu.EXIT_HOVER);
+        mainExitPressed = loadUiTexture(AssetPaths.MainMenu.EXIT_PRESSED);
+        mainExitDisabled = loadUiTexture(AssetPaths.MainMenu.EXIT_DISABLED);
+
+        armoryShell = loadUiTexture(AssetPaths.Armory.SHELL);
+        armoryWeaponsGrid = loadUiTexture(AssetPaths.Armory.WEAPONS_GRID);
+        armoryCloseNormal = loadUiTexture(AssetPaths.Armory.CLOSE_NORMAL);
+        armoryCloseHover = loadUiTexture(AssetPaths.Armory.CLOSE_HOVER);
+        armoryClosePressed = loadUiTexture(AssetPaths.Armory.CLOSE_PRESSED);
+        armoryCategoryHover = loadUiTexture(AssetPaths.Armory.CATEGORY_HOVER);
+        armoryCategorySelected = loadUiTexture(AssetPaths.Armory.CATEGORY_SELECTED);
+        armoryWeaponCardHover = loadUiTexture(AssetPaths.Armory.WEAPON_CARD_HOVER);
+        armoryWeaponCardSelected = loadUiTexture(AssetPaths.Armory.WEAPON_CARD_SELECTED);
+        armoryActionUnavailable = loadUiTexture(AssetPaths.Armory.ACTION_UNAVAILABLE);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -315,5 +464,47 @@ public final class FxAssets{
         killBadge.dispose();
         shopIcon.dispose();
         keyIcon.dispose();
+        reloadReceiverTexture.dispose();
+        reloadMuzzleTexture.dispose();
+
+        pauseShell.dispose();
+        pauseResumeNormal.dispose();
+        pauseResumeHover.dispose();
+        pauseResumePressed.dispose();
+        pauseResumeDisabled.dispose();
+        pauseRestartNormal.dispose();
+        pauseRestartHover.dispose();
+        pauseRestartPressed.dispose();
+        pauseRestartDisabled.dispose();
+        pauseSettingsNormal.dispose();
+        pauseSettingsHover.dispose();
+        pauseSettingsPressed.dispose();
+        pauseSettingsDisabled.dispose();
+        pauseMainMenuNormal.dispose();
+        pauseMainMenuHover.dispose();
+        pauseMainMenuPressed.dispose();
+        pauseMainMenuDisabled.dispose();
+    }
+
+
+    private static TextureRegion[] loadReloadAtlasFrames(Texture texture,int start,int count,int frameWidth,int frameHeight,int pitchX,int pitchY){
+        TextureRegion[] frames = new TextureRegion[count];
+        for(int i=0;i<count;i++){
+            int frame = start+i;
+            int column = frame%8;
+            int row = frame/8;
+
+            int x = 2+column*pitchX;
+            int y = 2+row*pitchY;
+
+            frames[i] = new TextureRegion(texture,x,y,frameWidth,frameHeight);
+        }
+        return frames;
+    }
+
+    private static Texture loadUiTexture(String path){
+        Texture texture = new Texture(path);
+        texture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+        return texture;
     }
 }

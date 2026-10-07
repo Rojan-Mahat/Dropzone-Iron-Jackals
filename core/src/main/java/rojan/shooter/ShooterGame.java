@@ -187,7 +187,6 @@ public class ShooterGame extends ApplicationAdapter {
     private final float SCORE_FRENZY_DURATION = 15f;
     private final float SCORE_FRENZY_MULTIPLIER = 2f;
 
-
     private boolean BERSERK_ACTIVE = false;
     private float BERSERK_TIMER = 0f;
     private final float BERSERK_DURATION = 12f;
@@ -335,7 +334,51 @@ public class ShooterGame extends ApplicationAdapter {
     private float reloadTimer = 0f;
 
     private boolean pauseMenuOpen = false;
+    private boolean reloadReadyFxActive = false;
+    private float reloadReadyFxTimer = 0f;
 
+    private final float RELOAD_ENTER_DURATION = 0.10f;
+    private final float RELOAD_READY_DURATION = 0.12f;
+    private final int RELOAD_PROGRESS_SEGMENTS = 6;
+    private Texture reloadProgressPixel;
+    private TextureRegion reloadProgressPixelRegion;
+
+    private boolean gameOver = false;
+    private boolean reloadInsertPlayed = false;
+
+    private Rectangle pauseResumeBounds = new Rectangle();
+    private Rectangle pauseRestartBounds = new Rectangle();
+    private Rectangle pauseSettingsBounds = new Rectangle();
+    private Rectangle pauseMainMenuBounds = new Rectangle();
+    private Rectangle runRestartBounds = new Rectangle();
+    private Rectangle runArmoryBounds = new Rectangle();
+    private Rectangle runMainMenuBounds = new Rectangle();
+
+    private Rectangle mainStartBounds = new Rectangle();
+    private Rectangle mainArmoryBounds = new Rectangle();
+    private Rectangle mainSettingsBounds = new Rectangle();
+    private Rectangle mainExitBounds = new Rectangle();
+    private GlyphLayout mainMenuLayout = new GlyphLayout();
+
+    private Rectangle armoryCloseBounds = new Rectangle();
+    private Rectangle armoryWeaponsCategoryBounds = new Rectangle();
+    private Rectangle armoryPowerupsCategoryBounds = new Rectangle();
+    private Rectangle armorySpecialCategoryBounds = new Rectangle();
+    private Rectangle[] armoryWeaponBounds = new Rectangle[6];
+    private int selectedArmoryWeapon = -1;
+
+    private Rectangle settingsBackBounds = new Rectangle();
+    
+    private BitmapFont runSummaryFont;
+    private GlyphLayout runSummaryLayout = new GlyphLayout();
+
+    private enum GameScreen{
+                    MAIN_MENU,
+                    GAMEPLAY,
+                    ARMORY,
+                    SETTINGS
+                }
+    private GameScreen currentScreen = GameScreen.MAIN_MENU;
 
     @Override
     public void create(){
@@ -344,35 +387,76 @@ public class ShooterGame extends ApplicationAdapter {
         loadPlayerProfile();
 
         giveTestWeapons();
-        startNewRun();
+        AudioAssets.playMenuMusic();
     }
     
 
     @Override
-    public void render() {
+    public void render(){
         float dt = Gdx.graphics.getDeltaTime();
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
-        if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
-            if(inventoryOpen || inventoryAnimation > 0f)
+
+        switch(currentScreen){
+            case MAIN_MENU:
+                renderMainMenu(mouseX,mouseY);
+                return;
+
+            case ARMORY:
+                renderArmory(mouseX,mouseY);
+                return;
+
+            case SETTINGS:
+                renderSettings();
+                return;
+
+            case GAMEPLAY:
+                break;
+        }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)&& !gameOver){
+            if(inventoryOpen || inventoryAnimation > 0f){
                 inventoryOpen = false;
-            else
+                AudioAssets.playUiPanelClose();
+            }
+            else{
                 pauseMenuOpen =! pauseMenuOpen;
+                if(pauseMenuOpen){
+                    AudioAssets.playUiPanelOpen();
+                    AudioAssets.pauseMusic();
+                }
+                else{
+                    AudioAssets.playUiPanelClose();
+                    AudioAssets.resumeMusic();
+                }
+
+            }
         }
 
         if(Gdx.input.justTouched()){
-            if(inventoryOpen && inventoryAnimation >= 0.99f && inventoryCloseBounds.contains(mouseX,mouseY))
-                inventoryOpen = false;
-            else if(inventoryBagBounds.contains(mouseX,mouseY))
-                inventoryOpen = !inventoryOpen;
-            else if(inventoryOpen && inventoryAnimation >= 1f){
-                if(inventoryActionBounds.contains(mouseX,mouseY))
-                    useInventoryAction();
-                else{
-                    checkInventoryWeaponSelection(mouseX,mouseY);
-                    checkInventoryConsumableSelection(mouseX,mouseY);
+            if(gameOver)
+                handleRunSummaryClick(mouseX,mouseY);
+            else if(pauseMenuOpen)
+                handlePauseClick(mouseX,mouseY);
+            else{
+                if(inventoryOpen && inventoryAnimation >= 0.99f && inventoryCloseBounds.contains(mouseX,mouseY))
+                    inventoryOpen = false;
+                else if(inventoryBagBounds.contains(mouseX,mouseY)){
+                    inventoryOpen = !inventoryOpen;
+                    if(inventoryOpen)
+                        AudioAssets.playUiPanelOpen();
+                    else
+                        AudioAssets.playUiPanelClose();
                 }
-            } 
+            
+                else if(inventoryOpen && inventoryAnimation >= 1f){
+                    if(inventoryActionBounds.contains(mouseX,mouseY))
+                        useInventoryAction();
+                    else{
+                        checkInventoryWeaponSelection(mouseX,mouseY);
+                        checkInventoryConsumableSelection(mouseX,mouseY);
+                    }
+                }
+            }
         }
         updateInventoryAnimation(dt);
         boolean gamePaused = gameplayBlocked();
@@ -474,6 +558,7 @@ public class ShooterGame extends ApplicationAdapter {
 
             if(Gdx.input.isKeyJustPressed(Input.Keys.E))
                 openNearbyCrate();
+            
 
             if(Gdx.input.isKeyJustPressed(Input.Keys.Q))
                 claimActiveCrate();
@@ -482,6 +567,7 @@ public class ShooterGame extends ApplicationAdapter {
                bullet.update(dt);
             bulletPlatformCollision();
             updateReload(dt);
+            updateReloadFx(dt);
         }
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
@@ -535,6 +621,7 @@ public class ShooterGame extends ApplicationAdapter {
         }
         Vector2 grip = player.getCurrentGripWorldPosition();
         weapon.drawWeapon(batch, grip);
+        drawReloadLock(grip);
         drawPowerAura(true);
         drawPlayerPoisonFx(worldDt);
         drawPlayerStunFx(worldDt);
@@ -595,6 +682,8 @@ public class ShooterGame extends ApplicationAdapter {
 
         drawInventoryBag();
         drawInventory();
+        drawPauseMenu();
+        drawRunSummary();
 
         batch.end();
         batch.setProjectionMatrix(camera.combined);
@@ -630,6 +719,9 @@ public class ShooterGame extends ApplicationAdapter {
         inventoryBodyFont.dispose();
         inventoryInfoFont.dispose();
         inventoryButtonFont.dispose();
+        reloadProgressPixel.dispose();
+        AudioAssets.dispose();
+        runSummaryFont.dispose();
     }
 
     @Override
@@ -695,6 +787,7 @@ public class ShooterGame extends ApplicationAdapter {
 
     private void createBulletWhenFired(Vector2 mousePos){
         WeaponType type = weapon.getCurrentWeapon();
+        AudioAssets.playWeaponFire(type);
         Vector2 gunGrip = player.getCurrentGripWorldPosition();
         Vector2 nozzlePosition = weapon.getMuzzleWorldPosition(gunGrip);
         Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
@@ -849,6 +942,7 @@ public class ShooterGame extends ApplicationAdapter {
         removeBullets();
     }
     private void explodeRocket(Bullet bullet,boolean groundExplosion){
+        AudioAssets.playRocketImpact();
         Vector2 explosionPosition = new Vector2(bullet.getPosition());
         float maxDamage = bullet.getBodyDamage() * ROCKET_EXPLOSION_DAMAGE_MULTIPLIER;
         for(Enemy enemy : enemies){
@@ -1488,6 +1582,7 @@ private void drawJetpackDisabledHud(){
                 for(Circle circle : enemy.getWorldDrillCircles()){
                     if(bulletHitsCircle(bullet,circle)){
                         enemy.enemyHurt(bullet.getLimbDamage()+ bullet.getBodyDamage()/2f);
+                        AudioAssets.playArmorHit();
                         bullet.considerWasted();
                         hit = true;
                         break;
@@ -1504,6 +1599,7 @@ private void drawJetpackDisabledHud(){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
                     runState.addHeadshot();
+                    AudioAssets.playHeadshot();
                     enemy.enemyHurt(bullet.getHeadDamage());
                     bullet.considerWasted();
                     headshot = true;
@@ -1517,6 +1613,7 @@ private void drawJetpackDisabledHud(){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
                     runState.addBodyshot();
+                    AudioAssets.playBodyHit();
                     enemy.enemyHurt(bullet.getBodyDamage());
                     bullet.considerWasted();
                     bodyshot = true;
@@ -1605,6 +1702,7 @@ private void drawJetpackDisabledHud(){
                     runState.addPendingScore(5);
                 }
                 runState.addKill();
+                AudioAssets.playKill();
                 spawnLootCrate(enemies.get(i).getEnemyDeathLocation());
                 enemies.removeIndex(i);
             } 
@@ -2293,9 +2391,16 @@ private void drawJetpackDisabledHud(){
     }
 
     private void cycleScopeStage(){
+        float oldScope = getScopeMagnification();
         scopeStage++;
         if(scopeStage >= SCOPE_STAGE_COUNT)
             scopeStage = 0;
+
+        float newScope = getScopeMagnification();
+        if(newScope > oldScope)
+            AudioAssets.playScopeWiden();
+        else
+            AudioAssets.playScopeNarrow();
         updateScopeTarget();
     }
 
@@ -2405,6 +2510,10 @@ private void drawJetpackDisabledHud(){
         if(runState.getAmmo(weapon.getCurrentWeapon()) <= 0)
             return;
 
+        reloadInsertPlayed = false;
+        AudioAssets.playWeaponReloadStart(weapon.getCurrentWeapon());
+        reloadReadyFxActive = false;
+        reloadReadyFxTimer = 0f;
         reloading = true;
         reloadTimer = 0f;
     }
@@ -2413,14 +2522,21 @@ private void drawJetpackDisabledHud(){
         if(!reloading)
             return;
         reloadTimer+=dt;
+        if(!reloadInsertPlayed && getReloadProgress() >= 0.60f){
+            AudioAssets.playWeaponReloadInsert(weapon.getCurrentWeapon());
+            reloadInsertPlayed = true;
+        }
         if(reloadTimer < weapon.getReloadSpeed())
             return;
         int neededAmmo = weapon.getMagazineSize()-weapon.getCurrentAmmo();
         int ammoToLoad = runState.takeAmmo(weapon.getCurrentWeapon(),neededAmmo);
         weapon.addCurrentAmmo(ammoToLoad);
+        AudioAssets.playWeaponReloadFinish(weapon.getCurrentWeapon());
 
         reloadTimer = 0f;
         reloading = false;
+        reloadReadyFxActive = true;
+        reloadReadyFxTimer = 0f;
     }
     
     private void spawnLootCrate(Vector2 enemyDeathLocation){
@@ -2436,57 +2552,91 @@ private void drawJetpackDisabledHud(){
 
 
         int roll = MathUtils.random(1,3);
-        if(roll == 1)
-            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
-        else if(roll == 2)
-            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
-        else
-            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        if(roll == 1){
+            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
+        }
+        else if(roll == 2){
+            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
+        }
+        else{
+            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
+        }
         
     /*if(easyMode){
         if(roll <= 3){
-            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 12){
-            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 40){
-            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
     }
 
     else if(mediumMode){
         if(roll <= 5){
-            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 18){
-            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
-        else if(roll <= 45)
-            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+        else if(roll <= 45){
+            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
+        }
     }
 
     else if(hardMode){
         if(roll <= 8){
-            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 28){
-            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <=50){
-            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
     }
 
     else if(impossibleMode){
         if(roll <= 15){
-            lootCrates.add(new LootCrate(CrateType.SUPER_RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 38){
-            lootCrates.add(new LootCrate(CrateType.RARE,crateRect));
+            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
         else if(roll <= 60){
-            lootCrates.add(new LootCrate(CrateType.COMMON,crateRect));
+            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+            lootCrates.add(crate);
+            AudioAssets.playCrateSpawn(crate.getType());
         }
     }*/
 }
@@ -2519,7 +2669,9 @@ private void spawnSpecialCrate(float dt){
         return;
     Rectangle spawn = specialCrateSpawnPoints.random();
     Rectangle crateRect = new Rectangle(spawn.x,spawn.y,crateWidth,crateHeight);
-    lootCrates.add(new LootCrate(CrateType.SPECIAL,crateRect));
+    LootCrate crate = new LootCrate(CrateType.SPECIAL,crateRect);
+    lootCrates.add(crate);
+    AudioAssets.playCrateSpawn(crate.getType());
     SPECIAL_CRATE_TIMER = 0f;
     //SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,90f);
     SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
@@ -2537,6 +2689,7 @@ private void openNearbyCrate(){
         if(playerHitbox.overlaps(interactionZone)){
             activeLootCrate = crate;
             crate.openCrate();
+            AudioAssets.playCrateOpen(crate.getType());
             break;
         }
     }
@@ -2601,10 +2754,12 @@ private void updatePendingLoot(LootCrate.Contents loot){
     }
 
     if(loot.hasJackpot()){
+        AudioAssets.playJackpot();
         int goldCount = MathUtils.random(200,350);
         giveGold(goldCount);
     }
     if(loot.hasBiggerJackpot()){
+        AudioAssets.playBiggerJackpot();
         int goldCount = MathUtils.random(600,800);
         giveGold(goldCount);
     }
@@ -2799,9 +2954,7 @@ private TextureRegion getLootRegion(Texture texture){
     if(data.getType() == TextureData.TextureDataType.Pixmap){
         if(!data.isPrepared())
             data.prepare();
-
         Pixmap pixmap = data.consumePixmap();
-
         try{
             int left = pixmap.getWidth(),top = pixmap.getHeight();
             int right = -1,bottom = -1;
@@ -2846,12 +2999,14 @@ private void consumePowerup(Powerup.PowerupType type){
 
     if(type == Powerup.PowerupType.HEALTH){
         player.heal(player.getMaxHp()*0.80f);
+        AudioAssets.playPowerActivate("health");
         startPowerAuraBurst("health");
         return;
     }
 
     if(type == Powerup.PowerupType.JETPACK){
         player.setJetpackFuel(player.getMaxJetpackFuel());
+        AudioAssets.playPowerActivate("jetpack");
         startPowerAuraBurst("jetpack");
         return;
     }
@@ -2861,6 +3016,7 @@ private void consumePowerup(Powerup.PowerupType type){
             return;
         SHIELD_ACTIVE = true;
         SHIELD_AMOUNT = SHIELD_CAPACITY;
+        AudioAssets.playPowerActivate("shield");
         return;
     }
 
@@ -2870,6 +3026,7 @@ private void consumePowerup(Powerup.PowerupType type){
 
         FIRE_RATE_ACTIVE = true;
         FIRE_RATE_TIMER = 0f;
+        AudioAssets.playPowerActivate("fire_rate");
         refreshWeaponPowerupStats();
     }
 }
@@ -2894,6 +3051,7 @@ private void consumePowerup(Powerup.SpicyType type){
         OVERDRIVE_ACTIVE = true;
         OVERDRIVE_TIMER = 0f;
         refreshWeaponPowerupStats();
+        AudioAssets.playPowerActivate("overdrive");
         return;
     }
 
@@ -2905,6 +3063,7 @@ private void consumePowerup(Powerup.SpicyType type){
         RAPID_MOBILITY_TIMER = 0f;
         player.setMovementSpeed(RAPID_MOBILITY_SPEED_MULTIPLIER);
         jetpackThrust = BASE_JETPACK_THRUST * RAPID_MOBILITY_JETPACK_MULTIPLIER;
+        AudioAssets.playPowerActivate("rapid_mobility");
         return;
     }
 
@@ -2913,6 +3072,7 @@ private void consumePowerup(Powerup.SpicyType type){
             return;
         BOTTOMLESS_MAG_ACTIVE = true;
         BOTTOMLESS_MAG_TIMER = 0f;
+        AudioAssets.playPowerActivate("bottomless_mag");
         return;
     }
 
@@ -2921,6 +3081,7 @@ private void consumePowerup(Powerup.SpicyType type){
             return;
         DAMAGE_SURGE_ACTIVE = true;
         DAMAGE_SURGE_TIMER = 0f;
+        AudioAssets.playPowerActivate("damage_surge");
         refreshWeaponPowerupStats();
         return;
     }
@@ -2930,6 +3091,7 @@ private void consumePowerup(Powerup.SpicyType type){
             return;
         GOLD_RUSH_ACTIVE = true;
         GOLD_RUSH_TIMER = 0f;
+        AudioAssets.playPowerActivate("gold_rush");
         return;
     }
 
@@ -2937,6 +3099,7 @@ private void consumePowerup(Powerup.SpicyType type){
         if(SCORE_FRENZY_ACTIVE || DOUBLE_FORTUNE_ACTIVE)
             return;
         SCORE_FRENZY_ACTIVE = true;
+        AudioAssets.playPowerActivate("score_frenzy");
         SCORE_FRENZY_TIMER = 0f;
     }
 }
@@ -2963,6 +3126,7 @@ private void consumePowerup(Powerup.MoreSpicyType type){
         BERSERK_TIMER = 0f;
 
         refreshWeaponPowerupStats();
+        AudioAssets.playPowerActivate("berserk");
         return;
     }
 
@@ -2982,6 +3146,7 @@ private void consumePowerup(Powerup.MoreSpicyType type){
         INFINITE_ASSAULT_ACTIVE = true;
         INFINITE_ASSAULT_TIMER = 0f;
 
+        AudioAssets.playPowerActivate("infinite_assault");
         refreshWeaponPowerupStats();
         return;
     }
@@ -3002,6 +3167,8 @@ private void consumePowerup(Powerup.MoreSpicyType type){
         HYPERDRIVE_TIMER = 0f;
         player.setMovementSpeed(HYPERDRIVE_SPEED_MULTIPLIER);
         player.setJetpackFuel(player.getMaxJetpackFuel());
+
+        AudioAssets.playPowerActivate("hyperdrive");
         return;
     }
 
@@ -3014,6 +3181,7 @@ private void consumePowerup(Powerup.MoreSpicyType type){
 
         SHIELD_ACTIVE = true;
         SHIELD_AMOUNT = Math.max(SHIELD_AMOUNT,FORTRESS_SHIELD);
+        AudioAssets.playPowerActivate("fortress");
         return;
     }
 
@@ -3029,6 +3197,7 @@ private void consumePowerup(Powerup.MoreSpicyType type){
 
         DOUBLE_FORTUNE_ACTIVE = true;
         DOUBLE_FORTUNE_TIMER = 0f;
+        AudioAssets.playPowerActivate("double_fortune");
     }
 }
 
@@ -3061,6 +3230,7 @@ private void consumeGodMode(){
     GOD_MODE_TIMER = 0f;
 
     player.setJetpackFuel(player.getMaxJetpackFuel());
+    AudioAssets.playPowerActivate("god_mode");
     refreshWeaponPowerupStats();
 }
 
@@ -3267,12 +3437,18 @@ private void damagePlayer(float damage){
         SHIELD_AMOUNT -= absorbed;
         finalDamage -= absorbed;
         if(SHIELD_AMOUNT <= 0f){
+            AudioAssets.playShieldBreak();
             SHIELD_AMOUNT = 0f;
             SHIELD_ACTIVE = false;
         }
+        if(absorbed > 0f)
+            AudioAssets.playShieldHit();
     }
     if(finalDamage > 0f)
         player.takeDamage(finalDamage);
+    if(player.getHP() <= 0)
+        triggerGameOver();
+
 }
 
 private boolean infiniteMagazineActive(){
@@ -3943,8 +4119,11 @@ private void equipSelectedWeapon(){
 
     if(selectedWeapon == weapon.getCurrentWeapon())
         return;
+    if(reloading)
+        AudioAssets.playReloadCancel();
 
     weapon.equipWeapon(selectedWeapon);
+    AudioAssets.playWeaponEquip(selectedWeapon);
     updateScopeTarget();
     refreshWeaponPowerupStats();
     reloading = false;
@@ -4258,21 +4437,25 @@ private float getReloadProgress(){
 }
 
 private boolean gameplayBlocked(){
-    return inventoryBlockingGameplay() || pauseMenuOpen;
+    return currentScreen != GameScreen.GAMEPLAY || inventoryBlockingGameplay() || pauseMenuOpen || gameOver;
 }
 
 private void resumeGame(){
     pauseMenuOpen = false;
+    AudioAssets.playUiPanelClose();
+    AudioAssets.resumeMusic();
 }
 
 private void giveGold(int amount){
     int finalAmount = modifyGoldReward(amount);
-
     inventory.addGold(finalAmount);
     runState.addGoldEarned(finalAmount);
+    AudioAssets.playGoldGain();
 }
 
 private void startNewRun(){
+    AudioAssets.playRunStart();
+    AudioAssets.playTacticalMusic();
     resetRunSystems();
     runState = new RunState();
 
@@ -4386,6 +4569,15 @@ private void loadFonts(){
     inventoryButtonParameter.magFilter = Texture.TextureFilter.Linear;
     inventoryButtonFont = inventoryGenerator.generateFont(inventoryButtonParameter);
 
+
+    FreeTypeFontGenerator runSummaryGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+    FreeTypeFontGenerator.FreeTypeFontParameter runSummaryParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    runSummaryParameter.size = 96;
+    runSummaryParameter.minFilter = Texture.TextureFilter.Linear;
+    runSummaryParameter.magFilter = Texture.TextureFilter.Linear;
+    runSummaryFont = runSummaryGenerator.generateFont(runSummaryParameter);
+    runSummaryGenerator.dispose();
+
     inventoryGenerator.dispose();
     inventoryGlyphLayout = new GlyphLayout();
 }
@@ -4394,6 +4586,7 @@ private void loadFonts(){
 private void initializeGame(){
     map = loadMap();
     createShopFromMap(map);
+    AudioAssets.loadOnce();
 
     mapRenderer = new OrthogonalTiledMapRenderer(map);
 
@@ -4428,6 +4621,16 @@ private void initializeGame(){
 
     FxAssets.loadOnce();
     LootCrate.loadAssetsOnce();
+
+    Pixmap reloadPixelPixmap = new Pixmap(1,1,Pixmap.Format.RGBA8888);
+    reloadPixelPixmap.setColor(Color.WHITE);
+    reloadPixelPixmap.fill();
+    reloadProgressPixel = new Texture(reloadPixelPixmap);
+    reloadProgressPixelRegion = new TextureRegion(reloadProgressPixel);
+    reloadPixelPixmap.dispose();
+
+    for(int i = 0 ; i < armoryWeaponBounds.length ; i++)
+        armoryWeaponBounds[i] = new Rectangle();
 }
 
 private void loadPlayerProfile(){
@@ -4455,6 +4658,8 @@ private void endCurrentRun(){
 }
 
 private void resetRunSystems(){
+    gameOver = false;
+
     RIFLEMAN_RESPAWN_TIMER = 0f;
     HEAVY_RESPAWN_TIMER = 0f;
     DRILLER_RESPAWN_TIMER = 0f;
@@ -4555,11 +4760,566 @@ private void resetRunSystems(){
     selectedGodMode = false;
 
     pauseMenuOpen = false;
+    reloadReadyFxActive = false;
+    reloadReadyFxTimer = 0f;
 }
 
 private void restartGame(){
     endCurrentRun();
     startNewRun();
+}
+
+private void updateReloadFx(float dt){
+    if(!reloadReadyFxActive)
+        return;
+    reloadReadyFxTimer+=dt;
+    if(reloadReadyFxTimer >= RELOAD_READY_DURATION){
+        reloadReadyFxTimer = 0f;
+        reloadReadyFxActive = false;
+    }
+}
+
+private void drawReloadLock(Vector2 grip){
+    if(!reloading && !reloadReadyFxActive)
+        return;
+
+    TextureRegion receiverFrame;
+    TextureRegion muzzleFrame;
+
+    if(reloading && reloadTimer < RELOAD_ENTER_DURATION){
+        int frame = (int)(reloadTimer/RELOAD_ENTER_DURATION*6f);
+        frame = MathUtils.clamp(frame,0,5);
+
+        receiverFrame = FxAssets.reloadReceiverEnter[frame];
+        muzzleFrame = FxAssets.reloadMuzzleEnter[frame];
+    }
+
+    else if(reloading){
+        float reloadDuration = weapon.getReloadSpeed();
+        float serviceDuration = reloadDuration-RELOAD_ENTER_DURATION;
+
+        float progress;
+
+        if(serviceDuration <= 0f)
+            progress = 1f;
+        else
+            progress = MathUtils.clamp((reloadTimer-RELOAD_ENTER_DURATION)/serviceDuration,0f,1f);
+
+        int frame = (int)(progress*36f);
+
+        receiverFrame = FxAssets.reloadReceiverService[frame];
+        muzzleFrame = FxAssets.reloadMuzzleService[frame];
+    }
+
+    else{
+        int frame = (int)(reloadReadyFxTimer/RELOAD_READY_DURATION*8f);
+        frame = MathUtils.clamp(frame,0,7);
+
+        receiverFrame = FxAssets.reloadReceiverReady[frame];
+        muzzleFrame = FxAssets.reloadMuzzleReady[frame];
+    }
+
+    Vector2 muzzle = weapon.getMuzzleWorldPosition(grip);
+
+    float angle = weapon.getAngleOfRotation();
+    float facingY = player.isFacingLeft() ? -1f : 1f;
+
+    float cos = MathUtils.cosDeg(angle);
+    float sin = MathUtils.sinDeg(angle);
+
+    float receiverCenterX = grip.x+(muzzle.x-grip.x)*0.22f;
+    float receiverCenterY = grip.y+(muzzle.y-grip.y)*0.22f;
+
+    float localY = -5f*facingY;
+
+    receiverCenterX += -localY*sin;
+    receiverCenterY += localY*cos;
+
+    float receiverWidth = MathUtils.clamp(grip.dst(muzzle)*1.20f,38f,64f);
+    float receiverHeight = receiverWidth*(150f/192f);
+
+    float receiverX = receiverCenterX-receiverWidth/2f;
+    float receiverY = receiverCenterY-receiverHeight/2f;
+
+    float scaleY = player.isFacingLeft() ? -1f : 1f;
+
+    batch.draw(receiverFrame,receiverX,receiverY,receiverWidth/2f,receiverHeight/2f,receiverWidth,receiverHeight,1f,scaleY,angle);
+
+    float progress = getReloadProgress();
+    int activeSegments = (int)Math.ceil(progress*RELOAD_PROGRESS_SEGMENTS);
+
+    float railLength = MathUtils.clamp(grip.dst(muzzle)*0.75f,28f,60f);
+    float segmentGap = 2f;
+    float segmentWidth = (railLength-segmentGap*(RELOAD_PROGRESS_SEGMENTS-1))/RELOAD_PROGRESS_SEGMENTS;
+    float segmentHeight = 5.5f;
+
+    float railCenterX = grip.x+(muzzle.x-grip.x)*0.45f;
+    float railCenterY = grip.y+(muzzle.y-grip.y)*0.45f;
+
+    float railOffsetY = -12f*facingY;
+
+    railCenterX += -railOffsetY*sin;
+    railCenterY += railOffsetY*cos;
+    float railStart = -railLength/2f+segmentWidth/2f;
+
+    for(int i=0;i<RELOAD_PROGRESS_SEGMENTS;i++){
+        float localX = railStart+i*(segmentWidth+segmentGap);
+        float segmentCenterX = railCenterX+localX*cos;
+        float segmentCenterY = railCenterY+localX*sin;
+        float segmentX = segmentCenterX-segmentWidth/2f;
+        float segmentY = segmentCenterY-segmentHeight/2f;
+
+        if(i < activeSegments){
+            if(progress >= 0.75f)
+                batch.setColor(0.25f,1f,1f,1f);
+            else
+                batch.setColor(1f,0.55f,0.10f,1f);
+        }
+        else
+            batch.setColor(0.15f,0.18f,0.20f,0.75f);
+
+        batch.draw(reloadProgressPixelRegion,segmentX,segmentY,segmentWidth/2f,segmentHeight/2f,segmentWidth,segmentHeight,1f,1f,angle);
+    }
+
+    batch.setColor(Color.WHITE);
+
+    float muzzleCenterX = muzzle.x+cos*2f;
+    float muzzleCenterY = muzzle.y+sin*2f;
+
+    float muzzleWidth = 16f;
+    float muzzleHeight = 24f;
+
+    float muzzleX = muzzleCenterX-muzzleWidth/2f;
+    float muzzleY = muzzleCenterY-muzzleHeight/2f;
+
+    batch.draw(muzzleFrame,muzzleX,muzzleY,muzzleWidth/2f,muzzleHeight/2f,muzzleWidth,muzzleHeight,1f,scaleY,angle);
+}
+
+private void triggerGameOver(){
+    if(gameOver)
+        return;
+    gameOver = true;
+    playerProfile.updateBestScore(runState.getCurrentScore());
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playRunTerminated();
+    AudioAssets.pauseMusic();
+}
+
+
+private void drawPauseMenu(){
+    if(currentScreen != GameScreen.GAMEPLAY)
+        return;
+
+    if(!pauseMenuOpen)
+        return;
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    batch.setColor(0.05f,0.08f,0.12f,0.55f);
+    batch.draw(reloadProgressPixel,x,y,width,height);
+    batch.setColor(Color.WHITE);
+
+    batch.draw(FxAssets.pauseShell,x,y,width,height);
+
+    pauseResumeBounds.set(x+620f*scale,y+594f*scale,680f*scale,92f*scale);
+    pauseRestartBounds.set(x+620f*scale,y+498f*scale,680f*scale,76f*scale);
+    pauseSettingsBounds.set(x+620f*scale,y+402f*scale,328f*scale,76f*scale);
+    pauseMainMenuBounds.set(x+972f*scale,y+402f*scale,328f*scale,76f*scale);
+
+    float mouseX = Gdx.input.getX();
+    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+    Texture resume = FxAssets.pauseResumeNormal;
+
+    if(pauseResumeBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        resume = FxAssets.pauseResumePressed;
+    else if(pauseResumeBounds.contains(mouseX,mouseY))
+        resume = FxAssets.pauseResumeHover;
+
+    Texture restart = FxAssets.pauseRestartNormal;
+
+    if(pauseRestartBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        restart = FxAssets.pauseRestartPressed;
+    else if(pauseRestartBounds.contains(mouseX,mouseY))
+        restart = FxAssets.pauseRestartHover;
+
+    batch.draw(resume,pauseResumeBounds.x,pauseResumeBounds.y,pauseResumeBounds.width,pauseResumeBounds.height);
+    batch.draw(restart,pauseRestartBounds.x,pauseRestartBounds.y,pauseRestartBounds.width,pauseRestartBounds.height);
+
+    batch.draw(FxAssets.pauseSettingsDisabled,pauseSettingsBounds.x,pauseSettingsBounds.y,pauseSettingsBounds.width,pauseSettingsBounds.height);
+    batch.draw(FxAssets.pauseMainMenuDisabled,pauseMainMenuBounds.x,pauseMainMenuBounds.y,pauseMainMenuBounds.width,pauseMainMenuBounds.height);
+}
+
+private void handlePauseClick(float mouseX,float mouseY){
+    if(pauseResumeBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        resumeGame();
+        return;
+    }
+    if(pauseRestartBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        restartGame();
+    }
+}
+
+private void drawRunSummaryValue(String text,float x,float baseline,float logicalSize,float scale){
+    runSummaryFont.getData().setScale((logicalSize/96f)*scale);
+    runSummaryFont.draw(batch,text,x,baseline);
+}
+
+private void drawRunSummaryRightValue(String text,float rightX,float baseline,float logicalSize,float scale){
+    runSummaryFont.getData().setScale((logicalSize/96f)*scale);
+    runSummaryLayout.setText(runSummaryFont,text);
+    runSummaryFont.draw(batch,text,rightX-runSummaryLayout.width,baseline);
+}
+
+private void drawRunSummary(){
+    if(currentScreen != GameScreen.GAMEPLAY)
+        return;
+    if(!gameOver)
+        return;
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    batch.setColor(0.03f,0.05f,0.08f,0.65f);
+    batch.draw(reloadProgressPixel,x,y,width,height);
+    batch.setColor(Color.WHITE);
+
+    batch.draw(FxAssets.runSummaryShell,x,y,width,height);
+    runRestartBounds.set(x+116f*scale,y+98f*scale,544f*scale,96f*scale);
+    runArmoryBounds.set(x+688f*scale,y+98f*scale,632f*scale,96f*scale);
+    runMainMenuBounds.set(x+1348f*scale,y+98f*scale,456f*scale,96f*scale);
+
+    float mouseX = Gdx.input.getX();
+    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+    Texture restart = FxAssets.runRestartNormal;
+
+    if(runRestartBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        restart = FxAssets.runRestartPressed;
+
+    else if(runRestartBounds.contains(mouseX,mouseY))
+        restart = FxAssets.runRestartHover;
+
+    Texture armory = FxAssets.runArmoryNormal;
+    if(runArmoryBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        armory = FxAssets.runArmoryPressed;
+
+    else if(runArmoryBounds.contains(mouseX,mouseY))
+        armory = FxAssets.runArmoryHover;
+
+    Texture mainMenu = FxAssets.runMainMenuNormal;
+    if(runMainMenuBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        mainMenu = FxAssets.runMainMenuPressed;
+
+    else if(runMainMenuBounds.contains(mouseX,mouseY))
+        mainMenu = FxAssets.runMainMenuHover;
+
+    batch.draw(restart,runRestartBounds.x,runRestartBounds.y,runRestartBounds.width,runRestartBounds.height);
+    batch.draw(armory,runArmoryBounds.x,runArmoryBounds.y,runArmoryBounds.width,runArmoryBounds.height);
+    batch.draw(mainMenu,runMainMenuBounds.x,runMainMenuBounds.y,runMainMenuBounds.width,runMainMenuBounds.height);
+    batch.draw(restart,runRestartBounds.x,runRestartBounds.y,runRestartBounds.width,runRestartBounds.height);
+
+    drawRunSummaryValue(Integer.toString(runState.getCurrentScore()),x+156f*scale,y+635f*scale,96f,scale);
+    drawRunSummaryValue(Integer.toString(playerProfile.getBestScore()),x+156f*scale,y+410f*scale,68f,scale);
+    drawRunSummaryValue(Integer.toString(runState.getKillCount()),x+960f*scale,y+650f*scale,68f,scale);
+    drawRunSummaryValue(Integer.toString(runState.getHeadshotCount()),x+1402f*scale,y+650f*scale,68f,scale);
+    drawRunSummaryRightValue(Integer.toString(runState.getGoldEarned()),x+1768f*scale,y+470f*scale,48f,scale);
+    drawRunSummaryRightValue(Integer.toString(inventory.getGold()),x+1768f*scale,y+360f*scale,48f,scale);
+}
+
+private void handleRunSummaryClick(float mouseX,float mouseY){
+    if(runRestartBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        restartGame();
+        return;
+    }
+     if(runArmoryBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        endCurrentRun();
+        currentScreen = GameScreen.ARMORY;
+        gameOver = false;
+        AudioAssets.playMenuMusic();
+        return;
+    }
+    if(runMainMenuBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        endCurrentRun();
+        currentScreen = GameScreen.MAIN_MENU;
+        gameOver = false;
+        AudioAssets.playMenuMusic();
+        return;
+    }
+}
+
+private void renderMainMenu(float mouseX,float mouseY){
+    ScreenUtils.clear(0.03f,0.05f,0.08f,1f);
+
+    batch.setProjectionMatrix(hudCamera.combined);
+    batch.begin();
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    batch.draw(FxAssets.mainMenuShell,x,y,width,height);
+
+    mainStartBounds.set(x+1212f*scale,y+666f*scale,528f*scale,112f*scale);
+    mainArmoryBounds.set(x+1212f*scale,y+490f*scale,528f*scale,144f*scale);
+    mainSettingsBounds.set(x+1212f*scale,y+354f*scale,252f*scale,84f*scale);
+    mainExitBounds.set(x+1488f*scale,y+354f*scale,252f*scale,84f*scale);
+
+    Texture start = FxAssets.mainStartNormal;
+    Texture armory = FxAssets.mainArmoryNormal;
+    Texture settings = FxAssets.mainSettingsNormal;
+    Texture exit = FxAssets.mainExitNormal;
+
+    if(mainStartBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        start = FxAssets.mainStartPressed;
+    else if(mainStartBounds.contains(mouseX,mouseY))
+        start = FxAssets.mainStartHover;
+
+    if(mainArmoryBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        armory = FxAssets.mainArmoryPressed;
+    else if(mainArmoryBounds.contains(mouseX,mouseY))
+        armory = FxAssets.mainArmoryHover;
+
+    if(mainSettingsBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        settings = FxAssets.mainSettingsPressed;
+    else if(mainSettingsBounds.contains(mouseX,mouseY))
+        settings = FxAssets.mainSettingsHover;
+
+    if(mainExitBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        exit = FxAssets.mainExitPressed;
+    else if(mainExitBounds.contains(mouseX,mouseY))
+        exit = FxAssets.mainExitHover;
+
+    batch.draw(start,mainStartBounds.x,mainStartBounds.y,mainStartBounds.width,mainStartBounds.height);
+    batch.draw(armory,mainArmoryBounds.x,mainArmoryBounds.y,mainArmoryBounds.width,mainArmoryBounds.height);
+    batch.draw(settings,mainSettingsBounds.x,mainSettingsBounds.y,mainSettingsBounds.width,mainSettingsBounds.height);
+    batch.draw(exit,mainExitBounds.x,mainExitBounds.y,mainExitBounds.width,mainExitBounds.height);
+
+    drawMainMenuValues(x,y,scale);
+
+    batch.end();
+
+    if(Gdx.input.justTouched())
+        handleMainMenuClick(mouseX,mouseY);
+}
+
+private void drawMainMenuValues(float x,float y,float scale){
+    runSummaryFont.getData().setScale((30f/96f)*scale);
+
+    String goldText = Integer.toString(inventory.getGold());
+    mainMenuLayout.setText(runSummaryFont,goldText);
+
+    float goldRight = x+1422f*scale;
+    float baseline = y+974f*scale;
+
+    runSummaryFont.draw(batch,goldText,goldRight-mainMenuLayout.width,baseline);
+
+    String bestText = Integer.toString(playerProfile.getBestScore());
+    mainMenuLayout.setText(runSummaryFont,bestText);
+
+    float bestRight = x+1818f*scale;
+    
+    runSummaryFont.draw(batch,bestText,bestRight-mainMenuLayout.width,baseline);
+}
+
+private void handleMainMenuClick(float mouseX,float mouseY){
+    if(mainStartBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        currentScreen = GameScreen.GAMEPLAY;
+        startNewRun();
+
+        return;
+    }
+
+    if(mainArmoryBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        currentScreen = GameScreen.ARMORY;
+        return;
+    }
+
+    if(mainSettingsBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        currentScreen = GameScreen.SETTINGS;
+        return;
+    }
+
+    if(mainExitBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        saveManager.saveProfile(playerProfile);
+        Gdx.app.exit();
+    }
+}
+
+private void renderArmory(float mouseX,float mouseY){
+    ScreenUtils.clear(0.03f,0.05f,0.08f,1f);
+
+    batch.setProjectionMatrix(hudCamera.combined);
+    batch.begin();
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    batch.draw(FxAssets.armoryShell,x,y,width,height);
+
+    batch.draw(FxAssets.armoryWeaponsGrid,x+328f*scale,y+106f*scale,928f*scale,718f*scale);
+
+    armoryWeaponsCategoryBounds.set(x+72f*scale,y+740f*scale,220f*scale,88f*scale);
+    armoryPowerupsCategoryBounds.set(x+72f*scale,y+628f*scale,220f*scale,88f*scale);
+    armorySpecialCategoryBounds.set(x+72f*scale,y+516f*scale,220f*scale,88f*scale);
+
+    batch.draw(FxAssets.armoryCategorySelected,armoryWeaponsCategoryBounds.x,armoryWeaponsCategoryBounds.y,armoryWeaponsCategoryBounds.width,armoryWeaponsCategoryBounds.height);
+
+    if(armoryPowerupsCategoryBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.armoryCategoryHover,armoryPowerupsCategoryBounds.x,armoryPowerupsCategoryBounds.y,armoryPowerupsCategoryBounds.width,armoryPowerupsCategoryBounds.height);
+
+    if(armorySpecialCategoryBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.armoryCategoryHover,armorySpecialCategoryBounds.x,armorySpecialCategoryBounds.y,armorySpecialCategoryBounds.width,armorySpecialCategoryBounds.height);
+
+    drawArmoryWeaponBounds(x,y,scale,mouseX,mouseY);
+
+    armoryCloseBounds.set(x+1780f*scale,y+938f*scale,68f*scale,68f*scale);
+
+    Texture close = FxAssets.armoryCloseNormal;
+
+    if(armoryCloseBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        close = FxAssets.armoryClosePressed;
+    else if(armoryCloseBounds.contains(mouseX,mouseY))
+        close = FxAssets.armoryCloseHover;
+
+    batch.draw(close,armoryCloseBounds.x,armoryCloseBounds.y,armoryCloseBounds.width,armoryCloseBounds.height);
+
+    batch.draw(FxAssets.armoryActionUnavailable,x+1328f*scale,y+96f*scale,496f*scale,78f*scale);
+
+    drawArmoryGold(x,y,scale);
+
+    batch.end();
+
+    if(Gdx.input.justTouched())
+        handleArmoryClick(mouseX,mouseY);
+}
+
+
+private void drawArmoryWeaponBounds(float x,float y,float scale,float mouseX,float mouseY){
+    armoryWeaponBounds[0].set(x+328f*scale,y+606f*scale,448f*scale,218f*scale);
+    armoryWeaponBounds[1].set(x+808f*scale,y+606f*scale,448f*scale,218f*scale);
+
+    armoryWeaponBounds[2].set(x+328f*scale,y+362f*scale,448f*scale,218f*scale);
+    armoryWeaponBounds[3].set(x+808f*scale,y+362f*scale,448f*scale,218f*scale);
+
+    armoryWeaponBounds[4].set(x+328f*scale,y+118f*scale,448f*scale,218f*scale);
+    armoryWeaponBounds[5].set(x+808f*scale,y+118f*scale,448f*scale,218f*scale);
+
+    for(int i = 0 ; i < armoryWeaponBounds.length ; i++){
+        Rectangle bounds = armoryWeaponBounds[i];
+
+        if(i == selectedArmoryWeapon)
+            batch.draw(FxAssets.armoryWeaponCardSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+
+        else if(bounds.contains(mouseX,mouseY))
+            batch.draw(FxAssets.armoryWeaponCardHover,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+}
+
+private void drawArmoryGold(float x,float y,float scale){
+    String goldText = Integer.toString(inventory.getGold());
+    runSummaryFont.getData().setScale((30f/96f)*scale);
+    mainMenuLayout.setText(runSummaryFont,goldText);
+
+    float rightX = x+1744f*scale;
+    float baseline = y+958f*scale;
+
+    runSummaryFont.draw(batch,goldText,rightX-mainMenuLayout.width,baseline);
+}
+
+private void handleArmoryClick(float mouseX,float mouseY){
+    if(armoryCloseBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        currentScreen = GameScreen.MAIN_MENU;
+        return;
+    }
+    for(int i = 0 ; i < armoryWeaponBounds.length ; i++){
+        if(armoryWeaponBounds[i].contains(mouseX,mouseY)){
+            AudioAssets.playUiConfirm();
+            selectedArmoryWeapon = i;
+            return;
+        }
+    }
+}
+
+private void renderSettings(){
+    ScreenUtils.clear(0.03f,0.05f,0.08f,1f);
+
+    batch.setProjectionMatrix(hudCamera.combined);
+    batch.begin();
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    runSummaryFont.getData().setScale((64f/96f)*scale);
+    runSummaryFont.draw(batch,"SETTINGS",x+120f*scale,y+930f*scale);
+
+    settingsBackBounds.set(x+120f*scale,y+100f*scale,300f*scale,90f*scale);
+
+    batch.setColor(0.12f,0.16f,0.20f,1f);
+    batch.draw(reloadProgressPixel,settingsBackBounds.x,settingsBackBounds.y,settingsBackBounds.width,settingsBackBounds.height);
+    batch.setColor(Color.WHITE);
+
+    runSummaryFont.getData().setScale((36f/96f)*scale);
+    runSummaryFont.draw(batch,"BACK",settingsBackBounds.x+85f*scale,settingsBackBounds.y+58f*scale);
+
+    batch.end();
+
+    float mouseX = Gdx.input.getX();
+    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+    if(Gdx.input.justTouched() && settingsBackBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        currentScreen = GameScreen.MAIN_MENU;
+    }
 }
  
 
@@ -4570,7 +5330,7 @@ private void restartGame(){
 }
 
         
-        
+
 
 
 
@@ -4584,6 +5344,7 @@ private void restartGame(){
 
 
         
+
 
 
 
