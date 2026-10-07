@@ -61,6 +61,10 @@ public class Inventory{
     public int getAmmo(Weapon.WeaponType type){
         return ammo.get(type,0);
     }
+    
+    public boolean ownsWeapon(Weapon.WeaponType type){
+        return ownedWeapons.contains(type,true);
+    }
 
     public int takeAmmo(WeaponType type, int amount){
         int currentAmmo = ammo.get(type,0);

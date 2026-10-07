@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.ObjectIntMap;
 
 public class Weapon{
     private Vector2 position;
@@ -104,7 +105,7 @@ public class Weapon{
     private Texture ammoPanel;
     private Texture ammoIcon;
     private Texture noAmmoIcon;
-
+    private ObjectIntMap<WeaponType> weaponMagazineAmmo;
 
     Weapon(WeaponType type, float spawnX, float spawnY ,float width,float height,Vector2 offsetCoordinates){
         currentWeapon = type;
@@ -113,8 +114,11 @@ public class Weapon{
         this.width = width * weaponScale;
         this.height = height * weaponScale;
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
+        weaponMagazineAmmo = new ObjectIntMap<>();
         determineWeaponStats();
         currentAmmo = magazineSize;
+        weaponMagazineAmmo.put(currentWeapon,currentAmmo);
+
         ammoPanel = new Texture(AssetPaths.Hud.AMMO_PANEL);
         ammoIcon = new Texture(AssetPaths.Hud.AMMO_ICON);
         noAmmoIcon = new Texture(AssetPaths.Hud.NO_AMMO_ICON);
@@ -219,6 +223,92 @@ public class Weapon{
             maxScope = BASE_SCOPE_SNIPER;
         }
     }
+
+    public int getBaseMagazineSize(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return BASE_MAGAZINE_PISTOL;
+        if(type == WeaponType.AR)
+            return BASE_MAGAZINE_AR;
+        if(type == WeaponType.SMG)
+            return BASE_MAGAZINE_SMG;
+        if(type == WeaponType.SHOTGUN)
+            return BASE_MAGAZINE_SHOTGUN;
+        if(type == WeaponType.SNIPER)
+            return BASE_MAGAZINE_SNIPER;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return BASE_MAGAZINE_ROCKET;
+
+        return 0;
+    }
+
+    public float getBaseHeadDamage(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return BASE_HEAD_DAMAGE_PISTOL;
+        if(type == WeaponType.AR)
+            return BASE_HEAD_DAMAGE_AR;
+        if(type == WeaponType.SMG)
+            return BASE_HEAD_DAMAGE_SMG;
+        if(type == WeaponType.SHOTGUN)
+            return BASE_HEAD_DAMAGE_SHOTGUN;
+        if(type == WeaponType.SNIPER)
+            return BASE_HEAD_DAMAGE_SNIPER;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return BASE_HEAD_DAMAGE_ROCKET;
+
+        return 0;
+    }
+
+    public float getBaseBodyDamage(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return BASE_BODY_DAMAGE_PISTOL;
+        if(type == WeaponType.AR)
+            return BASE_BODY_DAMAGE_AR;
+        if(type == WeaponType.SMG)
+            return BASE_BODY_DAMAGE_SMG;
+        if(type == WeaponType.SHOTGUN)
+            return BASE_BODY_DAMAGE_SHOTGUN;
+        if(type == WeaponType.SNIPER)
+            return BASE_BODY_DAMAGE_SNIPER;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return BASE_BODY_DAMAGE_ROCKET;
+
+        return 0;
+    }
+
+    public float getBaseFireRate(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return BASE_FIRE_RATE_PISTOL;
+        if(type == WeaponType.AR)
+            return BASE_FIRE_RATE_AR;
+        if(type == WeaponType.SMG)
+            return BASE_FIRE_RATE_SMG;
+        if(type == WeaponType.SHOTGUN)
+            return BASE_FIRE_RATE_SHOTGUN;
+        if(type == WeaponType.SNIPER)
+            return BASE_FIRE_RATE_SNIPER;
+
+        // Rocket fire rate isn't finalized yet.
+        return -1f;
+    }
+
+    public float getBaseReloadSpeed(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return BASE_RELOAD_PISTOL;
+        if(type == WeaponType.AR)
+            return BASE_RELOAD_AR;
+        if(type == WeaponType.SMG)
+            return BASE_RELOAD_SMG;
+        if(type == WeaponType.SHOTGUN)
+            return BASE_RELOAD_SHOTGUN;
+        if(type == WeaponType.SNIPER)
+            return BASE_RELOAD_SNIPER;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return BASE_RELOAD_ROCKET;
+
+        return 0f;
+    }
+
+    
 
     public WeaponType getCurrentWeapon(){
         return currentWeapon;
@@ -330,6 +420,15 @@ public class Weapon{
             bodyDamage = BASE_BODY_DAMAGE_SHOTGUN;
             limbDamage = BASE_LIMB_DAMAGE_SHOTGUN;
         }
+    }
+
+    public void equipWeapon(WeaponType type){
+        if(type == currentWeapon)
+            return;
+        weaponMagazineAmmo.put(currentWeapon,currentAmmo);
+        currentWeapon = type;
+        determineWeaponStats();
+        currentAmmo = weaponMagazineAmmo.get(type,0);
     }
 
 

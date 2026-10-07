@@ -22,6 +22,15 @@ public final class AssetPaths {
         public static final String GOLD_ICON = "ui/hud/gold_icon.png";
         public static final String SCORE_ICON = "ui/hud/score_icon.png";
         public static final String BEST_SCORE_ICON = "ui/hud/best_score_icon.png";
+
+        public static final String INVENTORY_BAG ="ui/inventory/inventory_bag_button.png";
+        public static final String INVENTORY_BAG_HOVER ="ui/inventory/inventory_bag_button_hover.png";
+        public static final String INVENTORY_BAG_PRESSED = "ui/inventory/inventory_bag_button_pressed.png";
+        public static final String INVENTORY_PANEL = "ui/inventory/inventory_panel_icon.png";
+        public static final String INVENTORY_PANEL_GUN = "ui/inventory/inventory_panel_gun.png";
+
+        public static final String INVENTORY_WEAPON_LOCKED ="ui/inventory/weapon_locked.png";
+        public static final String INVENTORY_WEAPON_EQUIPPED ="ui/inventory/weapon_equipped.png";
 }
     
 

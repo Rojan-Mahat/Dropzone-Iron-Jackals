@@ -36,6 +36,7 @@ import com.badlogic.gdx.math.Ellipse;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.utils.Align;
 
 //./gradlew lwjgl3:run
 
@@ -162,7 +163,6 @@ public class ShooterGame extends ApplicationAdapter {
     private float SHIELD_AMOUNT = 0f;
     private final float SHIELD_CAPACITY = 60f;
 
-
     private boolean OVERDRIVE_ACTIVE = false;
     private float OVERDRIVE_TIMER = 0f;
     private final float OVERDRIVE_DURATION = 12f;
@@ -230,6 +230,23 @@ public class ShooterGame extends ApplicationAdapter {
     private final float GOD_MODE_DAMAGE_MULTIPLIER = 2f;
     private final float GOD_MODE_FIRE_RATE_MULTIPLIER = 2f;
 
+    private boolean inventoryOpen = false;
+    private Rectangle inventoryBagBounds = new Rectangle();
+    private float inventoryAnimation = 0f;
+    private final float INVENTORY_ANIMATION_SPEED = 4f;
+
+    private enum InventorySelectionType{
+                        NONE,
+                        POWERUP,
+                        WEAPON
+                    }
+    private InventorySelectionType inventorySelectionType = InventorySelectionType.NONE;
+    private Weapon.WeaponType selectedWeapon = null;
+    private Powerup.PowerupType selectedPowerup = null;
+    private Powerup.SpicyType selectedSpicy = null;
+    private Powerup.MoreSpicyType selectedMoreSpicy = null;
+    private boolean selectedGodMode = false;
+
     private static class LootVisual{
         Texture icon;
         String value;
@@ -240,7 +257,55 @@ public class ShooterGame extends ApplicationAdapter {
         }
     }
     private static final float[][] SLOT_3 = {{0.10046729f,0.33088235f,0.1728972f,0.5441176f},{0.4135514f,0.33088235f,0.1728972f,0.5441176f},{0.7266355f,0.33088235f,0.1728972f,0.5441176f}};
+    private Rectangle[] inventoryWeaponBounds = {new Rectangle(),new Rectangle(),new Rectangle(),new Rectangle(),new Rectangle(),new Rectangle()};
+    private final Weapon.WeaponType[] INVENTORY_WEAPONS = {
+                                    Weapon.WeaponType.PISTOL,
+                                    Weapon.WeaponType.AR,
+                                    Weapon.WeaponType.SMG,
+                                    Weapon.WeaponType.SHOTGUN,
+                                    Weapon.WeaponType.SNIPER,
+                                    Weapon.WeaponType.ROCKET_LAUNCHER
+                                };
 
+    private Rectangle[] inventoryConsumableBounds = {
+        new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(),
+        new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(),
+        new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(),
+        new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle()
+    };
+
+    private final Powerup.PowerupType[] INVENTORY_NORMAL_POWERUPS = {
+        Powerup.PowerupType.HEALTH,
+        Powerup.PowerupType.SHIELD,
+        Powerup.PowerupType.JETPACK,
+        Powerup.PowerupType.FIRE_RATE
+    };
+
+    private final Powerup.SpicyType[] INVENTORY_SPICY_POWERUPS = {
+        Powerup.SpicyType.OVERDRIVE,
+        Powerup.SpicyType.RAPID_MOBILITY,
+        Powerup.SpicyType.BOTTOMLESS_MAG,
+        Powerup.SpicyType.DAMAGE_SURGE,
+        Powerup.SpicyType.GOLD_RUSH,
+        Powerup.SpicyType.SCORE_FRENZY
+    };
+
+    private final Powerup.MoreSpicyType[] INVENTORY_MORE_SPICY_POWERUPS = {
+        Powerup.MoreSpicyType.BERSERK,
+        Powerup.MoreSpicyType.INFINITE_ASSAULT,
+        Powerup.MoreSpicyType.HYPERDRIVE,
+        Powerup.MoreSpicyType.FORTRESS,
+        Powerup.MoreSpicyType.DOUBLE_FORTUNE
+    };
+    private Rectangle inventoryActionBounds = new Rectangle();
+    private Rectangle inventoryCloseBounds = new Rectangle();
+
+    private BitmapFont inventoryTitleFont;
+    private BitmapFont inventoryBodyFont;
+    private BitmapFont inventoryInfoFont;
+    private BitmapFont inventoryButtonFont;
+    private GlyphLayout inventoryGlyphLayout;
+    
 
     @Override
     public void create(){
@@ -267,6 +332,34 @@ public class ShooterGame extends ApplicationAdapter {
         lootCountFont = lootCountGenerator.generateFont(lootCountParameter);
         lootCountGenerator.dispose();
         lootCountFont.setUseIntegerPositions(false);
+
+        FreeTypeFontGenerator inventoryGenerator =new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter inventoryTitleParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        inventoryTitleParameter.size = 28;
+        inventoryTitleParameter.minFilter = Texture.TextureFilter.Linear;
+        inventoryTitleParameter.magFilter = Texture.TextureFilter.Linear;
+        inventoryTitleFont = inventoryGenerator.generateFont(inventoryTitleParameter);
+
+        FreeTypeFontGenerator.FreeTypeFontParameter inventoryBodyParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        inventoryBodyParameter.size = 17;
+        inventoryBodyParameter.minFilter = Texture.TextureFilter.Linear;
+        inventoryBodyParameter.magFilter = Texture.TextureFilter.Linear;
+        inventoryBodyFont = inventoryGenerator.generateFont(inventoryBodyParameter);
+
+        FreeTypeFontGenerator.FreeTypeFontParameter inventoryInfoParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        inventoryInfoParameter.size = 16;
+        inventoryInfoParameter.minFilter = Texture.TextureFilter.Linear;
+        inventoryInfoParameter.magFilter = Texture.TextureFilter.Linear;
+        inventoryInfoFont = inventoryGenerator.generateFont(inventoryInfoParameter);
+
+        FreeTypeFontGenerator.FreeTypeFontParameter inventoryButtonParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        inventoryButtonParameter.size = 20;
+        inventoryButtonParameter.minFilter = Texture.TextureFilter.Linear;
+        inventoryButtonParameter.magFilter = Texture.TextureFilter.Linear;
+        inventoryButtonFont = inventoryGenerator.generateFont(inventoryButtonParameter);
+
+        inventoryGenerator.dispose();
+        inventoryGlyphLayout = new GlyphLayout();
 
         map = loadMap();
 
@@ -330,104 +423,124 @@ public class ShooterGame extends ApplicationAdapter {
     @Override
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
-        updatePowerups(dt);
-        clampCameraToPlayer();
-        activateGravity(dt);
-        Vector2 direction = new Vector2(0,0);
-        boolean movingRight = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
-        boolean movingLeft = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
-        if(movingRight)
-            direction.x++;
-        if(movingLeft)
-            direction.x--;
-
-        boolean movingHorizontally = movingRight!= movingLeft;
-        if(movingHorizontally)
-            horizontalHoldTime+=dt;
-        else
-            horizontalHoldTime = 0;
-
-        if(horizontalHoldTime > RUN_THRESHOLD)
-            player.setRunningTrue();
-        else
-            player.setRunningFalse();
-        
-        boolean jumpJustPressed = Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP);
-        boolean jumpHeld = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
-        if(jumpJustPressed){
-            if(player.getCrouchingState())
-                player.stand(solidPlatforms);
-            if(!player.getCrouchingState() && player.jumpsAvailable())
-                player.jump();
-        }
-        if(jumpHeld)
-            JumpVSFlight(dt);
-        else{
-            player.setAirTime(0f);
-            player.stopJetpack();
+        float mouseX = Gdx.input.getX();
+        float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+        if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
+            if(inventoryOpen || inventoryAnimation > 0f)
+                inventoryOpen = false;
         }
 
-        player.move(direction,dt,getWorldSize(),solidPlatforms);
-        player.ensureGrounding(solidPlatforms);
-
+        if(Gdx.input.justTouched()){
+            if(inventoryOpen && inventoryAnimation >= 0.99f && inventoryCloseBounds.contains(mouseX,mouseY))
+                inventoryOpen = false;
+            else if(inventoryBagBounds.contains(mouseX,mouseY))
+                inventoryOpen = !inventoryOpen;
+            else if(inventoryOpen && inventoryAnimation >= 1f){
+                if(inventoryActionBounds.contains(mouseX,mouseY))
+                    useInventoryAction();
+                else{
+                    checkInventoryWeaponSelection(mouseX,mouseY);
+                    checkInventoryConsumableSelection(mouseX,mouseY);
+                }
+            } 
+        }
+        updateInventoryAnimation(dt);
+        boolean gamePaused = inventoryBlockingGameplay();
+        float worldDt = gamePaused ? 0f : dt;
         Vector2 mouseWorldPosition = getMouseWorldPosition();
-        boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
-        boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
-        float fireInterval = 1f/weapon.getFireRate();
-        if(shooting)
-            player.setShootingTrue();
-        else
-            player.setShootingFalse();
+        if(!gamePaused){
+            updatePowerups(dt);
+            clampCameraToPlayer();
+            activateGravity(dt);
+            Vector2 direction = new Vector2(0,0);
+            boolean movingRight = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+            boolean movingLeft = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
+            if(movingRight)
+                direction.x++;
+            if(movingLeft)
+                direction.x--;
 
-        if(shootOnce  && (weapon.canShoot() || infiniteMagazineActive())){
-            createBulletWhenFired(mouseWorldPosition);
-            if(!infiniteMagazineActive())
-                weapon.consumeAmmo();
-            mouseHeld = 0f;
-        }
-        else if(shooting && weapon.isAutomatic() && (weapon.canShoot() || infiniteMagazineActive())){
-            mouseHeld+=dt;
-            if(mouseHeld >= fireInterval){
+            boolean movingHorizontally = movingRight!= movingLeft;
+            if(movingHorizontally)
+                horizontalHoldTime+=dt;
+            else
+                horizontalHoldTime = 0;
+
+            if(horizontalHoldTime > RUN_THRESHOLD)
+                player.setRunningTrue();
+            else
+                player.setRunningFalse();
+            
+            boolean jumpJustPressed = Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP);
+            boolean jumpHeld = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
+            if(jumpJustPressed){
+                if(player.getCrouchingState())
+                    player.stand(solidPlatforms);
+                if(!player.getCrouchingState() && player.jumpsAvailable())
+                    player.jump();
+            }
+            if(jumpHeld)
+                JumpVSFlight(dt);
+            else{
+                player.setAirTime(0f);
+                player.stopJetpack();
+            }
+
+            player.move(direction,dt,getWorldSize(),solidPlatforms);
+            player.ensureGrounding(solidPlatforms);
+
+            boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+            boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+            float fireInterval = 1f/weapon.getFireRate();
+            if(shooting)
+                player.setShootingTrue();
+            else
+                player.setShootingFalse();
+
+            if(shootOnce  && (weapon.canShoot() || infiniteMagazineActive())){
                 createBulletWhenFired(mouseWorldPosition);
                 if(!infiniteMagazineActive())
                     weapon.consumeAmmo();
-                mouseHeld-=fireInterval;
+                mouseHeld = 0f;
             }
-        }
-        else
-            mouseHeld = 0f;
-        bulletPlatformCollision();
-        if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
-            if(!player.getCrouchingState())
-                player.crouch();
+            else if(shooting && weapon.isAutomatic() && (weapon.canShoot() || infiniteMagazineActive())){
+                mouseHeld+=dt;
+                if(mouseHeld >= fireInterval){
+                    createBulletWhenFired(mouseWorldPosition);
+                    if(!infiniteMagazineActive())
+                        weapon.consumeAmmo();
+                    mouseHeld-=fireInterval;
+                }
+            }
             else
-                player.stand(solidPlatforms);   
-        }
-        if(Gdx.input.isKeyJustPressed(Input.Keys.R))
-            reloadGun();
-
-        if(Gdx.input.justTouched()){
-            float mouseX = Gdx.input.getX();
-            float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
-
-            if(reloadButtonBounds.contains(mouseX,mouseY))
+                mouseHeld = 0f;
+            bulletPlatformCollision();
+            if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
+                if(!player.getCrouchingState())
+                    player.crouch();
+                else
+                    player.stand(solidPlatforms);   
+            }
+            if(Gdx.input.isKeyJustPressed(Input.Keys.R))
                 reloadGun();
+
+            if(Gdx.input.justTouched()){
+                float mouseXa = Gdx.input.getX();
+                float mouseYa = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+                if(reloadButtonBounds.contains(mouseXa,mouseYa))
+                    reloadGun();
+            }
+
+            if(Gdx.input.isKeyJustPressed(Input.Keys.E))
+                openNearbyCrate();
+
+            if(Gdx.input.isKeyJustPressed(Input.Keys.Q))
+                claimActiveCrate();
+
+            for(Bullet bullet : bullets)
+               bullet.update(dt);
         }
-
-        if(Gdx.input.isKeyJustPressed(Input.Keys.E))
-            openNearbyCrate();
-
-        if(Gdx.input.isKeyJustPressed(Input.Keys.Q))
-            claimActiveCrate();
-        /*if(Gdx.input.isKeyJustPressed(Input.Keys.G)){
-            if(player.getCurrentMode() == Player.PlayerMode.UNARMED)
-                player.switchPlayerModeArmed();
-            else if(player.getCurrentMode() == Player.PlayerMode.ARMED)
-                player.switchPlayerModeUnarmed();
-        }*/
-
-        for(Bullet bullet : bullets)
-            bullet.update(dt);
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
         batch.setProjectionMatrix(camera.combined);
@@ -453,61 +566,74 @@ public class ShooterGame extends ApplicationAdapter {
         }
 
         drawDroneBeam();
-        player.drawPlayer(batch,dt);
+        player.drawPlayer(batch,worldDt);
         for(Enemy enemy: enemies)
-            enemy.drawEnemy(batch, dt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
+            enemy.drawEnemy(batch, worldDt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
 
-        if(player.getJetPackStatus()){
-            if(!infiniteJetpackActive())
-                player.consumeFuel(dt);
-        }
-        else{
-            player.rechargeFuel(dt);
-        }
-        if(isPlayerStunned()){
-            player.emptyJetpack();
-            player.stopJetpack();
+        if(!gamePaused){
+            if(player.getJetPackStatus()){
+                if(!infiniteJetpackActive())
+                    player.consumeFuel(dt);
+            }
+            else{
+                player.rechargeFuel(dt);
+            }
+            if(isPlayerStunned()){
+                player.emptyJetpack();
+                player.stopJetpack();
+            }
         }
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
-        updatePlayerFacingDirection(mouseWorldPosition); 
-        weapon.setFacingLeft(player.isFacingLeft());
+        if(!gamePaused){
+            updatePlayerFacingDirection(mouseWorldPosition); 
+            weapon.setFacingLeft(player.isFacingLeft());
+            weapon.rotateWeapon(player.getCurrentGripWorldPosition(), mouseWorldPosition);
+        }
         Vector2 grip = player.getCurrentGripWorldPosition();
-        weapon.rotateWeapon(grip, mouseWorldPosition);
         weapon.drawWeapon(batch, grip);
-        drawPlayerPoisonFx(dt);
-        drawPlayerStunFx(dt);
+        drawPlayerPoisonFx(worldDt);
+        drawPlayerStunFx(worldDt);
 
         for(Bullet bullet : bullets)
             bullet.draw(batch);
 
-        createEnemyProjectile();
-        for(EnemyProjectile projectile : enemyProjectiles)
-            projectile.update(dt);
-        for(EnemyProjectile projectile : enemyProjectiles){
-            projectile.draw(batch);
+        if(!gamePaused){
+            createEnemyProjectile();
+            for(EnemyProjectile projectile : enemyProjectiles)
+                projectile.update(dt);
+            for(EnemyProjectile projectile : enemyProjectiles){
+                projectile.draw(batch);
+            }
         }
-        spawnSpecialCrate(dt);
+        if(!gamePaused)
+            spawnSpecialCrate(dt);
         for(LootCrate crate : lootCrates){
-            crate.update(dt);
+            if(!gamePaused)
+                crate.update(dt);
             crate.drawCrate(batch,dt);
         }
-        removeLootCrates();
+        if(!gamePaused)
+            removeLootCrates();
         drawLootDashboard();
-        playerEnemyProjectileCollisionChecker();
-        removeEnemyProjectiles();
-        drawDroneOverlayFx();
-        transferDroneLockToHeavy();
-        drawHeavyLockFx();
-        drawHeavyPortalFx(dt);
-        drawBombardmentProjectiles();
-        collectBombardmentImpacts();
-        drawBombardmentImpacts(dt);
+        if(!gamePaused){
+            playerEnemyProjectileCollisionChecker();
+            removeEnemyProjectiles();
 
-        bulletEnemyCollisionChecker();
-        communicateDamage();
-        removeEnemies();
-        updateGameTracks();
-        respawnEnemies(dt);
+            transferDroneLockToHeavy();
+            collectBombardmentImpacts();
+
+            bulletEnemyCollisionChecker();
+            communicateDamage();
+            removeEnemies();
+            updateGameTracks();
+            respawnEnemies(dt);
+        }
+        drawDroneOverlayFx();
+        drawHeavyLockFx();
+        drawHeavyPortalFx(worldDt);
+        drawBombardmentProjectiles();
+        drawBombardmentImpacts(worldDt);
+
         batch.end(); 
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
@@ -517,44 +643,11 @@ public class ShooterGame extends ApplicationAdapter {
         drawJetpackDisabledHud();
         drawScoreDashboard();
         drawAmmoHud();
+        drawInventoryBag();
+        drawInventory();
 
         batch.end();
         batch.setProjectionMatrix(camera.combined);
-
-        shapeRenderer.setProjectionMatrix(camera.combined);
-shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-for(Enemy enemy : enemies){
-
-    Rectangle hurtbox = enemy.getWorldHurtbox();
-
-    shapeRenderer.setColor(1,0,0,1);
-    shapeRenderer.rect(
-        hurtbox.x,
-        hurtbox.y,
-        hurtbox.width,
-        hurtbox.height
-    );
-
-    shapeRenderer.setColor(0,1,0,1);
-    for(Rectangle rect : enemy.getHeadshotBoxes()){
-        Rectangle world = enemy.getWorldHitRegion(rect);
-        shapeRenderer.rect(world.x,world.y,world.width,world.height);
-    }
-
-    shapeRenderer.setColor(0,0,1,1);
-    for(Rectangle rect : enemy.getBodyshotBoxes()){
-        Rectangle world = enemy.getWorldHitRegion(rect);
-        shapeRenderer.rect(world.x,world.y,world.width,world.height);
-    }
-
-    shapeRenderer.setColor(1,1,0,1);
-    for(Rectangle rect : enemy.getLimbshotBoxes()){
-        Rectangle world = enemy.getWorldHitRegion(rect);
-        shapeRenderer.rect(world.x,world.y,world.width,world.height);
-    }
-}
-shapeRenderer.end();
     }  
     
 
@@ -573,7 +666,12 @@ shapeRenderer.end();
         hudFont.dispose();
         lootFont.dispose();
         lootIconRegions.clear();
+        inventoryTitleFont.dispose();
+        inventoryBodyFont.dispose();
+        inventoryInfoFont.dispose();
+        inventoryButtonFont.dispose();
     }
+
     @Override
     public void resize(int width,int height){
         hudCamera.setToOrtho(false,width,height);
@@ -2985,6 +3083,671 @@ private boolean infiniteJetpackActive(){
 private boolean playerInvulnerable(){
     return GOD_MODE_ACTIVE;
 }
+
+private void drawInventoryBag(){
+    float size = 64f;
+    float x = 20f;
+    float y = 20f;
+    float mouseX = Gdx.input.getX();
+    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+    inventoryBagBounds.set(x,y,size,size);
+    Texture texture = FxAssets.inventoryBag;
+
+    if(inventoryBagBounds.contains(mouseX,mouseY)){
+        if(Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+            texture = FxAssets.inventoryBagPressed;
+        else
+            texture = FxAssets.inventoryBagHover;
+    }
+    batch.draw(texture,x,y,size,size);
+}
+
+
+private void drawInventory(){
+    if(inventoryAnimation <= 0f)
+        return;
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+    float finalScale = Math.min(1f,Math.min((screenWidth-80f)/1280f,(screenHeight-80f)/720f));
+
+    float finalWidth = 1280f*finalScale;
+    float finalHeight = 720f*finalScale;
+
+    float t = inventoryAnimation;
+    float smoothT = t*t*(3f-2f*t);
+    float startScale = 0.15f;
+    float animatedScale = startScale+(1f-startScale)*smoothT;
+
+    float width = finalWidth*animatedScale;
+    float height = finalHeight*animatedScale;
+
+    float sx = width/1280f;
+    float sy = height/720f;
+
+    float bagCenterX = inventoryBagBounds.x+inventoryBagBounds.width/2f;
+    float bagCenterY =inventoryBagBounds.y+inventoryBagBounds.height/2f;
+    float screenCenterX = screenWidth/2f;
+    float screenCenterY = screenHeight/2f;
+
+    float centerX = bagCenterX+ (screenCenterX-bagCenterX)*smoothT;
+    float centerY = bagCenterY+ (screenCenterY-bagCenterY)*smoothT;
+
+    float x = centerX-width/2f;
+    float y = centerY-height/2f;
+
+    inventoryActionBounds.set(x+844f*sx,y+54f*sy,372f*sx,42f*sy);
+    inventoryCloseBounds.set(x+1174f*sx, y+655f*sy,50f*sx,45f*sy);
+
+    Texture panelTexture = FxAssets.inventoryPanel;
+    if(inventorySelectionType == InventorySelectionType.WEAPON)
+        panelTexture = FxAssets.inventoryPanelGun;
+    batch.draw(panelTexture,x,y,width,height);
+    drawInventoryWeapons(x,y,width,height);
+    drawInventoryConsumables(x,y,width,height);
+    drawSelectedInventoryPreview(x,y,width,height);
+    drawSelectedPowerupInfo(x,y,width,height);
+    drawSelectedWeaponInfo(x,y,width,height);
+}
+
+private void updateInventoryAnimation(float dt){
+    if(inventoryOpen){
+        inventoryAnimation += dt*INVENTORY_ANIMATION_SPEED;
+        if(inventoryAnimation > 1f)
+            inventoryAnimation = 1f;
+    }
+    else{
+        inventoryAnimation -= dt*INVENTORY_ANIMATION_SPEED;
+        if(inventoryAnimation < 0f)
+            inventoryAnimation = 0f;
+    }
+}
+
+private boolean inventoryBlockingGameplay(){
+    return inventoryOpen || inventoryAnimation > 0f;
+}
+
+private void drawInventoryConsumable(Texture icon, int amount, int row, int column, float panelX, float panelY, float panelWidth,float panelHeight){
+    float sx = panelWidth/1280f;
+    float sy = panelHeight/720f;
+
+    float iconX = panelX+(94f+184f*column)*sx;
+    float iconY = panelY+(418f-116f*row)*sy;
+
+    float iconWidth = 84f*sx;
+    float iconHeight = 84f*sy;
+
+    int index = row*4+column;
+
+    inventoryConsumableBounds[index].set(iconX, iconY,iconWidth,iconHeight);
+
+    drawContain( icon, iconX, iconY, iconWidth, iconHeight);
+
+    float quantityX = panelX+(108f+184f*column)*sx;
+    float quantityY = panelY+(396f-116f*row)*sy;
+
+    float quantityWidth = 56f*sx;
+    float quantityHeight = 18f*sy;
+
+    drawInventoryQuantity(amount,quantityX,quantityY,quantityWidth,quantityHeight);
+}
+
+private void drawInventoryQuantity(int amount, float x,float y, float width,float height){
+    String text = "x"+amount;
+
+    hudFont.getData().setScale(0.65f);
+    GlyphLayout layout = new GlyphLayout(hudFont,text);
+
+    float textX =  x+(width-layout.width)/2f;
+    float textY = y+(height+layout.height)/2f;
+    hudFont.draw(batch, text, textX, textY);
+}
+
+
+private void drawInventoryConsumables(float panelX,float panelY,float panelWidth,float panelHeight){
+    drawInventoryConsumable(FxAssets.powerupIcons.get(Powerup.PowerupType.HEALTH),
+        inventory.getPowerupAmount(Powerup.PowerupType.HEALTH),
+        0,0,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable( FxAssets.powerupIcons.get(Powerup.PowerupType.SHIELD),
+        inventory.getPowerupAmount(Powerup.PowerupType.SHIELD),
+        0,1,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.powerupIcons.get(Powerup.PowerupType.JETPACK),
+        inventory.getPowerupAmount(Powerup.PowerupType.JETPACK),
+        0,2,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.powerupIcons.get(Powerup.PowerupType.FIRE_RATE),
+        inventory.getPowerupAmount(Powerup.PowerupType.FIRE_RATE),
+        0,3,
+        panelX,panelY,panelWidth,panelHeight);
+
+
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.OVERDRIVE),
+        inventory.getSpicyAmount(Powerup.SpicyType.OVERDRIVE),
+        1,0,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.RAPID_MOBILITY),
+        inventory.getSpicyAmount(Powerup.SpicyType.RAPID_MOBILITY),
+        1,1,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.BOTTOMLESS_MAG),
+        inventory.getSpicyAmount(Powerup.SpicyType.BOTTOMLESS_MAG),
+        1,2,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.DAMAGE_SURGE),
+        inventory.getSpicyAmount(Powerup.SpicyType.DAMAGE_SURGE),
+        1,3,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.GOLD_RUSH),
+        inventory.getSpicyAmount(Powerup.SpicyType.GOLD_RUSH),
+        2,0,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.spicyIcons.get(Powerup.SpicyType.SCORE_FRENZY),
+        inventory.getSpicyAmount(Powerup.SpicyType.SCORE_FRENZY),
+        2,1,
+        panelX,panelY,panelWidth,panelHeight);
+
+
+
+    drawInventoryConsumable(FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.BERSERK),
+        inventory.getMoreSpicyAmount(Powerup.MoreSpicyType.BERSERK),
+        2,2,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.INFINITE_ASSAULT),
+        inventory.getMoreSpicyAmount(Powerup.MoreSpicyType.INFINITE_ASSAULT),
+        2,3,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.HYPERDRIVE),
+        inventory.getMoreSpicyAmount(Powerup.MoreSpicyType.HYPERDRIVE),
+        3,0,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.FORTRESS),
+        inventory.getMoreSpicyAmount(Powerup.MoreSpicyType.FORTRESS),
+        3,1,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.DOUBLE_FORTUNE),
+        inventory.getMoreSpicyAmount(Powerup.MoreSpicyType.DOUBLE_FORTUNE),
+        3,2,
+        panelX,panelY,panelWidth,panelHeight);
+
+    drawInventoryConsumable(FxAssets.godModeIcon,inventory.getGodModeAmount(),3,3,panelX,panelY,panelWidth,panelHeight);
+}
+private void drawInventoryWeapons(float panelX,float panelY,float panelWidth, float panelHeight){
+    float sx = panelWidth/1280f;
+    float sy = panelHeight/720f;
+
+    for(int i=0;i<INVENTORY_WEAPONS.length;i++){
+        Weapon.WeaponType type = INVENTORY_WEAPONS[i];
+        float slotX = panelX+(44f+200f*i)*sx;
+        float slotY = panelY+556f*sy;
+        float slotWidth = 188f*sx;
+        float slotHeight = 88f*sy;
+
+        inventoryWeaponBounds[i].set(slotX,slotY,slotWidth,slotHeight);
+        Texture gun = FxAssets.weaponRewardIcons.get(type);
+        drawContain(gun, slotX+10f*sx,slotY+26f*sy,168f*sx,54f*sy);
+
+        if(!inventory.ownsWeapon(type))
+            batch.draw(FxAssets.inventoryWeaponLocked,slotX,slotY,slotWidth,slotHeight);
+    
+        else if(type == weapon.getCurrentWeapon())            
+            batch.draw(FxAssets.inventoryWeaponEquipped,slotX,slotY,slotWidth,slotHeight);
+    }
+}
+
+
+private void checkInventoryWeaponSelection(float mouseX,float mouseY){
+    for(int i=0;i<inventoryWeaponBounds.length;i++){
+        if(!inventoryWeaponBounds[i].contains(mouseX,mouseY))
+            continue;
+        selectedPowerup = null;
+        selectedSpicy = null;
+        selectedMoreSpicy = null;
+        selectedGodMode = false;
+
+        selectedWeapon = INVENTORY_WEAPONS[i];
+        inventorySelectionType = InventorySelectionType.WEAPON;
+        return;
+    }
+}
+
+private void checkInventoryConsumableSelection(float mouseX,float mouseY){
+    for(int i=0;i<inventoryConsumableBounds.length;i++){
+        if(!inventoryConsumableBounds[i].contains(mouseX,mouseY))
+            continue;
+        selectedPowerup = null;
+        selectedSpicy = null;
+        selectedMoreSpicy = null;
+        selectedGodMode = false;
+        selectedWeapon = null;
+        if(i < 4)
+            selectedPowerup = INVENTORY_NORMAL_POWERUPS[i];
+    
+        else if(i < 10)
+            selectedSpicy = INVENTORY_SPICY_POWERUPS[i-4];
+        
+        else if(i < 15)
+            selectedMoreSpicy = INVENTORY_MORE_SPICY_POWERUPS[i-10];
+
+        else
+            selectedGodMode = true;
+
+        inventorySelectionType = InventorySelectionType.POWERUP;
+        return;
+    }
+}
+
+private void drawSelectedInventoryPreview(
+    float panelX,
+    float panelY,
+    float panelWidth,
+    float panelHeight
+){
+    float sx = panelWidth/1280f;
+    float sy = panelHeight/720f;
+
+
+    if(inventorySelectionType == InventorySelectionType.WEAPON){
+        if(selectedWeapon == null)
+            return;
+        Texture gun = FxAssets.weaponRewardIcons.get(selectedWeapon);
+        drawContain(gun,panelX+850f*sx,panelY+340f*sy,360f*sx,130f*sy);
+        return;
+    }
+
+
+    if(inventorySelectionType == InventorySelectionType.POWERUP){
+        Texture icon = getSelectedInventoryIcon();
+        if(icon == null)
+            return;
+        drawContain(icon,panelX+935f*sx,panelY+300f*sy,190f*sx,190f*sy);
+    }
+}
+
+private Texture getSelectedInventoryIcon(){
+    if(selectedPowerup != null)
+        return FxAssets.powerupIcons.get(selectedPowerup);
+
+    if(selectedSpicy != null)
+        return FxAssets.spicyIcons.get(selectedSpicy);
+
+    if(selectedMoreSpicy != null)
+        return FxAssets.moreSpicyIcons.get(selectedMoreSpicy);
+
+    if(selectedGodMode)
+        return FxAssets.godModeIcon;
+    return null;
+}
+
+
+private void consumeSelectedInventoryPowerup(){
+    if(inventorySelectionType != InventorySelectionType.POWERUP)
+        return;
+
+    if(selectedPowerup != null){
+        consumePowerup(selectedPowerup);
+        return;
+    }
+
+    if(selectedSpicy != null){
+        consumePowerup(selectedSpicy);
+        return;
+    }
+
+    if(selectedMoreSpicy != null){
+        consumePowerup(selectedMoreSpicy);
+        return;
+    }
+
+    if(selectedGodMode)
+        consumeGodMode();
+}
+
+private String getSelectedPowerupName(){
+    if(selectedPowerup != null){
+        if(selectedPowerup == Powerup.PowerupType.HEALTH)
+            return "HEALTH";
+        if(selectedPowerup == Powerup.PowerupType.SHIELD)
+            return "SHIELD";
+        if(selectedPowerup == Powerup.PowerupType.JETPACK)
+            return "JETPACK BOOST";
+        if(selectedPowerup == Powerup.PowerupType.FIRE_RATE)
+            return "FIRE RATE";
+    }
+
+    if(selectedSpicy != null){
+        if(selectedSpicy == Powerup.SpicyType.OVERDRIVE)
+            return "OVERDRIVE";
+        if(selectedSpicy == Powerup.SpicyType.RAPID_MOBILITY)
+            return "RAPID MOBILITY";
+        if(selectedSpicy == Powerup.SpicyType.BOTTOMLESS_MAG)
+            return "BOTTOMLESS MAG";
+        if(selectedSpicy == Powerup.SpicyType.DAMAGE_SURGE)
+            return "DAMAGE SURGE";
+        if(selectedSpicy == Powerup.SpicyType.GOLD_RUSH)
+            return "GOLD RUSH";
+        if(selectedSpicy == Powerup.SpicyType.SCORE_FRENZY)
+            return "SCORE FRENZY";
+    }
+
+    if(selectedMoreSpicy != null){
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.BERSERK)
+            return "BERSERK";
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.INFINITE_ASSAULT)
+            return "INFINITE ASSAULT";
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.HYPERDRIVE)
+            return "HYPERDRIVE";
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.FORTRESS)
+            return "FORTRESS";
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.DOUBLE_FORTUNE)
+            return "DOUBLE FORTUNE";
+    }
+
+    if(selectedGodMode)
+        return "GOD MODE";
+
+    return "";
+}
+
+private String getSelectedPowerupDescription(){
+    if(selectedPowerup != null){
+        if(selectedPowerup == Powerup.PowerupType.HEALTH)
+            return "Restores 80% of maximum health.";
+
+        if(selectedPowerup == Powerup.PowerupType.SHIELD)
+            return "Grants 60 shield HP. Damage hits the shield before health.";
+
+        if(selectedPowerup == Powerup.PowerupType.JETPACK)
+            return "Instantly restores jetpack fuel to maximum.";
+
+        if(selectedPowerup == Powerup.PowerupType.FIRE_RATE)
+            return "Doubles weapon fire rate.";
+    }
+
+    if(selectedSpicy != null){
+        if(selectedSpicy == Powerup.SpicyType.OVERDRIVE)
+            return "Increases weapon damage and fire rate by 40%.";
+
+        if(selectedSpicy == Powerup.SpicyType.RAPID_MOBILITY)
+            return "Increases movement speed and jetpack thrust by 50%.";
+
+        if(selectedSpicy == Powerup.SpicyType.BOTTOMLESS_MAG)
+            return "Weapons fire without consuming magazine ammo.";
+
+        if(selectedSpicy == Powerup.SpicyType.DAMAGE_SURGE)
+            return "Doubles weapon damage.";
+
+        if(selectedSpicy == Powerup.SpicyType.GOLD_RUSH)
+            return "Doubles all gold earned while active.";
+
+        if(selectedSpicy == Powerup.SpicyType.SCORE_FRENZY)
+            return "Doubles all score earned while active.";
+    }
+
+    if(selectedMoreSpicy != null){
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.BERSERK)
+            return "2x damage and 1.6x fire rate, but incoming damage increases by 25%.";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.INFINITE_ASSAULT)
+            return "Bottomless magazine with 1.4x fire rate.";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.HYPERDRIVE)
+            return "1.75x movement speed with unlimited jetpack fuel.";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.FORTRESS)
+            return "Grants 100 shield HP and reduces incoming damage by 50%.";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.DOUBLE_FORTUNE)
+            return "Doubles both gold and score earned.";
+    }
+    if(selectedGodMode)
+        return "Invulnerability, unlimited ammo and jetpack fuel, 2x damage and 2x fire rate.";
+
+    return "";
+}
+
+
+private String getSelectedPowerupDuration(){
+    if(selectedPowerup != null){
+        if(selectedPowerup == Powerup.PowerupType.HEALTH)
+            return "INSTANT";
+
+        if(selectedPowerup == Powerup.PowerupType.SHIELD)
+            return "UNTIL DEPLETED";
+
+        if(selectedPowerup == Powerup.PowerupType.JETPACK)
+            return "INSTANT";
+
+        if(selectedPowerup == Powerup.PowerupType.FIRE_RATE)
+            return "5 SEC";
+    }
+
+
+    if(selectedSpicy != null){
+        if(selectedSpicy == Powerup.SpicyType.OVERDRIVE)
+            return "12 SEC";
+
+        if(selectedSpicy == Powerup.SpicyType.RAPID_MOBILITY)
+            return "12 SEC";
+
+        if(selectedSpicy == Powerup.SpicyType.BOTTOMLESS_MAG)
+            return "10 SEC";
+
+        if(selectedSpicy == Powerup.SpicyType.DAMAGE_SURGE)
+            return "10 SEC";
+
+        if(selectedSpicy == Powerup.SpicyType.GOLD_RUSH)
+            return "15 SEC";
+
+        if(selectedSpicy == Powerup.SpicyType.SCORE_FRENZY)
+            return "15 SEC";
+    }
+
+
+    if(selectedMoreSpicy != null){
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.BERSERK)
+            return "12 SEC";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.INFINITE_ASSAULT)
+            return "15 SEC";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.HYPERDRIVE)
+            return "12 SEC";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.FORTRESS)
+            return "15 SEC";
+
+        if(selectedMoreSpicy == Powerup.MoreSpicyType.DOUBLE_FORTUNE)
+            return "20 SEC";
+    }
+
+    if(selectedGodMode)
+        return "8 SEC";
+
+    return "";
+}
+
+
+private int getSelectedPowerupAmount(){
+    if(selectedPowerup != null)
+        return inventory.getPowerupAmount(selectedPowerup);
+
+    if(selectedSpicy != null)
+        return inventory.getSpicyAmount(selectedSpicy);
+
+    if(selectedMoreSpicy != null)
+        return inventory.getMoreSpicyAmount(selectedMoreSpicy);
+
+    if(selectedGodMode)
+        return inventory.getGodModeAmount();
+
+    return 0;
+}
+
+private void drawSelectedPowerupInfo(float panelX, float panelY,float panelWidth, float panelHeight){
+    if(inventorySelectionType != InventorySelectionType.POWERUP)
+        return;
+
+    if(inventoryAnimation < 0.99f)
+        return;
+
+    float sx = panelWidth/1280f;
+    float sy = panelHeight/720f;
+
+    inventoryTitleFont.getData().setScale(sx);
+    inventoryBodyFont.getData().setScale(sx);
+    inventoryInfoFont.getData().setScale(sx);
+    inventoryButtonFont.getData().setScale(sx);
+
+    String name = getSelectedPowerupName();
+    String description = getSelectedPowerupDescription();
+    String duration = getSelectedPowerupDuration();
+    int amount = getSelectedPowerupAmount();
+
+    //TITLE BOX
+    drawInventoryCenteredText(inventoryTitleFont,name,panelX+835f*sx,panelY+238f*sy, 380f*sx,48f*sy,false);
+
+    //DESCRIPTION BOX
+    drawInventoryCenteredText(inventoryBodyFont, description, panelX+850f*sx, panelY+166f*sy, 350f*sx, 72f*sy, true);
+
+    //INFO ROWS
+    drawInventoryInfoRow("DURATION",duration,panelX+855f*sx,panelX+1200f*sx, panelY+158f*sy);
+    drawInventoryInfoRow( "OWNED","x"+amount,panelX+855f*sx,panelX+1200f*sx, panelY+128f*sy);
+
+    //BUTTON
+    String buttonText = amount > 0 ? "CONSUME" : "EMPTY";
+    drawInventoryCenteredText(inventoryButtonFont,buttonText,panelX+844f*sx,panelY+54f*sy, 372f*sx,42f*sy, false);
+}
+
+
+private void drawInventoryInfoRow(String label,String value,float leftX,float rightX,float y){
+    inventoryInfoFont.draw(batch,label,leftX,y);
+    inventoryGlyphLayout.setText(inventoryInfoFont,value);
+    inventoryInfoFont.draw(batch,value,rightX-inventoryGlyphLayout.width,y);
+}
+
+private void drawInventoryCenteredText(BitmapFont font, String text,float x,float y,float width,float height,boolean wrap){
+    inventoryGlyphLayout.setText( font, text, Color.WHITE, width, Align.center, wrap);
+    float textY =y+(height+inventoryGlyphLayout.height)/2f;
+    font.draw(batch, text, x, textY, width, Align.center, wrap);
+}
+
+private String getSelectedWeaponName(){
+    if(selectedWeapon == WeaponType.PISTOL)
+        return "PISTOL";
+
+    if(selectedWeapon == WeaponType.AR)
+        return "ASSAULT RIFLE";
+
+    if(selectedWeapon == WeaponType.SMG)
+        return "SMG";
+
+    if(selectedWeapon == WeaponType.SHOTGUN)
+        return "SHOTGUN";
+
+    if(selectedWeapon == WeaponType.SNIPER)
+        return "SNIPER RIFLE";
+
+    if(selectedWeapon == WeaponType.ROCKET_LAUNCHER)
+        return "ROCKET LAUNCHER";
+
+    return "";
+}
+
+private String getSelectedWeaponButtonText(){
+    if(selectedWeapon == null)
+        return "";
+
+    if(!inventory.ownsWeapon(selectedWeapon))
+        return "LOCKED";
+
+    if(selectedWeapon == weapon.getCurrentWeapon())
+        return "EQUIPPED";
+
+    return "EQUIP";
+}
+
+private void drawSelectedWeaponInfo(float panelX,float panelY,float panelWidth,float panelHeight){
+    if(inventorySelectionType != InventorySelectionType.WEAPON)
+        return;
+
+    if(selectedWeapon == null)
+        return;
+
+    if(inventoryAnimation < 0.99f)
+        return;
+
+    float sx = panelWidth/1280f;
+    float sy = panelHeight/720f;
+
+    inventoryTitleFont.getData().setScale(sx);
+    inventoryInfoFont.getData().setScale(sx);
+    inventoryButtonFont.getData().setScale(sx);
+
+    String name = getSelectedWeaponName();
+
+    int magazine = weapon.getBaseMagazineSize(selectedWeapon);
+    float headDamage = weapon.getBaseHeadDamage(selectedWeapon);
+    float bodyDamage = weapon.getBaseBodyDamage(selectedWeapon);
+    float fireRate = weapon.getBaseFireRate(selectedWeapon);
+    float reload = weapon.getBaseReloadSpeed(selectedWeapon);
+    int reserveAmmo = inventory.getAmmo(selectedWeapon);
+
+    drawInventoryCenteredText(inventoryTitleFont, name, panelX+835f*sx, panelY+302f*sy, 380f*sx, sy, false);
+
+    drawInventoryInfoRow("HEAD DAMAGE",Integer.toString((int)headDamage), panelX+855f*sx,panelX+1200f*sx,panelY+245f*sy);
+    drawInventoryInfoRow("BODY DAMAGE", Integer.toString((int)bodyDamage), panelX+855f*sx, panelX+1200f*sx, panelY+272f*sy);
+    drawInventoryInfoRow("FIRE RATE", fireRate < 0f ? "--" : Float.toString(fireRate),panelX+855f*sx, panelX+1200f*sx,panelY+215f*sy);
+    drawInventoryInfoRow("MAGAZINE", Integer.toString(magazine), panelX+855f*sx, panelX+1200f*sx,panelY+185f*sy);
+    drawInventoryInfoRow("RELOAD", reload+" SEC", panelX+855f*sx, panelX+1200f*sx, panelY+155f*sy);
+    drawInventoryInfoRow("RESERVE", Integer.toString(reserveAmmo), panelX+855f*sx, panelX+1200f*sx, panelY+128f*sy);
+
+    String buttonText = getSelectedWeaponButtonText();
+    drawInventoryCenteredText(inventoryButtonFont,buttonText,panelX+844f*sx,panelY+54f*sy, 372f*sx,42f*sy, false);
+}
+
+private void useInventoryAction(){
+    if(inventorySelectionType == InventorySelectionType.POWERUP){
+        consumeSelectedInventoryPowerup();
+        return;
+    }
+    if(inventorySelectionType == InventorySelectionType.WEAPON){
+        equipSelectedWeapon();
+    }
+}
+
+private void equipSelectedWeapon(){
+    if(selectedWeapon == null)
+        return;
+
+    if(!inventory.ownsWeapon(selectedWeapon))
+        return;
+
+    if(selectedWeapon == WeaponType.ROCKET_LAUNCHER)
+        return;
+
+    if(selectedWeapon == weapon.getCurrentWeapon())
+        return;
+
+    weapon.equipWeapon(selectedWeapon);
+    refreshWeaponPowerupStats();
+}
+
 
 
 

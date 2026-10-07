@@ -82,6 +82,14 @@ public final class FxAssets{
     public static ObjectMap<Powerup.MoreSpicyType,Texture> moreSpicyIcons;
     public static ObjectMap<Weapon.WeaponType,Texture> weaponRewardIcons;
 
+    public static Texture inventoryBag;
+    public static Texture inventoryBagHover;
+    public static Texture inventoryBagPressed;
+    public static Texture inventoryPanel;
+    public static Texture inventoryPanelGun;
+    public static Texture inventoryWeaponLocked;
+    public static Texture inventoryWeaponEquipped;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -181,6 +189,14 @@ public final class FxAssets{
         weaponRewardIcons.put(Weapon.WeaponType.SHOTGUN,new Texture(guns+"shotgun.png"));
         weaponRewardIcons.put(Weapon.WeaponType.SNIPER,new Texture(guns+"sniper.png"));
         weaponRewardIcons.put(Weapon.WeaponType.ROCKET_LAUNCHER,new Texture(guns+"rocket_launcher.png"));
+
+        inventoryBag = new Texture(AssetPaths.Hud.INVENTORY_BAG);
+        inventoryBagHover = new Texture(AssetPaths.Hud.INVENTORY_BAG_HOVER);
+        inventoryBagPressed = new Texture(AssetPaths.Hud.INVENTORY_BAG_PRESSED);
+        inventoryPanel = new Texture(AssetPaths.Hud.INVENTORY_PANEL);
+        inventoryPanelGun = new Texture(AssetPaths.Hud.INVENTORY_PANEL_GUN);
+        inventoryWeaponLocked = new Texture(AssetPaths.Hud.INVENTORY_WEAPON_LOCKED);
+        inventoryWeaponEquipped = new Texture(AssetPaths.Hud.INVENTORY_WEAPON_EQUIPPED);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -204,10 +220,16 @@ public final class FxAssets{
         playerHealthFillTexture.dispose();
         playerHealthIconTexture.dispose();
         reloadIconTexture.dispose();
-        emptyMagazineTexture.dispose();
         scoreDashboard.dispose();
         goldIcon.dispose();
         scoreIcon.dispose();
         bestScoreIcon.dispose();
+        inventoryBag.dispose();
+        inventoryBagHover.dispose();
+        inventoryBagPressed.dispose();
+        inventoryPanel.dispose();
+        inventoryPanelGun.dispose();
+        inventoryWeaponLocked.dispose();
+        inventoryWeaponEquipped.dispose();
     }
 }

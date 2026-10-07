@@ -1060,3 +1060,11 @@ ui/hud/reload_icon.png
 ui/hud/scope_overlay.png
 ui/hud/score_dashboard_frame.png
 ui/hud/score_icon.png
+ui/inventory/inventory_bag_button.png
+ui/inventory/inventory_bag_button_hover.png
+ui/inventory/inventory_bag_button_pressed.png
+ui/inventory/inventory_bag_icon.png
+ui/inventory/inventory_panel_gun.png
+ui/inventory/inventory_panel_icon.png
+ui/inventory/weapon_equipped.png
+ui/inventory/weapon_locked.png
