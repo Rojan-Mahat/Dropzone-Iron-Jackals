@@ -89,14 +89,7 @@ public class ShooterGame extends ApplicationAdapter {
     private int drillerCount = 0;
     private int droneCount = 0;
 
-    private int pendingScore= 0;
     private int currentScore = 0;
-    private int bestScore = 0;
-
-    private int nextHeadshotReward = 5;
-    private int nextBodyshotReward = 10;
-    private int nextLimbshotReward = 15;
-    private int nextKillReward = 10;
     private LootCrate activeLootCrate;
 
     private final int WEAPON_INITIAL_CAPACITY =5;
@@ -128,11 +121,6 @@ public class ShooterGame extends ApplicationAdapter {
     private float DRILLER_RESPAWN_TIMER = 0f;
     private float DRONE_RESPAWN_TIMER = 0f;
 
-    private static float HEADSHOTCOUNT = 0;
-    private static float BODYSHOTCOUNT = 0;
-    private static float LIMBSHOTCOUNT = 0;
-    private static int TOTAL_KILL_COUNT =0;
-
     private float difficulty = 0;
     private boolean easyMode = true;
     private boolean mediumMode = false;
@@ -143,6 +131,7 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Rectangle> drillerSpawnPoints;
     private Array<LootCrate> lootCrates;
     private Inventory inventory;
+    private RunState runState;
     private Array<Rectangle> specialCrateSpawnPoints;
     private float SPECIAL_CRATE_TIMER = 0f;
     //private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,75f);
@@ -341,6 +330,9 @@ public class ShooterGame extends ApplicationAdapter {
 
     private boolean reloading = false;
     private float reloadTimer = 0f;
+
+    private boolean pauseMenuOpen = false;
+    private PlayerProfile playerProfile;
         
 
     @Override
@@ -444,11 +436,13 @@ public class ShooterGame extends ApplicationAdapter {
         riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
         heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
 
-        inventory = new Inventory();
+        playerProfile = new PlayerProfile();
+        inventory = playerProfile.getInventory();
+        runState = new RunState();
         int roll = MathUtils.random(1,1);
         if(roll == 1){
             inventory.addWeapon(weapon.getCurrentWeapon());
-            inventory.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY* weapon.getMagazineSize());
+            runState.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY* weapon.getMagazineSize());
         }
         lootCrates = new Array<>();
         FxAssets.loadOnce();
@@ -460,23 +454,14 @@ public class ShooterGame extends ApplicationAdapter {
         inventory.addWeapon(WeaponType.SHOTGUN);
         inventory.addWeapon(WeaponType.SNIPER);
         inventory.addWeapon(WeaponType.ROCKET_LAUNCHER);
-        inventory.addAmmo(WeaponType.PISTOL,
-    5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
 
-inventory.addAmmo(WeaponType.AR,
-    5*weapon.getBaseMagazineSize(WeaponType.AR));
-
-inventory.addAmmo(WeaponType.SMG,
-    5*weapon.getBaseMagazineSize(WeaponType.SMG));
-
-inventory.addAmmo(WeaponType.SHOTGUN,
-    5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
-
-inventory.addAmmo(WeaponType.SNIPER,
-    5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
-
-inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
-    5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
+        runState.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize());
+        runState.addAmmo(WeaponType.PISTOL,5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
+        runState.addAmmo(WeaponType.AR,5*weapon.getBaseMagazineSize(WeaponType.AR));
+        runState.addAmmo(WeaponType.SMG,5*weapon.getBaseMagazineSize(WeaponType.SMG));
+        runState.addAmmo(WeaponType.SHOTGUN,5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
+        runState.addAmmo(WeaponType.SNIPER,5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
+        runState.addAmmo(WeaponType.ROCKET_LAUNCHER,5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
     }
 
     @Override
@@ -487,6 +472,8 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
             if(inventoryOpen || inventoryAnimation > 0f)
                 inventoryOpen = false;
+            else
+                pauseMenuOpen =! pauseMenuOpen;
         }
 
         if(Gdx.input.justTouched()){
@@ -504,7 +491,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
             } 
         }
         updateInventoryAnimation(dt);
-        boolean gamePaused = inventoryBlockingGameplay();
+        boolean gamePaused = gameplayBlocked();
         float worldDt = gamePaused ? 0f : dt;
         Vector2 mouseWorldPosition = getMouseWorldPosition();
         if(!gamePaused){
@@ -1627,7 +1614,7 @@ private void drawJetpackDisabledHud(){
             for(Rectangle rect :enemy.getHeadshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
-                    HEADSHOTCOUNT++;
+                    runState.addHeadshot();
                     enemy.enemyHurt(bullet.getHeadDamage());
                     bullet.considerWasted();
                     headshot = true;
@@ -1640,7 +1627,7 @@ private void drawJetpackDisabledHud(){
             for(Rectangle rect : enemy.getBodyshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
-                    BODYSHOTCOUNT++;
+                    runState.addBodyshot();
                     enemy.enemyHurt(bullet.getBodyDamage());
                     bullet.considerWasted();
                     bodyshot = true;
@@ -1653,7 +1640,7 @@ private void drawJetpackDisabledHud(){
             for(Rectangle rect : enemy.getLimbshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
-                    LIMBSHOTCOUNT++;
+                    runState.addLimbshot();
                     enemy.enemyHurt(bullet.getLimbDamage());
                     bullet.considerWasted();
                     break;
@@ -1714,21 +1701,21 @@ private void drawJetpackDisabledHud(){
             if(enemies.get(i).isReadytoBeRemoved()){
                 if(enemies.get(i).getType()== EnemyType.RIFLEMAN){
                     riflemanCount--;
-                    pendingScore+=10;
+                    runState.addPendingScore(10);
                 }
                 if(enemies.get(i).getType()== EnemyType.HEAVY){
                     heavyCount--;
-                    pendingScore+=25;
+                    runState.addPendingScore(25);
                 }
                 if(enemies.get(i).getType()== EnemyType.DRILL_CRAWLER){
                     drillerCount--;
-                    pendingScore+=10;
+                    runState.addPendingScore(10);
                 }
                 if(enemies.get(i).getType()== EnemyType.HOVER_DRONE){
                     droneCount--;
-                    pendingScore+=5;
+                    runState.addPendingScore(5);
                 }
-                TOTAL_KILL_COUNT++;
+                runState.addKill();
                 spawnLootCrate(enemies.get(i).getEnemyDeathLocation());
                 enemies.removeIndex(i);
             } 
@@ -1736,7 +1723,7 @@ private void drawJetpackDisabledHud(){
     }
 
     private void updateGameTracks(){
-        if(TOTAL_KILL_COUNT < 20){
+        if(runState.getKillCount() < 20){
             easyMode = true;
             mediumMode = false;
             hardMode = false;
@@ -1748,32 +1735,32 @@ private void drawJetpackDisabledHud(){
             HEAVY_RESPAWN_TIME = 28f;
             MAX_ACTIVE_ENEMIES = 6;
 
-            if(HEADSHOTCOUNT >= nextHeadshotReward){
-                pendingScore+=40;
+            if(runState.getHeadshotCount()>= runState.getNextHeadshotReward()){
+                runState.addPendingScore(40);
                 inventory.addGold(modifyGoldReward(5));
-                nextHeadshotReward+=5;
+                runState.advanceHeadshotReward();
             }
 
-            if(BODYSHOTCOUNT >= nextBodyshotReward){
-                pendingScore+=25;
+            if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
+                runState.addPendingScore(25);
                 inventory.addGold(modifyGoldReward(3));
-                nextBodyshotReward+=10;
+                runState.advanceBodyshotReward();
             }
 
-            if(LIMBSHOTCOUNT >= nextLimbshotReward){
-                pendingScore+=15;
+            if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
+                runState.addPendingScore(15);
                 inventory.addGold(modifyGoldReward(2));
-                nextLimbshotReward+=15;
+                runState.advanceLimbshotReward();
             }
 
-            if(TOTAL_KILL_COUNT >= nextKillReward){
-                pendingScore+=100;
+            if(runState.getKillCount() >= runState.getNextKillReward()){
+                runState.addPendingScore(100);
                 inventory.addGold(modifyGoldReward(10));
-                nextKillReward+=10;
+                runState.advanceKillReward();
             }
         }
 
-        else if(TOTAL_KILL_COUNT < 40){
+        else if(runState.getKillCount() < 40){
             easyMode = false;
             mediumMode = true;
             hardMode = false;
@@ -1785,32 +1772,32 @@ private void drawJetpackDisabledHud(){
             HEAVY_RESPAWN_TIME = 20f;
             MAX_ACTIVE_ENEMIES = 8;
 
-            if(HEADSHOTCOUNT >= nextHeadshotReward){
-                pendingScore+=50;
+            if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
+                runState.addPendingScore(50);
                 inventory.addGold(modifyGoldReward(7));
-                nextHeadshotReward+=5;
+                runState.advanceHeadshotReward();
             }
 
-            if(BODYSHOTCOUNT >= nextBodyshotReward){
-                pendingScore+=30;
+            if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
+                runState.addPendingScore(30);
                 inventory.addGold(modifyGoldReward(4));
-                nextBodyshotReward+=10;
+                runState.advanceBodyshotReward();
             }
 
-            if(LIMBSHOTCOUNT >= nextLimbshotReward){
-                pendingScore+=20;
+            if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
+                runState.addPendingScore(20);
                 inventory.addGold(modifyGoldReward(3));
-                nextLimbshotReward+=15;
+                runState.advanceLimbshotReward();
             }
 
-            if(TOTAL_KILL_COUNT >= nextKillReward){
-                pendingScore+=140;
+            if(runState.getKillCount() >= runState.getNextKillReward()){
+                runState.addPendingScore(140);
                 inventory.addGold(modifyGoldReward(15));
-                nextKillReward+=10;
+                runState.advanceKillReward();
             }
         }
 
-        else if(TOTAL_KILL_COUNT < 70){
+        else if(runState.getKillCount()< 70){
             easyMode = false;
             mediumMode = false;
             hardMode = true;
@@ -1822,28 +1809,28 @@ private void drawJetpackDisabledHud(){
             HEAVY_RESPAWN_TIME = 14f;
             MAX_ACTIVE_ENEMIES = 10;
 
-            if(HEADSHOTCOUNT >= nextHeadshotReward){
-                pendingScore+=70;
+            if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
+                runState.addPendingScore(70);
                 inventory.addGold(modifyGoldReward(10));
-                nextHeadshotReward+=5;
+                runState.advanceHeadshotReward();
             }
 
-            if(BODYSHOTCOUNT >= nextBodyshotReward){
-                pendingScore+=45;
+            if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
+                runState.addPendingScore(45);
                 inventory.addGold(modifyGoldReward(6));
-                nextBodyshotReward+=10;
+                runState.advanceBodyshotReward();
             }
 
-            if(LIMBSHOTCOUNT >= nextLimbshotReward){
-                pendingScore+=30;
+            if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
+                runState.addPendingScore(30);
                 inventory.addGold(modifyGoldReward(4));
-                nextLimbshotReward+=15;
+                runState.advanceLimbshotReward();
             }
 
-            if(TOTAL_KILL_COUNT >= nextKillReward){
-                pendingScore+=200;
+            if(runState.getKillCount() >= runState.getNextKillReward()){
+                runState.addPendingScore(200);
                 inventory.addGold(modifyGoldReward(20));
-                nextKillReward+=10;
+                runState.advanceKillReward();
             }
         }
 
@@ -1859,35 +1846,34 @@ private void drawJetpackDisabledHud(){
             HEAVY_RESPAWN_TIME = 9f;
             MAX_ACTIVE_ENEMIES = 11;
 
-            if(HEADSHOTCOUNT >= nextHeadshotReward){
-                pendingScore+=100;
+            if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
+                runState.addPendingScore(100);
                 inventory.addGold(modifyGoldReward(15));
-                nextHeadshotReward+=5;
+                runState.advanceHeadshotReward();
             }
 
-            if(BODYSHOTCOUNT >= nextBodyshotReward){
-                pendingScore+=60;
+            if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
+                runState.addPendingScore(60);
                 inventory.addGold(modifyGoldReward(8));
-                nextBodyshotReward+=10;
+                runState.advanceBodyshotReward();
             }
 
-            if(LIMBSHOTCOUNT >= nextLimbshotReward){
-                pendingScore+=40;
+            if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
+                runState.addPendingScore(40);
                 inventory.addGold(modifyGoldReward(15));
-                nextLimbshotReward+=15;
+                runState.advanceLimbshotReward();
             }
 
-            if(TOTAL_KILL_COUNT >= nextKillReward){
-                pendingScore+=300;
+            if(runState.getKillCount() >= runState.getNextKillReward()){
+                runState.addPendingScore(300);
                 inventory.addGold(modifyGoldReward(30));
-                nextKillReward+=10;
+                runState.advanceKillReward();
             }
         }
 
-        currentScore += modifyScoreReward(pendingScore);
-        if(currentScore > bestScore)
-            bestScore = currentScore;
-        pendingScore = 0;
+        runState.addScore(modifyScoreReward(runState.getPendingScore()));
+        playerProfile.updateBestScore(runState.getCurrentScore());
+        runState.clearPendingScore();
     }
 
 
@@ -2345,7 +2331,7 @@ private void drawJetpackDisabledHud(){
             batch.draw(weapon.getNoAmmoIconTexture(),ammoIconX,ammoIconY,ammoIconSize,ammoIconSize);
 
         String magazineText = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
-        String reserveText = "RES "+inventory.getAmmo(weapon.getCurrentWeapon());
+        String reserveText = "RES "+runState.getAmmo(weapon.getCurrentWeapon());
 
         hudFont.getData().setScale(1.15f);
         hudFont.draw(batch,magazineText,ammoPanelX+90f*ammoPanelScale,ammoPanelY+55f*ammoPanelScale);
@@ -2405,7 +2391,7 @@ private void drawJetpackDisabledHud(){
         float killValueWidth = 88f*killScaleX;
         float killValueHeight = 32f*killScaleY;
 
-        String killValueText = Integer.toString(TOTAL_KILL_COUNT);
+        String killValueText = Integer.toString(runState.getKillCount());
         hudFont.getData().setScale(0.85f);
         scopeValueLayout.setText(hudFont,killValueText);
 
@@ -2508,7 +2494,7 @@ private void drawJetpackDisabledHud(){
         float keyIconX = x+width-keyIconSize;
         float keyIconY =  y-keyIconSize-6f;
 
-        String keyText = inventory.hasKey() ? "x1" : "x0";
+        String keyText = runState.hasKey() ? "x1" : "x0";
 
         batch.draw(FxAssets.goldIcon,goldX,zoneY,iconSize,iconSize);
         batch.draw(FxAssets.scoreIcon,scoreX,zoneY,iconSize,iconSize);
@@ -2517,8 +2503,8 @@ private void drawJetpackDisabledHud(){
 
         hudFont.draw(batch,keyText,keyIconX-26f,keyIconY+21f);
         hudFont.draw(batch,Integer.toString(inventory.getGold()),goldX+48f*scale,zoneY+27f*scale);
-        hudFont.draw(batch,Integer.toString(currentScore),scoreX+48f*scale,zoneY+27f*scale);
-        hudFont.draw(batch,Integer.toString(bestScore),bestX+48f*scale,zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(runState.getCurrentScore()),scoreX+48f*scale,zoneY+27f*scale);
+        hudFont.draw(batch,Integer.toString(playerProfile.getBestScore()),bestX+48f*scale,zoneY+27f*scale);
     }
 
 
@@ -2529,7 +2515,7 @@ private void drawJetpackDisabledHud(){
             return;
         if(weapon.getCurrentAmmo() >= weapon.getMagazineSize())
             return;
-        if(inventory.getAmmo(weapon.getCurrentWeapon()) <= 0)
+        if(runState.getAmmo(weapon.getCurrentWeapon()) <= 0)
             return;
 
         reloading = true;
@@ -2543,7 +2529,7 @@ private void drawJetpackDisabledHud(){
         if(reloadTimer < weapon.getReloadSpeed())
             return;
         int neededAmmo = weapon.getMagazineSize()-weapon.getCurrentAmmo();
-        int ammoToLoad = inventory.takeAmmo(weapon.getCurrentWeapon(),neededAmmo);
+        int ammoToLoad = runState.takeAmmo(weapon.getCurrentWeapon(),neededAmmo);
         weapon.addCurrentAmmo(ammoToLoad);
 
         reloadTimer = 0f;
@@ -2711,13 +2697,22 @@ private void claimActiveCrate(){
 }
 
 private void updatePendingLoot(LootCrate.Contents loot){
-    currentScore+= modifyScoreReward(loot.getScore());
-    if(currentScore > bestScore)
-        bestScore = currentScore;
+    runState.addScore(modifyScoreReward(loot.getScore()));
+    playerProfile.updateBestScore(runState.getCurrentScore());
     inventory.addGold(modifyGoldReward(loot.getGold()));
-    inventory.addAmmo(weapon.getCurrentWeapon(), (loot.getAmmoReward()* WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize())/100);
+    runState.addAmmo(weapon.getCurrentWeapon(), (loot.getAmmoReward()* WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize())/100);
     inventory.addPowerupFromArray(loot.getPowerups());
-    inventory.addWeaponFromArray(loot.getWeapons(),WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize());
+
+    for(WeaponType type : loot.getWeapons()){
+        boolean alreadyOwned = inventory.ownsWeapon(type);
+        inventory.addWeapon(type);
+        int initialAmmo = WEAPON_INITIAL_CAPACITY*weapon.getBaseMagazineSize(type);
+        if(alreadyOwned)
+            runState.addAmmo(type,initialAmmo*2);
+        else
+            runState.addAmmo(type,initialAmmo);
+    }
+
     if(loot.hasJackpot()){
         int goldCount = MathUtils.random(200,350);
         inventory.addGold(modifyGoldReward(goldCount));
@@ -4027,7 +4022,7 @@ private void drawSelectedWeaponInfo(float panelX,float panelY,float panelWidth,f
     float bodyDamage = weapon.getBaseBodyDamage(selectedWeapon);
     float fireRate = weapon.getBaseFireRate(selectedWeapon);
     float reload = weapon.getBaseReloadSpeed(selectedWeapon);
-    int reserveAmmo = inventory.getAmmo(selectedWeapon);
+    int reserveAmmo = runState.getAmmo(selectedWeapon);
 
     drawInventoryCenteredText(inventoryTitleFont, name, panelX+835f*sx, panelY+302f*sy, 380f*sx, sy, false);
 
@@ -4373,6 +4368,18 @@ private float getReloadProgress(){
     if(!reloading)
         return 0f;
     return MathUtils.clamp(reloadTimer/weapon.getReloadSpeed(),0f,1f);
+}
+
+private boolean gameplayBlocked(){
+    return inventoryBlockingGameplay() || pauseMenuOpen;
+}
+
+private void resumeGame(){
+    pauseMenuOpen = false;
+}
+
+private void restartGame(){
+
 }
 
  
