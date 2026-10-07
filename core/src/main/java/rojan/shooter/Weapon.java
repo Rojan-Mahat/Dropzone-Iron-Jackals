@@ -33,7 +33,7 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_PISTOL = 30f;
     private final float BASE_LIMB_DAMAGE_PISTOL = 20f;
     private final float BASE_FIRE_RATE_PISTOL = 2.5f;
-    private final float BASE_SCOPE_PISTOL = 2.3f;
+    private final float BASE_SCOPE_PISTOL = 1.25f;
     private final boolean BASE_AUTOMATIC_PISTOL = false;
 
 
@@ -44,7 +44,7 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_AR = 30f;
     private final float BASE_LIMB_DAMAGE_AR = 20f;
     private final float BASE_FIRE_RATE_AR = 5f;
-    private final float BASE_SCOPE_AR = 4.2f;
+    private final float BASE_SCOPE_AR = 1.4f;
     private final boolean BASE_AUTOMATIC_AR = true;
 
 
@@ -54,8 +54,8 @@ public class Weapon{
     private final float BASE_HEAD_DAMAGE_SHOTGUN = 180f;
     private final float BASE_BODY_DAMAGE_SHOTGUN = 80f;
     private final float BASE_LIMB_DAMAGE_SHOTGUN = 50f;
-    private final float BASE_FIRE_RATE_SHOTGUN = 1.5f;
-    private final float BASE_SCOPE_SHOTGUN = 2f;
+    private final float BASE_FIRE_RATE_SHOTGUN = 1.15f;
+    private final float BASE_SCOPE_SHOTGUN = 1.12f;
     private final boolean BASE_AUTOMATIC_SHOTGUN = false;
 
 
@@ -66,7 +66,7 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_SMG = 18f;
     private final float BASE_LIMB_DAMAGE_SMG = 10f;
     private final float BASE_FIRE_RATE_SMG = 9f;
-    private final float BASE_SCOPE_SMG = 3f;
+    private final float BASE_SCOPE_SMG = 1.35f;
     private final boolean BASE_AUTOMATIC_SMG = true;
 
 
@@ -77,7 +77,7 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_SNIPER = 80f;
     private final float BASE_LIMB_DAMAGE_SNIPER = 50f;
     private final float BASE_FIRE_RATE_SNIPER = 1f;
-    private final float BASE_SCOPE_SNIPER = 8f;
+    private final float BASE_SCOPE_SNIPER = 2.25f;
     private final boolean BASE_AUTOMATIC_SNIPER = false;
 
 
@@ -88,7 +88,7 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_ROCKET = 30f;
     private final float BASE_LIMB_DAMAGE_ROCKET = 20f;
     private final boolean BASE_AUTOMATIC_ROCKET = false;
-    private final float BASE_SCOPE_ROCKET = 5f;
+    private final float BASE_SCOPE_ROCKET = 1.7f;
     private final float BASE_FIRE_RATE_ROCKET_LAUNCHER = 0.75f;
 
     private final float PISTOL_VISUAL_SCALE = 1.20f;
@@ -391,6 +391,10 @@ public class Weapon{
         return currentWeapon;
     }
 
+    public float getMaxScope(){
+        return maxScope;
+    }
+
     public float getHeadDamage(){
         return headDamage;
     }
@@ -454,7 +458,7 @@ public class Weapon{
             fireRate = BASE_FIRE_RATE_PISTOL;
         if(currentWeapon == WeaponType.SNIPER)
             fireRate = BASE_FIRE_RATE_SNIPER;
-        if(currentWeapon == WeaponType.ROCKET_LAUNCHER){}
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER)
             fireRate = BASE_FIRE_RATE_ROCKET_LAUNCHER;
         if(currentWeapon == WeaponType.SHOTGUN)
             fireRate = BASE_FIRE_RATE_SHOTGUN;
@@ -608,6 +612,10 @@ public class Weapon{
         float rotatedY = dx*sin+dy*cos;
         
         return new Vector2( pivotX+rotatedX, pivotY+rotatedY);
+    }
+
+    public float getReloadSpeed(){
+        return reloadSpeed;
     }
 
 

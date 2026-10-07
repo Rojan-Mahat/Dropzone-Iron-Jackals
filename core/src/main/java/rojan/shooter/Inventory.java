@@ -37,6 +37,10 @@ public class Inventory{
         keyOwned = false;
     }
 
+    public boolean hasKey(){
+        return keyOwned;
+    }
+
     public void addWeapon(Weapon.WeaponType type){
         if(!ownedWeapons.contains(type,true))
             ownedWeapons.add(type);
@@ -149,6 +153,8 @@ public class Inventory{
         godMode--;
         return true;
     }
+
+
 
 
 

@@ -92,6 +92,9 @@ public final class FxAssets{
     public static TextureRegion[] groundExplosion;
     public static TextureRegion[] midAirExplosion;
 
+    public static Texture shopIcon;
+    public static Texture keyIcon;
+
     public static class PowerAuraAnimation{
         Texture backTexture;
         Texture frontTexture;
@@ -125,6 +128,11 @@ public final class FxAssets{
     public static Texture powerSpicy;
     public static Texture powerMoreSpicy;
     public static Texture powerSpecial;
+
+    public static Texture scopeButton;
+    public static Texture scopeButtonHover;
+    public static Texture scopeButtonPressed;
+    public static Texture killBadge;
 
     public static void loadOnce(){
         if(loadedTextures != null)
@@ -243,6 +251,16 @@ public final class FxAssets{
 
         groundExplosion = loadFrames(AssetPaths.Explosion.GROUND,AssetPaths.Explosion.GROUND_FRAMES);
         midAirExplosion = loadFrames(AssetPaths.Explosion.MID_AIR,AssetPaths.Explosion.MID_AIR_FRAMES);
+
+        scopeButton = new Texture(AssetPaths.Hud.SCOPE_BUTTON);
+        scopeButtonHover = new Texture(AssetPaths.Hud.SCOPE_BUTTON_HOVER);
+        scopeButtonPressed = new Texture(AssetPaths.Hud.SCOPE_BUTTON_PRESSED);
+        killBadge = new Texture(AssetPaths.Hud.KILL_BADGE);
+
+        shopIcon = new Texture(AssetPaths.Shop.ICON);
+        keyIcon = new Texture(AssetPaths.Hud.KEY_ICON);
+        shopIcon.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+        keyIcon.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -291,5 +309,11 @@ public final class FxAssets{
                 aura.dispose();
             powerAuraCache.clear();
         }
+        scopeButton.dispose();
+        scopeButtonHover.dispose();
+        scopeButtonPressed.dispose();
+        killBadge.dispose();
+        shopIcon.dispose();
+        keyIcon.dispose();
     }
 }

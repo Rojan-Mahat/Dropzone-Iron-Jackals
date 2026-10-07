@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="13" nextobjectid="619">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="64" height="36" tilewidth="64" tileheight="64" infinite="0" nextlayerid="13" nextobjectid="622">
  <tileset firstgid="1" source="terrain.tsx"/>
  <layer id="1" name="Tile Layer 1" width="64" height="36" visible="0" locked="1">
   <data encoding="csv">
@@ -44,7 +44,7 @@
  <imagelayer id="4" name="background" locked="1" opacity="0.5">
   <image source="../background/background.png" width="4096" height="2304"/>
  </imagelayer>
- <objectgroup id="6" name="reference">
+ <objectgroup id="6" name="reference" locked="1">
   <object id="271" name="Camera" x="1449.23" y="759.607" width="1200" height="780"/>
   <object id="422" name="forJetpack" x="1919.25" y="1253.85" width="80" height="120"/>
   <object id="424" name="jetPack" x="1902.05" y="1288.69" width="75" height="90"/>
@@ -188,7 +188,7 @@
   <object id="276" x="1025.96" y="2055.01" width="528.43" height="139.061"/>
   <object id="278" x="1847.96" y="2503.09"/>
  </objectgroup>
- <objectgroup color="#ff0000" id="7" name="collision" locked="1">
+ <objectgroup color="#ff0000" id="7" name="collision" visible="0" locked="1">
   <object id="217" x="-1.62344" y="1055.62" width="205.666" height="79.5934"/>
   <object id="218" x="616.344" y="1195.82" width="136.392" height="71.8237"/>
   <object id="219" x="461.056" y="1275.65" width="363.614" height="64.3174"/>
@@ -271,7 +271,7 @@
   <object id="391" x="2615.08" y="2157.25" width="261.259" height="104.504"/>
   <object id="392" x="2575.27" y="1900.97" width="303.558" height="77.1336"/>
  </objectgroup>
- <objectgroup id="9" name="Player" visible="0" locked="1">
+ <objectgroup id="9" name="Player" locked="1">
   <object id="406" name="PlayerSpawn" x="2532.48" y="1402.8" width="80" height="120"/>
   <object id="399" name="playerMovement" x="2547.3" y="1414.09" width="56.5681" height="108.702"/>
   <object id="402" name="crouchMovement" x="2547.73" y="1443.89" width="55.2354" height="78.9076"/>
@@ -500,7 +500,7 @@
   <object id="555" name="rifleman_1" x="1308.74" y="93.2044" width="2" height="2"/>
   <object id="556" name="rifleman_3" x="62.138" y="235.914" width="2" height="2"/>
   <object id="557" name="rifleman_2" x="460.242" y="254.871"/>
-  <object id="558" name="rifleman_4" x="773.196" y="513.555" width="2" height="2"/>
+  <object id="558" name="rifleman_4" x="773.196" y="600.162" width="2" height="2"/>
   <object id="559" name="rifleman_5" x="77.028" y="1007.42" width="2" height="2"/>
   <object id="560" name="rifleman_6" x="544.101" y="1134.02" width="2" height="2"/>
   <object id="561" name="rifleman_7" x="84.0015" y="1514.57" width="2" height="2"/>
@@ -547,13 +547,14 @@
   <object id="605" name="drill" x="1087.73" y="1764.04" width="54.4806" height="39.4514"/>
   <object id="606" name="drill" x="2030.03" y="1631.84" width="63.8738" height="80.7815"/>
   <object id="607" name="drill" x="2806.69" y="1570.54" width="20.665" height="13.1505"/>
-  <object id="611" name="special_crate" x="2040.93" y="1317.53" width="63.2494" height="58.8494"/>
+  <object id="611" name="special_crate" x="2229.55" y="572.99" width="63.2494" height="58.8494"/>
   <object id="612" name="special_crate" x="2038.07" y="2050.84" width="63.2494" height="58.8494"/>
-  <object id="613" name="special_crate" x="797.149" y="2165.27" width="63.2494" height="58.8494"/>
-  <object id="614" name="special_crate" x="42.0976" y="988.387" width="63.2494" height="58.8494"/>
-  <object id="615" name="special_crate" x="13.7389" y="297.143" width="63.2494" height="58.8494"/>
+  <object id="613" name="special_crate" x="780.147" y="2159.6" width="63.2494" height="58.8494"/>
+  <object id="614" name="special_crate" x="144.16" y="990.536" width="63.2494" height="58.8494"/>
+  <object id="615" name="special_crate" x="93.0815" y="291.476" width="63.2494" height="58.8494"/>
   <object id="616" name="special_crate" x="3654.29" y="1353.51" width="63.2494" height="58.8494"/>
   <object id="617" name="special_crate" x="3579.85" y="2175.91" width="63.2494" height="58.8494"/>
   <object id="618" name="special_crate" x="4033.59" y="297.143" width="63.2494" height="58.8494"/>
+  <object id="619" name="shop" x="1767.4" y="1353.34" width="54.1892" height="40.2946"/>
  </objectgroup>
 </map>

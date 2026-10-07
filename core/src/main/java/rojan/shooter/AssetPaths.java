@@ -37,6 +37,13 @@ public final class AssetPaths {
         public static final String POWER_SPICY = "ui/hud/power/primary_tier_spicy.png";
         public static final String POWER_MORE_SPICY = "ui/hud/power/primary_tier_more_spicy.png";
         public static final String POWER_SPECIAL = "ui/hud/power/primary_tier_special.png";
+
+        public static final String SCOPE_BUTTON = "ui/hud/scope/scope_button_normal.png";
+        public static final String SCOPE_BUTTON_HOVER = "ui/hud/scope/scope_button_hover.png";
+        public static final String SCOPE_BUTTON_PRESSED = "ui/hud/scope/scope_button_pressed.png";
+        public static final String KILL_BADGE = "ui/hud/kill/kill_badge.png";
+
+        public static final String KEY_ICON = "ui/hud/keyIcon.png";
 }
     
 
@@ -45,6 +52,11 @@ public final class AssetPaths {
         public static final String BASE = "sprites/enemy_projectiles/";
         public static final String HEAVY_PROJECTILE= BASE + "heavy.png";
         public static final String RIFLEMAN_PROJECTILE= BASE + "rifleman.png";
+    }
+
+    public static final class Shop{
+        private Shop(){}
+        public static final String ICON = "ui/shop/shopICon.png";
     }
 
     public static final class FX{

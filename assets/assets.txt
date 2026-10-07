@@ -1061,6 +1061,8 @@ ui/hud/hp_icon.png
 ui/hud/jetpack_fuel_fill.png
 ui/hud/jetpack_fuel_frame.png
 ui/hud/jetpack_icon.png
+ui/hud/keyIcon.png
+ui/hud/kill/kill_badge.png
 ui/hud/no_ammo_icon.png
 ui/hud/player_health_fill.png
 ui/hud/player_health_frame.png
@@ -1085,6 +1087,9 @@ ui/hud/power/secondary_tier_special.png
 ui/hud/power/secondary_tier_spicy.png
 ui/hud/power/secondary_urgent.png
 ui/hud/reload_icon.png
+ui/hud/scope/scope_button_hover.png
+ui/hud/scope/scope_button_normal.png
+ui/hud/scope/scope_button_pressed.png
 ui/hud/scope_overlay.png
 ui/hud/score_dashboard_frame.png
 ui/hud/score_icon.png
@@ -1096,3 +1101,4 @@ ui/inventory/inventory_panel_gun.png
 ui/inventory/inventory_panel_icon.png
 ui/inventory/weapon_equipped.png
 ui/inventory/weapon_locked.png
+ui/shop/shopIcon.png

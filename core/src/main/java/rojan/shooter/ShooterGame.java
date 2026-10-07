@@ -82,6 +82,7 @@ public class ShooterGame extends ApplicationAdapter {
     private boolean stunStatusEnding = false;
     private BitmapFont hudFont;
     private Rectangle reloadButtonBounds = new Rectangle();
+    private Rectangle scopeButtonBounds = new Rectangle();
 
     private int riflemanCount = 0;
     private int heavyCount = 0;
@@ -326,6 +327,20 @@ public class ShooterGame extends ApplicationAdapter {
     private final float ROCKET_EXPLOSION_RADIUS = 150f;
     private final float ROCKET_EXPLOSION_DAMAGE_MULTIPLIER = 5f;
     private final float ROCKET_EXPLOSION_MIN_MULTIPLIER = 0.40f;
+
+    private int scopeStage = 0;
+    private final int SCOPE_STAGE_COUNT = 4;
+
+    private float targetCameraZoom = 1f;
+    private final float SCOPE_ZOOM_SPEED = 6f;
+    private final GlyphLayout scopeValueLayout = new GlyphLayout();
+    
+    private Rectangle shop;
+    private final float shopIconWidth = 120f;
+    private final float shopIconHeight = 120f;
+
+    private boolean reloading = false;
+    private float reloadTimer = 0f;
         
 
     @Override
@@ -383,7 +398,7 @@ public class ShooterGame extends ApplicationAdapter {
         inventoryGlyphLayout = new GlyphLayout();
 
         map = loadMap();
-
+        createShopFromMap(map);
         mapRenderer = new OrthogonalTiledMapRenderer(map); 
         camera = createCameraFromMap(map);
         mapRenderer.setView(camera);
@@ -494,6 +509,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         Vector2 mouseWorldPosition = getMouseWorldPosition();
         if(!gamePaused){
             updatePowerups(dt);
+            updateScope(dt);
             clampCameraToPlayer();
             activateGravity(dt);
             Vector2 direction = new Vector2(0,0);
@@ -536,23 +552,29 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
             boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
             boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
             float fireInterval = 1f/weapon.getFireRate();
-            if(shooting)
+            if(shooting && !reloading) 
                 player.setShootingTrue();
             else
                 player.setShootingFalse();
 
-            if(shootOnce  && (weapon.canShoot() || infiniteMagazineActive())){
+            if(!reloading && shootOnce  && (weapon.canShoot() || infiniteMagazineActive())){
                 createBulletWhenFired(mouseWorldPosition);
-                if(!infiniteMagazineActive())
+                if(!infiniteMagazineActive()){
                     weapon.consumeAmmo();
+                    if(weapon.getCurrentAmmo() <= 0)
+                        reloadGun();
+                }
                 mouseHeld = 0f;
             }
-            else if(shooting && weapon.isAutomatic() && (weapon.canShoot() || infiniteMagazineActive())){
+            else if(!reloading && shooting && weapon.isAutomatic() && (weapon.canShoot() || infiniteMagazineActive())){
                 mouseHeld+=dt;
                 if(mouseHeld >= fireInterval){
                     createBulletWhenFired(mouseWorldPosition);
-                    if(!infiniteMagazineActive())
+                    if(!infiniteMagazineActive()){
                         weapon.consumeAmmo();
+                        if(weapon.getCurrentAmmo() <= 0)
+                            reloadGun();
+                    }
                     mouseHeld-=fireInterval;
                 }
             }
@@ -564,7 +586,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
                 else
                     player.stand(solidPlatforms);   
             }
-            if(Gdx.input.isKeyJustPressed(Input.Keys.R))
+            if(Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT))
                 reloadGun();
 
             if(Gdx.input.justTouched()){
@@ -573,6 +595,8 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
 
                 if(reloadButtonBounds.contains(mouseXa,mouseYa))
                     reloadGun();
+                 else if(scopeButtonBounds.contains(mouseXa,mouseYa))
+                    cycleScopeStage();    
             }
 
             if(Gdx.input.isKeyJustPressed(Input.Keys.E))
@@ -584,6 +608,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
             for(Bullet bullet : bullets)
                bullet.update(dt);
             bulletPlatformCollision();
+            updateReload(dt);
         }
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
@@ -611,6 +636,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
 
         drawDroneBeam();
         drawPowerAura(false);
+        drawShop();
         player.drawPlayer(batch,worldDt);
         for(Enemy enemy: enemies)
             enemy.drawEnemy(batch, worldDt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
@@ -629,7 +655,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
             }
         }
         weapon.determineWeaponDrawLocation(player.getCurrentGripWorldPosition());
-        if(!gamePaused){
+        if(!gamePaused  && !reloading){
             updatePlayerFacingDirection(mouseWorldPosition); 
             weapon.setFacingLeft(player.isFacingLeft());
             weapon.rotateWeapon(player.getCurrentGripWorldPosition(), mouseWorldPosition);
@@ -700,6 +726,7 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         batch.end();
         batch.setProjectionMatrix(camera.combined);
     }  
+
     
 
     @Override
@@ -796,6 +823,10 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         Vector2 nozzlePosition = weapon.getMuzzleWorldPosition(gunGrip);
         Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
         Texture texture = bulletTextures.get(type);
+        if(type == WeaponType.SHOTGUN){
+            createShotgunSpread(nozzlePosition,bulletDirection,texture);
+            return;
+        }
         Bullet bullet =new Bullet(nozzlePosition,bulletDirection,getProjectileSpeed(type),texture, getBulletCollisionRadius(type),type,getBulletDrawSize(type),weapon.getHeadDamage(),weapon.getBodyDamage(),weapon.getLimbDamage());
         bullets.add(bullet);
     }
@@ -872,8 +903,11 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         float cameraX = camera.position.x;
         float cameraY = camera.position.y;
 
-        float deadZoneHalfWidth = 0.33f * camera.viewportWidth/2;
-        float deadZoneHalfHeight = 0.33f * camera.viewportHeight/2;
+        float visibleWidth = camera.viewportWidth * camera.zoom;
+        float visibleHeight = camera.viewportHeight * camera.zoom;
+
+        float deadZoneHalfWidth = 0.33f * visibleWidth/2;
+        float deadZoneHalfHeight = 0.33f * visibleHeight/2;
 
         float rightThreshold = cameraX + deadZoneHalfWidth;
         float leftThreshold = cameraX - deadZoneHalfWidth;
@@ -893,24 +927,22 @@ inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
         else if(playerPos.y < bottomThreshold)
             cameraY = cameraY + playerPos.y - bottomThreshold;
         
-        float minCameraX = camera.viewportWidth / 2;
-        float maxCameraX = worldSize.x - camera.viewportWidth / 2;
+        float minCameraX = visibleWidth/ 2;
+        float maxCameraX = worldSize.x - visibleWidth / 2;
 
-        float minCameraY = camera.viewportHeight / 2;
-        float maxCameraY = worldSize.y - camera.viewportHeight / 2;
+        float minCameraY = visibleHeight/ 2;
+        float maxCameraY = worldSize.y - visibleHeight / 2;
+        if(visibleWidth >= worldSize.x)
+            cameraX = worldSize.x/2f;
 
-        if(cameraX < minCameraX)
-            cameraX = minCameraX;
-        
-        else if(cameraX > maxCameraX)
-            cameraX = maxCameraX;
-        
-        if(cameraY < minCameraY)
-            cameraY = minCameraY;
-        
-        else if(cameraY > maxCameraY)
-            cameraY = maxCameraY;
-    
+        if(visibleHeight >= worldSize.y)
+            cameraY = worldSize.y/2f;
+
+        if(visibleWidth < worldSize.x)
+            cameraX = MathUtils.clamp(cameraX,minCameraX,maxCameraX);
+        if(visibleHeight < worldSize.y)
+            cameraY = MathUtils.clamp(cameraY,minCameraY,maxCameraY);
+
         camera.position.set(cameraX,cameraY,0);
         camera.update();
         mapRenderer.setView(camera);
@@ -1646,7 +1678,7 @@ private void drawJetpackDisabledHud(){
         t = ((circle.x-start.x)*dx + (circle.y-start.y)*dy)/ lengthSquared;
         t = MathUtils.clamp(t, 0f, 1f);
     }
-    
+
     float closestX = start.x+t*dx;
     float closestY = start.y+t*dy;
     float cx = circle.x-closestX;
@@ -2026,6 +2058,13 @@ private void drawJetpackDisabledHud(){
          batch.draw(FxAssets.playerHealthIcon,iconX,iconY,iconSize,iconSize);
     }
 
+    private float getScopeMagnification(){
+        if(scopeStage == 0)
+            return 1f;
+        float progress = scopeStage / 3f;
+        return (float)Math.pow(weapon.getMaxScope(),progress);
+    }
+
     private void drawJetpackHud(){
         float ratio = MathUtils.clamp(player.getJetpackFuel()/player.getMaxJetpackFuel(),0f,1f);
 
@@ -2280,37 +2319,118 @@ private void drawJetpackDisabledHud(){
     }
 
     private void drawAmmoHud(){
-        float width = 230f;
-        float scale = width/256f;
-        float height = 80f*scale;
+        float ammoPanelWidth = 230f;
+        float ammoPanelScale = ammoPanelWidth/256f;
+        float ammoPanelHeight = 80f*ammoPanelScale;
 
-        float x = Gdx.graphics.getWidth()-width-24f;
-        float y = 24f;
+        float controlScale = 0.70f;
+        float scopeButtonWidth = 224f*controlScale;
+        float scopeButtonHeight = 96f*controlScale;
+        float reloadButtonSize = 65f;
+        float controlsGap = 8f;
+        float bottomMargin = 24f;
 
-        float iconX = x+18f*scale;
-        float iconY = y+16f*scale;
-        float iconSize = 48f*scale;
+        float ammoPanelX = Gdx.graphics.getWidth()-ammoPanelWidth-24f;
+        float ammoPanelY = bottomMargin+scopeButtonHeight+controlsGap;
 
-        batch.draw(weapon.getAmmoPanelTexture(),x,y,width,height);
+        float ammoIconX = ammoPanelX+18f*ammoPanelScale;
+        float ammoIconY = ammoPanelY+16f*ammoPanelScale;
+        float ammoIconSize = 48f*ammoPanelScale;
+
+        batch.draw(weapon.getAmmoPanelTexture(),ammoPanelX,ammoPanelY,ammoPanelWidth,ammoPanelHeight);
+
         if(weapon.getCurrentAmmo()>5)
-            batch.draw(weapon.getAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
+            batch.draw(weapon.getAmmoIconTexture(),ammoIconX,ammoIconY,ammoIconSize,ammoIconSize);
         else
-            batch.draw(weapon.getNoAmmoIconTexture(),iconX,iconY,iconSize, iconSize);
-        String magazine = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
+            batch.draw(weapon.getNoAmmoIconTexture(),ammoIconX,ammoIconY,ammoIconSize,ammoIconSize);
 
-        String reserve ="RES "+inventory.getAmmo(weapon.getCurrentWeapon());
-
-        float reloadSize = 65f;
-        float reloadX = x+width-reloadSize;
-        float reloadY = y+height+2f;
-        batch.draw(FxAssets.reloadIcon,reloadX,reloadY,reloadSize,reloadSize);
-        reloadButtonBounds.set(reloadX,reloadY,reloadSize,reloadSize);
+        String magazineText = weapon.getCurrentAmmo()+" / "+weapon.getMagazineSize();
+        String reserveText = "RES "+inventory.getAmmo(weapon.getCurrentWeapon());
 
         hudFont.getData().setScale(1.15f);
-        hudFont.draw(batch,magazine,x+90f*scale,y+55f*scale);
+        hudFont.draw(batch,magazineText,ammoPanelX+90f*ammoPanelScale,ammoPanelY+55f*ammoPanelScale);
+
         hudFont.getData().setScale(0.75f);
-        hudFont.draw(batch,reserve,x+90f*scale,y+30f*scale);
+        hudFont.draw(batch,reserveText,ammoPanelX+90f*ammoPanelScale,ammoPanelY+30f*ammoPanelScale);
+
+        float scopeButtonX = ammoPanelX;
+        float scopeButtonY = bottomMargin;
+        scopeButtonBounds.set(scopeButtonX,scopeButtonY,scopeButtonWidth,scopeButtonHeight);
+
+        float mouseX = Gdx.input.getX();
+        float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
+        Texture scopeButtonTexture = FxAssets.scopeButton;
+        if(scopeButtonBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+            scopeButtonTexture = FxAssets.scopeButtonPressed;
+        else if(scopeButtonBounds.contains(mouseX,mouseY))
+            scopeButtonTexture = FxAssets.scopeButtonHover;
+
+        batch.draw(scopeButtonTexture,scopeButtonX,scopeButtonY,scopeButtonWidth,scopeButtonHeight);
+
+        float scopeScaleX = scopeButtonWidth/224f;
+        float scopeScaleY = scopeButtonHeight/96f;
+
+        float scopeValueX = scopeButtonX+108f*scopeScaleX;
+        float scopeValueY = scopeButtonY+42f*scopeScaleY;
+        float scopeValueWidth = 96f*scopeScaleX;
+        float scopeValueHeight = 36f*scopeScaleY;
+
+        String scopeValueText = String.format("%.1fx",getScopeMagnification());
+        hudFont.getData().setScale(0.85f);
+        scopeValueLayout.setText(hudFont,scopeValueText);
+
+        float scopeTextX = scopeValueX+(scopeValueWidth-scopeValueLayout.width)/2f;
+        float scopeTextY = scopeValueY+(scopeValueHeight+scopeValueLayout.height)/2f;
+        hudFont.draw(batch,scopeValueText,scopeTextX,scopeTextY);
+
+        float reloadButtonX = scopeButtonX+scopeButtonWidth+controlsGap;
+        float reloadButtonY = scopeButtonY+(scopeButtonHeight-reloadButtonSize)/2f;
+
+        batch.draw(FxAssets.reloadIcon,reloadButtonX,reloadButtonY,reloadButtonSize,reloadButtonSize);
+        reloadButtonBounds.set(reloadButtonX,reloadButtonY,reloadButtonSize,reloadButtonSize);
+
+        float killBadgeWidth = 176f*controlScale;
+        float killBadgeHeight = 68f*controlScale;
+        float killBadgeX = ammoPanelX+ammoPanelWidth-killBadgeWidth;
+        float killBadgeY = ammoPanelY+ammoPanelHeight+controlsGap;
+
+        batch.draw(FxAssets.killBadge,killBadgeX,killBadgeY,killBadgeWidth,killBadgeHeight);
+
+        float killScaleX = killBadgeWidth/176f;
+        float killScaleY = killBadgeHeight/68f;
+
+        float killValueX = killBadgeX+72f*killScaleX;
+        float killValueY = killBadgeY+9f*killScaleY;
+        float killValueWidth = 88f*killScaleX;
+        float killValueHeight = 32f*killScaleY;
+
+        String killValueText = Integer.toString(TOTAL_KILL_COUNT);
+        hudFont.getData().setScale(0.85f);
+        scopeValueLayout.setText(hudFont,killValueText);
+
+        float killTextX = killValueX+(killValueWidth-scopeValueLayout.width)/2f;
+        float killTextY = killValueY+(killValueHeight+scopeValueLayout.height)/2f;
+        hudFont.draw(batch,killValueText,killTextX,killTextY);
     }
+
+    private void updateScopeTarget(){
+        float magnification = getScopeMagnification();
+        targetCameraZoom = magnification;
+    }
+
+    private void cycleScopeStage(){
+        scopeStage++;
+        if(scopeStage >= SCOPE_STAGE_COUNT)
+            scopeStage = 0;
+        updateScopeTarget();
+    }
+
+    private void updateScope(float dt){
+        camera.zoom = MathUtils.lerp(camera.zoom,targetCameraZoom,Math.min(1f,dt*SCOPE_ZOOM_SPEED));
+        camera.update();
+    }
+
 
     private Array<Rectangle> extractGroundEnemySpawnPoints(){
         Array<Rectangle> spawnPoints = new Array<>();
@@ -2368,7 +2488,7 @@ private void drawJetpackDisabledHud(){
     }
 
     private void drawScoreDashboard(){
-        float width = 360f;
+        float width = 360f*1.12f;
         float scale = width/640f;
         float height = 96f*scale;
 
@@ -2383,14 +2503,19 @@ private void drawJetpackDisabledHud(){
         float goldX = x+30f*scale;
         float scoreX = x+218f*scale;
         float bestX = x+442f*scale;
-;
+
+        float keyIconSize = 28f;
+        float keyIconX = x+width-keyIconSize;
+        float keyIconY =  y-keyIconSize-6f;
+
+        String keyText = inventory.hasKey() ? "x1" : "x0";
 
         batch.draw(FxAssets.goldIcon,goldX,zoneY,iconSize,iconSize);
         batch.draw(FxAssets.scoreIcon,scoreX,zoneY,iconSize,iconSize);
         batch.draw(FxAssets.bestScoreIcon,bestX,zoneY,iconSize,iconSize);
+        batch.draw(FxAssets.keyIcon,keyIconX,keyIconY,keyIconSize,keyIconSize);
 
-        hudFont.getData().setScale(0.8f);
-
+        hudFont.draw(batch,keyText,keyIconX-26f,keyIconY+21f);
         hudFont.draw(batch,Integer.toString(inventory.getGold()),goldX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(currentScore),scoreX+48f*scale,zoneY+27f*scale);
         hudFont.draw(batch,Integer.toString(bestScore),bestX+48f*scale,zoneY+27f*scale);
@@ -2398,9 +2523,31 @@ private void drawJetpackDisabledHud(){
 
 
     private void reloadGun(){
+        if(reloading)
+            return;
+        if(infiniteMagazineActive())
+            return;
+        if(weapon.getCurrentAmmo() >= weapon.getMagazineSize())
+            return;
+        if(inventory.getAmmo(weapon.getCurrentWeapon()) <= 0)
+            return;
+
+        reloading = true;
+        reloadTimer = 0f;
+    }
+
+    private void updateReload(float dt){
+        if(!reloading)
+            return;
+        reloadTimer+=dt;
+        if(reloadTimer < weapon.getReloadSpeed())
+            return;
         int neededAmmo = weapon.getMagazineSize()-weapon.getCurrentAmmo();
         int ammoToLoad = inventory.takeAmmo(weapon.getCurrentWeapon(),neededAmmo);
         weapon.addCurrentAmmo(ammoToLoad);
+
+        reloadTimer = 0f;
+        reloading = false;
     }
     
     private void spawnLootCrate(Vector2 enemyDeathLocation){
@@ -3916,7 +4063,36 @@ private void equipSelectedWeapon(){
         return;
 
     weapon.equipWeapon(selectedWeapon);
+    updateScopeTarget();
     refreshWeaponPowerupStats();
+    reloading = false;
+    reloadTimer = 0f;
+}
+
+private Vector2 rotateBulletDirection(Vector2 direction,float angle){
+    float cos = MathUtils.cosDeg(angle);
+    float sin = MathUtils.sinDeg(angle);
+
+    return new Vector2(direction.x*cos-direction.y*sin, direction.x*sin+direction.y*cos).nor();
+}
+private void createShotgunSpread(Vector2 nozzlePosition,Vector2 baseDirection,Texture texture){
+    int pelletCount = 7;
+    float totalSpread = 16.5f;
+
+    float startAngle =-totalSpread/2f;
+    float angleStep = totalSpread/(pelletCount-1);
+    float damageBoost = 1.25f;
+    float headDamage = weapon.getHeadDamage()*damageBoost/pelletCount;;
+    float bodyDamage = weapon.getBodyDamage()*damageBoost/pelletCount;
+    float limbDamage = weapon.getLimbDamage()*damageBoost/pelletCount;
+    for(int i=0;i<pelletCount;i++){
+        float angle = startAngle + angleStep*i;
+        Vector2 pelletDirection =rotateBulletDirection(baseDirection, angle);
+        Bullet pellet = new Bullet(nozzlePosition,pelletDirection,getProjectileSpeed(WeaponType.SHOTGUN),texture,
+            getBulletCollisionRadius(WeaponType.SHOTGUN),WeaponType.SHOTGUN,getBulletDrawSize(WeaponType.SHOTGUN),
+            headDamage,bodyDamage,limbDamage);
+        bullets.add(pellet);
+    }
 }
 
 private void startPowerAuraBurst(String id){
@@ -4178,7 +4354,26 @@ private Texture getPowerHudIcon(String id){
 }
 
 
+private void createShopFromMap(TiledMap map){
+    MapLayer spawnLayer = map.getLayers().get("spawns");
+    RectangleMapObject shopObject = (RectangleMapObject) spawnLayer.getObjects().get("shop");
+    Rectangle shopRect = shopObject.getRectangle();
+    shop = new Rectangle(shopRect.x, shopRect.y , shopIconWidth, shopIconHeight);
+}
 
+private Rectangle getShopInteractionZone(){
+    return new Rectangle(shop.x-30f,shop.y-20f,shop.width+60f,shop.height+40f);
+}
+
+private void drawShop(){
+    batch.draw(FxAssets.shopIcon,shop.x,shop.y,shop.width,shop.height);
+}
+
+private float getReloadProgress(){
+    if(!reloading)
+        return 0f;
+    return MathUtils.clamp(reloadTimer/weapon.getReloadSpeed(),0f,1f);
+}
 
  
 
