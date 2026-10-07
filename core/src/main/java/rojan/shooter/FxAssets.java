@@ -81,7 +81,6 @@ public final class FxAssets{
     public static ObjectMap<Powerup.SpicyType,Texture> spicyIcons;
     public static ObjectMap<Powerup.MoreSpicyType,Texture> moreSpicyIcons;
     public static ObjectMap<Weapon.WeaponType,Texture> weaponRewardIcons;
-
     public static Texture inventoryBag;
     public static Texture inventoryBagHover;
     public static Texture inventoryBagPressed;
@@ -90,10 +89,48 @@ public final class FxAssets{
     public static Texture inventoryWeaponLocked;
     public static Texture inventoryWeaponEquipped;
 
+    public static TextureRegion[] groundExplosion;
+    public static TextureRegion[] midAirExplosion;
+
+    public static class PowerAuraAnimation{
+        Texture backTexture;
+        Texture frontTexture;
+        TextureRegion[] backFrames;
+        TextureRegion[] frontFrames;
+        PowerAuraAnimation(String id){
+            backTexture = new Texture(AssetPaths.FX.powerAuraBack(id));
+            frontTexture = new Texture(AssetPaths.FX.powerAuraFront(id));
+            backTexture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+            frontTexture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+            backFrames = new TextureRegion[24];
+            frontFrames = new TextureRegion[24];
+            for(int i=0;i<24;i++){
+                int column = i%6;
+                int row = i/6;
+                int x = 2+column*260;
+                int y = 2+row*324;
+                backFrames[i] = new TextureRegion(backTexture,x, y, 256,320);
+                frontFrames[i] = new TextureRegion(frontTexture, x, y, 256, 320);
+            }
+        }
+
+        void dispose(){
+            backTexture.dispose();
+            frontTexture.dispose();
+        }
+    }
+    private static ObjectMap<String,PowerAuraAnimation> powerAuraCache;
+    public static Texture powerFrame;
+    public static Texture powerNormal;
+    public static Texture powerSpicy;
+    public static Texture powerMoreSpicy;
+    public static Texture powerSpecial;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
         loadedTextures = new Array<>();
+        powerAuraCache = new ObjectMap<>();
         phaseBeam = loadFrames(AssetPaths.FX.PHASE_BEAM,AssetPaths.FX.PHASE_BEAM_FRAMES);
         emitterFlash = loadFrames(AssetPaths.FX.EMITTER_FLASH,AssetPaths.FX.EMITTER_FLASH_FRAMES);
         beamContact = loadFrames(AssetPaths.FX.BEAM_CONTACT,AssetPaths.FX.BEAM_CONTACT_FRAMES);
@@ -197,6 +234,15 @@ public final class FxAssets{
         inventoryPanelGun = new Texture(AssetPaths.Hud.INVENTORY_PANEL_GUN);
         inventoryWeaponLocked = new Texture(AssetPaths.Hud.INVENTORY_WEAPON_LOCKED);
         inventoryWeaponEquipped = new Texture(AssetPaths.Hud.INVENTORY_WEAPON_EQUIPPED);
+
+        powerFrame = new Texture(AssetPaths.Hud.POWER_FRAME);
+        powerNormal = new Texture(AssetPaths.Hud.POWER_NORMAL);
+        powerSpicy = new Texture(AssetPaths.Hud.POWER_SPICY);
+        powerMoreSpicy = new Texture(AssetPaths.Hud.POWER_MORE_SPICY);
+        powerSpecial = new Texture(AssetPaths.Hud.POWER_SPECIAL);
+
+        groundExplosion = loadFrames(AssetPaths.Explosion.GROUND,AssetPaths.Explosion.GROUND_FRAMES);
+        midAirExplosion = loadFrames(AssetPaths.Explosion.MID_AIR,AssetPaths.Explosion.MID_AIR_FRAMES);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -208,6 +254,15 @@ public final class FxAssets{
             frames[i] = new TextureRegion(texture);
         }
         return frames;
+    }
+
+    public static PowerAuraAnimation getPowerAura(String id){
+        PowerAuraAnimation aura = powerAuraCache.get(id);
+        if(aura == null){
+            aura = new PowerAuraAnimation(id);
+            powerAuraCache.put(id,aura);
+        }
+        return aura;
     }
 
     public static void dispose(){
@@ -231,5 +286,10 @@ public final class FxAssets{
         inventoryPanelGun.dispose();
         inventoryWeaponLocked.dispose();
         inventoryWeaponEquipped.dispose();
+        if(powerAuraCache != null){
+            for(PowerAuraAnimation aura : powerAuraCache.values())
+                aura.dispose();
+            powerAuraCache.clear();
+        }
     }
 }

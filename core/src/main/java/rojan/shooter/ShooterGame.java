@@ -57,7 +57,7 @@ public class ShooterGame extends ApplicationAdapter {
     private float BASE_JETPACK_THRUST = 2200.f;
     private float jetpackThrust= BASE_JETPACK_THRUST;
 
-    private Texture bulletTexture;
+    private ObjectMap<WeaponType,Texture> bulletTextures;
 
     private float horizontalHoldTime = 0f;
     private final float RUN_THRESHOLD = 0.30f;
@@ -247,6 +247,12 @@ public class ShooterGame extends ApplicationAdapter {
     private Powerup.MoreSpicyType selectedMoreSpicy = null;
     private boolean selectedGodMode = false;
 
+    private float POWER_AURA_VISUAL_TIMER = 0f;
+    private String POWER_AURA_BURST = null;
+    private float POWER_AURA_BURST_TIMER = 0f;
+
+    private Rectangle bulletSweepRect = new Rectangle();
+
     private static class LootVisual{
         Texture icon;
         String value;
@@ -305,7 +311,22 @@ public class ShooterGame extends ApplicationAdapter {
     private BitmapFont inventoryInfoFont;
     private BitmapFont inventoryButtonFont;
     private GlyphLayout inventoryGlyphLayout;
-    
+
+    private static class RocketExplosionFx{
+            Vector2 position;
+            float timer;
+            boolean ground;
+            RocketExplosionFx(Vector2 position,boolean ground){
+                this.position = new Vector2(position);
+                this.ground = ground;
+                timer = 0f;
+            }
+        }
+    private Array<RocketExplosionFx>rocketExplosionFx = new Array<>();
+    private final float ROCKET_EXPLOSION_RADIUS = 150f;
+    private final float ROCKET_EXPLOSION_DAMAGE_MULTIPLIER = 5f;
+    private final float ROCKET_EXPLOSION_MIN_MULTIPLIER = 0.40f;
+        
 
     @Override
     public void create(){
@@ -404,7 +425,7 @@ public class ShooterGame extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         solidPlatforms = extractSolidPlatformsFromMap(map);
         bullets = new Array<>();
-        bulletTexture = new Texture(AssetPaths.Bullets.BASE+ "AR_bullet.png");
+        loadBulletTextures();
         riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
         heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
 
@@ -418,6 +439,29 @@ public class ShooterGame extends ApplicationAdapter {
         FxAssets.loadOnce();
         LootCrate.loadAssetsOnce();
         specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
+        inventory.addWeapon(WeaponType.PISTOL);
+        inventory.addWeapon(WeaponType.AR);
+        inventory.addWeapon(WeaponType.SMG);
+        inventory.addWeapon(WeaponType.SHOTGUN);
+        inventory.addWeapon(WeaponType.SNIPER);
+        inventory.addWeapon(WeaponType.ROCKET_LAUNCHER);
+        inventory.addAmmo(WeaponType.PISTOL,
+    5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
+
+inventory.addAmmo(WeaponType.AR,
+    5*weapon.getBaseMagazineSize(WeaponType.AR));
+
+inventory.addAmmo(WeaponType.SMG,
+    5*weapon.getBaseMagazineSize(WeaponType.SMG));
+
+inventory.addAmmo(WeaponType.SHOTGUN,
+    5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
+
+inventory.addAmmo(WeaponType.SNIPER,
+    5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
+
+inventory.addAmmo(WeaponType.ROCKET_LAUNCHER,
+    5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
     }
 
     @Override
@@ -514,7 +558,6 @@ public class ShooterGame extends ApplicationAdapter {
             }
             else
                 mouseHeld = 0f;
-            bulletPlatformCollision();
             if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
                 if(!player.getCrouchingState())
                     player.crouch();
@@ -540,6 +583,7 @@ public class ShooterGame extends ApplicationAdapter {
 
             for(Bullet bullet : bullets)
                bullet.update(dt);
+            bulletPlatformCollision();
         }
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
@@ -566,6 +610,7 @@ public class ShooterGame extends ApplicationAdapter {
         }
 
         drawDroneBeam();
+        drawPowerAura(false);
         player.drawPlayer(batch,worldDt);
         for(Enemy enemy: enemies)
             enemy.drawEnemy(batch, worldDt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
@@ -591,8 +636,10 @@ public class ShooterGame extends ApplicationAdapter {
         }
         Vector2 grip = player.getCurrentGripWorldPosition();
         weapon.drawWeapon(batch, grip);
+        drawPowerAura(true);
         drawPlayerPoisonFx(worldDt);
         drawPlayerStunFx(worldDt);
+        drawRocketExplosions(worldDt);
 
         for(Bullet bullet : bullets)
             bullet.draw(batch);
@@ -641,8 +688,12 @@ public class ShooterGame extends ApplicationAdapter {
         drawPlayerHealthHud();
         drawJetpackHud();
         drawJetpackDisabledHud();
+
         drawScoreDashboard();
         drawAmmoHud();
+
+        drawPoweredStateHud();
+
         drawInventoryBag();
         drawInventory();
 
@@ -658,7 +709,13 @@ public class ShooterGame extends ApplicationAdapter {
         batch.dispose();
         player.disposePlayer();
         weapon.disposeWeapon();
-        bulletTexture.dispose();
+        if(bulletTextures != null){
+            for(Texture texture :
+                bulletTextures.values()){
+                texture.dispose();
+            }
+            bulletTextures.clear();
+        }
         shapeRenderer.dispose();
         FxAssets.dispose();
         riflemanProjectileTexture.dispose();
@@ -734,20 +791,64 @@ public class ShooterGame extends ApplicationAdapter {
     }
 
     private void createBulletWhenFired(Vector2 mousePos){
-        Vector2 nozzleOffset = extractARNozzleOffsetFromMap(map);
+        WeaponType type = weapon.getCurrentWeapon();
         Vector2 gunGrip = player.getCurrentGripWorldPosition();
-        float angle = weapon.getAngleOfRotation();
-        float cos = MathUtils.cosDeg(angle);
-        float sin = MathUtils.sinDeg(angle);
-        float rotatedX = nozzleOffset.x * cos - nozzleOffset.y * sin;
-        float rotatedY = nozzleOffset.x * sin + nozzleOffset.y * cos;
-
-        float x = gunGrip.x + rotatedX;
-        float y = gunGrip.y + rotatedY;
-        Vector2 nozzlePosition = new Vector2(x,y);
+        Vector2 nozzlePosition = weapon.getMuzzleWorldPosition(gunGrip);
         Vector2 bulletDirection = normalizeBulletDirection(nozzlePosition,mousePos);
-        Bullet bullet = new Bullet(nozzlePosition , bulletDirection, 2500.f,bulletTexture, 1.5f);
+        Texture texture = bulletTextures.get(type);
+        Bullet bullet =new Bullet(nozzlePosition,bulletDirection,getProjectileSpeed(type),texture, getBulletCollisionRadius(type),type,getBulletDrawSize(type),weapon.getHeadDamage(),weapon.getBodyDamage(),weapon.getLimbDamage());
         bullets.add(bullet);
+    }
+
+     private float getBulletCollisionRadius(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return 4.5f;
+        if(type == WeaponType.AR)
+            return 3.5f;
+        if(type == WeaponType.SMG)
+            return 3.5f;
+        if(type == WeaponType.SHOTGUN)
+            return 4f;
+        if(type == WeaponType.SNIPER)
+            return 3f;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return 12f;
+        return 3f;
+    }
+
+
+    private void loadBulletTextures(){
+        bulletTextures = new ObjectMap<>();
+        bulletTextures.put(WeaponType.PISTOL, new Texture(AssetPaths.Bullets.PISTOL));
+        bulletTextures.put(WeaponType.AR,new Texture(AssetPaths.Bullets.AR));
+        bulletTextures.put(WeaponType.SMG,new Texture(AssetPaths.Bullets.SMG));
+        bulletTextures.put(WeaponType.SHOTGUN, new Texture(AssetPaths.Bullets.SHOTGUN));
+        bulletTextures.put(WeaponType.SNIPER,new Texture(AssetPaths.Bullets.SNIPER));
+        bulletTextures.put(WeaponType.ROCKET_LAUNCHER,new Texture(AssetPaths.Bullets.ROCKET_LAUNCHER));
+        for(Texture texture : bulletTextures.values()){
+            texture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+        }
+    }
+
+    private float getBulletDrawSize(WeaponType type){
+        if(type == WeaponType.PISTOL)
+            return 40f;
+
+        if(type == WeaponType.AR)
+            return 40f;
+
+        if(type == WeaponType.SMG)
+            return 50f;
+
+        if(type == WeaponType.SHOTGUN)
+            return 60f;
+
+        if(type == WeaponType.SNIPER)
+            return 80f;
+
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return 80f;
+        return 25f;
     }
 
     private Vector2 getWorldSize(){
@@ -816,21 +917,73 @@ public class ShooterGame extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
     }
 
+    private boolean bulletHitsRectangle(Bullet bullet,Rectangle rectangle){
+        float r = bullet.getRadius();
+        bulletSweepRect.set(rectangle.x-r,rectangle.y-r,rectangle.width+r*2f,rectangle.height+r*2f);
+        return Intersector.intersectSegmentRectangle(bullet.getPreviousPosition(),bullet.getPosition(),bulletSweepRect);
+    }
+
     private void bulletPlatformCollision(){
         for(Bullet bullet : bullets){
-            float x = bullet.getPosition().x;
-            float y = bullet.getPosition().y;
-            float r = bullet.getRadius();
-            Circle bulletZone = new Circle(x,y,r);
+            if(bullet.isWasted())
+                continue;
+           
             for(Rectangle solid : solidPlatforms){
-                if(Intersector.overlaps(bulletZone,solid)){
-                    bullet.considerWasted();
-                    removeBullets();
-                    break;
+                if(!bulletHitsRectangle(bullet,solid)){
+                    continue;
                 }
+                if(bullet.getWeaponType() == WeaponType.ROCKET_LAUNCHER)
+                    explodeRocket(bullet,true);
+                bullet.considerWasted();
+                break;
             }
         }
+        removeBullets();
     }
+    private void explodeRocket(Bullet bullet,boolean groundExplosion){
+        Vector2 explosionPosition = new Vector2(bullet.getPosition());
+        float maxDamage = bullet.getBodyDamage() * ROCKET_EXPLOSION_DAMAGE_MULTIPLIER;
+        for(Enemy enemy : enemies){
+            Rectangle hurtbox = enemy.getWorldHurtbox();
+            float closestX = MathUtils.clamp(explosionPosition.x, hurtbox.x, hurtbox.x+hurtbox.width);
+            float closestY = MathUtils.clamp(explosionPosition.y,hurtbox.y,hurtbox.y+hurtbox.height);
+
+            float dx = explosionPosition.x-closestX;
+            float dy = explosionPosition.y-closestY;
+            float distance = (float)Math.sqrt(dx*dx+dy*dy);
+
+            if(distance >
+            ROCKET_EXPLOSION_RADIUS)
+                continue;
+
+            float distancePercent = MathUtils.clamp(distance/ROCKET_EXPLOSION_RADIUS,0f,1f);
+            float damageMultiplier =MathUtils.lerp(1f,ROCKET_EXPLOSION_MIN_MULTIPLIER,distancePercent);
+            enemy.enemyHurt(maxDamage*damageMultiplier);
+        }
+        rocketExplosionFx.add(new RocketExplosionFx(explosionPosition,groundExplosion));
+    }
+
+    private void drawRocketExplosions(float dt){
+    float frameDuration = 0.05f;
+    float drawSize = 220f;
+    for(int i = rocketExplosionFx.size-1;i>=0;i--){
+        RocketExplosionFx fx = rocketExplosionFx.get(i);
+        fx.timer += dt;
+        TextureRegion[] frames;
+        if(fx.ground)
+            frames = FxAssets.groundExplosion;
+        else
+            frames = FxAssets.midAirExplosion;
+        int frame = (int)(fx.timer/frameDuration);
+        if(frame >= frames.length){
+            rocketExplosionFx.removeIndex(i);
+            continue;
+        }
+        batch.draw(frames[frame],fx.position.x-drawSize/2f,fx.position.y-drawSize/2f,drawSize,drawSize);
+    }
+}
+
+
 
     private Array<Rectangle> extractSolidPlatformsFromMap(TiledMap map){
         Array<Rectangle> solidPlatforms = new Array<>();
@@ -1404,99 +1557,104 @@ private void drawJetpackDisabledHud(){
 
 
     private void bulletEnemyCollisionChecker(){
-        for(Bullet bullet : bullets){
-            for(Enemy enemy: enemies){
-                boolean chanceOfCollision = false;
-                boolean headshot = false;
-                boolean bodyshot = false;
-                boolean limbshot = false;
-                Rectangle hurtbox = enemy.getWorldHurtbox();
-                if(enemy.getType() == Enemy.EnemyType.DRILL_CRAWLER && !bullet.isWasted()){
-                    Circle bulletCircle = new Circle(bullet.getPosition().x,bullet.getPosition().y,bullet.getRadius());
-                    for(Circle circle : enemy.getWorldDrillCircles()){
-                        if(Intersector.overlaps(bulletCircle,circle)){
-                            enemy.enemyHurt(weapon.getLimbDamage()+ weapon.getBodyDamage()/2);
-                            bullet.considerWasted();
-                            break;
-                        }
-                    }
-                    continue;
+    for(Bullet bullet : bullets){
+        if(bullet.isWasted())
+            continue;
+        for(Enemy enemy : enemies){
+            if(bullet.isWasted())
+                break;
+            Rectangle hurtbox = enemy.getWorldHurtbox();
+
+            //ROCKET
+            if(bullet.getWeaponType() == WeaponType.ROCKET_LAUNCHER){
+                if(bulletHitsRectangle(bullet,hurtbox)){
+                    explodeRocket(bullet,false);
+                    bullet.considerWasted();
+                    break;
                 }
-                if((bullet.getPosition().y  - bullet.getRadius() < hurtbox.y + hurtbox.height)
-                && (bullet.getPosition().y  + bullet.getRadius() > hurtbox.y)
-                &&(bullet.getPosition().x  + bullet.getRadius() > hurtbox.x)
-                &&(bullet.getPosition().x  - bullet.getRadius() <  hurtbox.x + hurtbox.width)){
-                    chanceOfCollision = true;
+                continue;
+            }
+            //DRILL CRAWLER
+            if(enemy.getType() == EnemyType.DRILL_CRAWLER){
+                boolean hit = false;
+                for(Circle circle : enemy.getWorldDrillCircles()){
+                    if(bulletHitsCircle(bullet,circle)){
+                        enemy.enemyHurt(bullet.getLimbDamage()+ bullet.getBodyDamage()/2f);
+                        bullet.considerWasted();
+                        hit = true;
+                        break;
+                    }
                 }
-
-                if(chanceOfCollision && !bullet.isWasted()){
-                    for(Rectangle rect : enemy.getHeadshotBoxes()){
-                        Rectangle worldRect = enemy.getWorldHitRegion(rect);
-                        float rectX = worldRect.x;
-                        float rectY = worldRect.y;
-                       
-                        float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
-                        float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
-                        float dx = bullet.getPosition().x - closestX;
-                        float dy = bullet.getPosition().y - closestY;
-                        if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
-                            headshot = true;
-                            HEADSHOTCOUNT++;
-                            enemy.enemyHurt(weapon.getHeadDamage());
-                            bullet.considerWasted();
-                            break;
-                        }
-                        if(bullet.isWasted())
-                            break;
-                    }
-
-                    if(!headshot && !bullet.isWasted()){
-                        for(Rectangle rect : enemy.getBodyshotBoxes()){
-                            Rectangle worldRect = enemy.getWorldHitRegion(rect);
-                            float rectX = worldRect.x;
-                            float rectY = worldRect.y;
-                            
-                            float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
-                            float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
-                            float dx = bullet.getPosition().x - closestX;
-                            float dy = bullet.getPosition().y - closestY;
-                            if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
-                                bodyshot = true;
-                                BODYSHOTCOUNT++;
-                                enemy.enemyHurt(weapon.getBodyDamage());
-                                bullet.considerWasted();
-                                break;
-                            }
-                        }
-                        if(bullet.isWasted())
-                            break;
-                    }
-
-                    if(!headshot && !bodyshot && !bullet.isWasted()){
-                        for(Rectangle rect : enemy.getLimbshotBoxes()){
-                            Rectangle worldRect = enemy.getWorldHitRegion(rect);
-                            float rectX = worldRect.x;
-                            float rectY = worldRect.y;
-
-                            float closestX = MathUtils.clamp(bullet.getPosition().x, rectX, rectX + rect.width);
-                            float closestY = MathUtils.clamp(bullet.getPosition().y, rectY, rectY + rect.height);
-                            float dx = bullet.getPosition().x - closestX;
-                            float dy = bullet.getPosition().y - closestY;
-                            if(dx * dx + dy * dy <= bullet.getRadius() * bullet.getRadius()){
-                                limbshot = true;
-                                LIMBSHOTCOUNT++;
-                                enemy.enemyHurt(weapon.getLimbDamage());
-                                bullet.considerWasted();
-                                break;
-                            }
-                        }
-                        if(bullet.isWasted())
-                            break;
-                    }
+                if(hit)
+                    break;
+                continue;
+            }
+            boolean headshot = false;
+            boolean bodyshot = false;
+            //HEAD
+            for(Rectangle rect :enemy.getHeadshotBoxes()){
+                Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                if(bulletHitsRectangle(bullet,worldRect)){
+                    HEADSHOTCOUNT++;
+                    enemy.enemyHurt(bullet.getHeadDamage());
+                    bullet.considerWasted();
+                    headshot = true;
+                    break;
+                }
+            }
+            if(headshot)
+                break;
+            //BODY
+            for(Rectangle rect : enemy.getBodyshotBoxes()){
+                Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                if(bulletHitsRectangle(bullet,worldRect)){
+                    BODYSHOTCOUNT++;
+                    enemy.enemyHurt(bullet.getBodyDamage());
+                    bullet.considerWasted();
+                    bodyshot = true;
+                    break;
+                }
+            }
+            if(bodyshot)
+                break;
+            //LIMB
+            for(Rectangle rect : enemy.getLimbshotBoxes()){
+                Rectangle worldRect = enemy.getWorldHitRegion(rect);
+                if(bulletHitsRectangle(bullet,worldRect)){
+                    LIMBSHOTCOUNT++;
+                    enemy.enemyHurt(bullet.getLimbDamage());
+                    bullet.considerWasted();
+                    break;
                 }
             }
         }
     }
+    removeBullets();
+    }
+
+    private boolean bulletHitsCircle(Bullet bullet,Circle circle){
+    Vector2 start = bullet.getPreviousPosition();
+    Vector2 end = bullet.getPosition();
+    float dx = end.x-start.x;
+    float dy = end.y-start.y;
+    float lengthSquared = dx*dx+dy*dy;
+    float t;
+    if(lengthSquared == 0f)
+        t = 0f;
+
+    else{
+        t = ((circle.x-start.x)*dx + (circle.y-start.y)*dy)/ lengthSquared;
+        t = MathUtils.clamp(t, 0f, 1f);
+    }
+    
+    float closestX = start.x+t*dx;
+    float closestY = start.y+t*dy;
+    float cx = circle.x-closestX;
+    float cy = circle.y-closestY;
+    float combinedRadius = circle.radius + bullet.getRadius();
+
+    return cx*cx+cy*cy <=combinedRadius*combinedRadius;
+}
 
     private void playerEnemyProjectileCollisionChecker(){
         for(EnemyProjectile projectile : enemyProjectiles){
@@ -1917,6 +2075,12 @@ private void drawJetpackDisabledHud(){
             }
         }
 
+    }
+
+    private float getProjectileSpeed(WeaponType type){
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return 900f;
+        return 2500f;
     }
 
     private boolean isPlayerPoisoned(){
@@ -2653,11 +2817,13 @@ private void consumePowerup(Powerup.PowerupType type){
 
     if(type == Powerup.PowerupType.HEALTH){
         player.heal(player.getMaxHp()*0.80f);
+        startPowerAuraBurst("health");
         return;
     }
 
     if(type == Powerup.PowerupType.JETPACK){
         player.setJetpackFuel(player.getMaxJetpackFuel());
+        startPowerAuraBurst("jetpack");
         return;
     }
 
@@ -2903,6 +3069,14 @@ private void refreshWeaponPowerupStats(){
 
 
 private void updatePowerups(float dt){
+    POWER_AURA_VISUAL_TIMER += dt;
+    if(POWER_AURA_BURST != null){
+        POWER_AURA_BURST_TIMER += dt;
+        if(POWER_AURA_BURST_TIMER >= 0.6f){
+            POWER_AURA_BURST = null;
+            POWER_AURA_BURST_TIMER = 0f;
+        }
+    }
     boolean refreshWeapon = false;
     if(FIRE_RATE_ACTIVE){
         FIRE_RATE_TIMER += dt;
@@ -3738,14 +3912,269 @@ private void equipSelectedWeapon(){
     if(!inventory.ownsWeapon(selectedWeapon))
         return;
 
-    if(selectedWeapon == WeaponType.ROCKET_LAUNCHER)
-        return;
-
     if(selectedWeapon == weapon.getCurrentWeapon())
         return;
 
     weapon.equipWeapon(selectedWeapon);
     refreshWeaponPowerupStats();
+}
+
+private void startPowerAuraBurst(String id){
+    POWER_AURA_BURST = id;
+    POWER_AURA_BURST_TIMER = 0f;
+}
+
+
+private String getDominantPowerAura(){
+    if(GOD_MODE_ACTIVE)
+        return "god_mode";
+    if(BERSERK_ACTIVE)
+        return "berserk";
+    if(INFINITE_ASSAULT_ACTIVE)
+        return "infinite_assault";
+    if(FORTRESS_ACTIVE)
+        return "fortress";
+    if(OVERDRIVE_ACTIVE)
+        return "overdrive";
+    if(DAMAGE_SURGE_ACTIVE)
+        return "damage_surge";
+    if(FIRE_RATE_ACTIVE)
+        return "fire_rate";
+    if(BOTTOMLESS_MAG_ACTIVE)
+        return "bottomless_mag";
+    if(HYPERDRIVE_ACTIVE)
+        return "hyperdrive";
+    if(RAPID_MOBILITY_ACTIVE)
+        return "rapid_mobility";
+    if(SHIELD_ACTIVE && SHIELD_AMOUNT > 0f)
+        return "shield";
+    if(DOUBLE_FORTUNE_ACTIVE)
+        return "double_fortune";
+    if(GOLD_RUSH_ACTIVE)
+        return "gold_rush";
+    if(SCORE_FRENZY_ACTIVE)
+        return "score_frenzy";
+    return null;
+}
+
+private String getCurrentPowerAura(){
+    if(POWER_AURA_BURST != null)
+        return POWER_AURA_BURST;
+
+    return getDominantPowerAura();
+}
+
+private int getPowerAuraFrame(){
+    if(POWER_AURA_BURST != null){
+        int frame = (int)(POWER_AURA_BURST_TIMER/0.05f);
+        return MathUtils.clamp(frame,0,11);
+    }
+    return (int)(POWER_AURA_VISUAL_TIMER*30f)%24;
+}
+
+private void drawPowerAura(boolean front){
+    String id = getCurrentPowerAura();
+    if(id == null)
+        return;
+    FxAssets.PowerAuraAnimation aura = FxAssets.getPowerAura(id);
+    int frameIndex = getPowerAuraFrame();
+    TextureRegion frame;
+    if(front)
+        frame = aura.frontFrames[frameIndex];
+    else
+        frame = aura.backFrames[frameIndex];
+
+    Vector2 playerPos = player.getPlayerPosition();
+    float playerWidth = player.getPlayerWidth();
+    float playerHeight = player.getPlayerHeight();
+    float playerCenterX = playerPos.x+playerWidth/2f;
+    float playerFeetY = playerPos.y;
+    float auraWidth = playerWidth*(512f/160f);
+    float auraHeight = playerHeight*(640f/240f);
+    float auraX = playerCenterX-auraWidth/2f;
+    float auraY = playerFeetY - auraHeight*(92f/640f);
+
+    batch.draw(frame, auraX, auraY, auraWidth, auraHeight);
+}
+
+private String getActivePowerName(String id){
+    if("shield".equals(id))
+        return "SHIELD";
+
+    if("fire_rate".equals(id))
+        return "FIRE RATE BOOST";
+
+    if("overdrive".equals(id))
+        return "OVERDRIVE";
+
+    if("rapid_mobility".equals(id))
+        return "RAPID MOBILITY";
+
+    if("bottomless_mag".equals(id))
+        return "BOTTOMLESS MAG";
+
+    if("damage_surge".equals(id))
+        return "DAMAGE SURGE";
+
+    if("gold_rush".equals(id))
+        return "GOLD RUSH";
+
+    if("score_frenzy".equals(id))
+        return "SCORE FRENZY";
+
+    if("berserk".equals(id))
+        return "BERSERK";
+
+    if("infinite_assault".equals(id))
+        return "INFINITE ASSAULT";
+
+    if("hyperdrive".equals(id))
+        return "HYPERDRIVE";
+
+    if("fortress".equals(id))
+        return "FORTRESS";
+
+    if("double_fortune".equals(id))
+        return "DOUBLE FORTUNE";
+
+    if("god_mode".equals(id))
+        return "GOD MODE";
+
+    return "";
+}
+
+private float getActivePowerRemaining(String id){
+    if("fire_rate".equals(id))
+        return FIRE_RATE_DURATION-FIRE_RATE_TIMER;
+
+    if("overdrive".equals(id))
+        return OVERDRIVE_DURATION-OVERDRIVE_TIMER;
+
+    if("rapid_mobility".equals(id))
+        return RAPID_MOBILITY_DURATION-RAPID_MOBILITY_TIMER;
+
+    if("bottomless_mag".equals(id))
+        return BOTTOMLESS_MAG_DURATION-BOTTOMLESS_MAG_TIMER;
+
+    if("damage_surge".equals(id))
+        return DAMAGE_SURGE_DURATION-DAMAGE_SURGE_TIMER;
+
+    if("gold_rush".equals(id))
+        return GOLD_RUSH_DURATION-GOLD_RUSH_TIMER;
+
+    if("score_frenzy".equals(id))
+        return SCORE_FRENZY_DURATION-SCORE_FRENZY_TIMER;
+
+    if("berserk".equals(id))
+        return BERSERK_DURATION-BERSERK_TIMER;
+
+    if("infinite_assault".equals(id))
+        return INFINITE_ASSAULT_DURATION-INFINITE_ASSAULT_TIMER;
+
+    if("hyperdrive".equals(id))
+        return HYPERDRIVE_DURATION-HYPERDRIVE_TIMER;
+
+    if("fortress".equals(id))
+        return FORTRESS_DURATION-FORTRESS_TIMER;
+
+    if("double_fortune".equals(id))
+        return DOUBLE_FORTUNE_DURATION-DOUBLE_FORTUNE_TIMER;
+
+    if("god_mode".equals(id))
+        return GOD_MODE_DURATION-GOD_MODE_TIMER;
+
+    return 0f;
+}
+
+private Texture getPowerTierTexture(String id){
+    if("god_mode".equals(id))
+        return FxAssets.powerSpecial;
+
+    if("berserk".equals(id) || "infinite_assault".equals(id) ||
+       "hyperdrive".equals(id) || "fortress".equals(id) ||"double_fortune".equals(id))
+        return FxAssets.powerMoreSpicy;
+
+    if("overdrive".equals(id) ||  "rapid_mobility".equals(id) ||  "bottomless_mag".equals(id) ||
+       "damage_surge".equals(id) || "gold_rush".equals(id) || "score_frenzy".equals(id))
+        return FxAssets.powerSpicy;
+
+    return FxAssets.powerNormal;
+}
+
+private void drawPoweredStateHud(){
+    String id = getDominantPowerAura();
+    if(id == null)
+        return;
+
+    float scale = 1f;
+    float width = 384f*scale;
+    float height = 88f*scale;
+    float x = (Gdx.graphics.getWidth()-width)/2f;
+    float y = Gdx.graphics.getHeight()-height-14f;
+    batch.draw(FxAssets.powerFrame,x,y, width,height);
+    batch.draw(getPowerTierTexture(id),x,y,width,height);
+    Texture icon = getPowerHudIcon(id);
+    if(icon != null)
+        drawContain(icon,x+12f*scale,y+14f*scale,64f*scale,64f*scale);
+    inventoryInfoFont.getData().setScale(0.8f);
+    inventoryInfoFont.draw(batch,"POWERED STATE",x+88f,y+72f);
+    inventoryTitleFont.getData().setScale(0.72f);
+    inventoryTitleFont.draw(batch,getActivePowerName(id), x+88f, y+49f);
+    inventoryInfoFont.getData().setScale(0.85f);
+    if("shield".equals(id)){
+        inventoryInfoFont.draw(batch, Integer.toString((int)SHIELD_AMOUNT),x+305f, y+38f);
+    }
+    else{
+        float remaining = Math.max( 0f, getActivePowerRemaining(id));
+        String timer = String.format("%.1fs",remaining);
+        inventoryInfoFont.draw(batch,timer, x+296f,y+38f);
+    }
+}
+
+private Texture getPowerHudIcon(String id){
+    if("shield".equals(id))
+        return FxAssets.powerupIcons.get(Powerup.PowerupType.SHIELD);
+
+    if("fire_rate".equals(id))
+        return FxAssets.powerupIcons.get(Powerup.PowerupType.FIRE_RATE);
+
+    if("overdrive".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.OVERDRIVE);
+
+    if("rapid_mobility".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.RAPID_MOBILITY);
+
+    if("bottomless_mag".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.BOTTOMLESS_MAG);
+
+    if("damage_surge".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.DAMAGE_SURGE);
+
+    if("gold_rush".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.GOLD_RUSH);
+
+    if("score_frenzy".equals(id))
+        return FxAssets.spicyIcons.get(Powerup.SpicyType.SCORE_FRENZY);
+
+    if("berserk".equals(id))
+        return FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.BERSERK);
+
+    if("infinite_assault".equals(id))
+        return FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.INFINITE_ASSAULT);
+
+    if("hyperdrive".equals(id))
+        return FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.HYPERDRIVE);
+
+    if("fortress".equals(id))
+        return FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.FORTRESS);
+
+    if("double_fortune".equals(id))
+        return FxAssets.moreSpicyIcons.get(Powerup.MoreSpicyType.DOUBLE_FORTUNE);
+
+    if("god_mode".equals(id))
+        return FxAssets.godModeIcon;
+
+    return null;
 }
 
 

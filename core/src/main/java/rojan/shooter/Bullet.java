@@ -5,32 +5,69 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
+import rojan.shooter.Weapon.WeaponType;
+
 public class Bullet{
     private Vector2 position;
     private Vector2 direction;
     private float radius;
     private float speed;
-    private float width = 25f;
-    private float height = 25f;
+    private float width;
+    private float height;
     private float balancingX =0f;
     private float balancingY = 0f;
     private Texture texture;
     boolean considerWasted;
 
+    private Weapon.WeaponType weaponType;
+    private float headDamage;
+    private float bodyDamage;
+    private float limbDamage;
+    private Vector2 previousPosition;
 
-    public Bullet(Vector2 position, Vector2 direction, float speed, Texture texture, float radius) {
+
+    public Bullet(Vector2 position,Vector2 direction,float speed,Texture texture,float radius,Weapon.WeaponType weaponType,float drawSize,float headDamage,float bodyDamage,float limbDamage){
         this.position = new Vector2(position);
-        this.direction =new Vector2(direction);
+        this.previousPosition = new Vector2(position);
+        this.direction = new Vector2(direction);
         this.speed = speed;
         this.texture = texture;
         this.radius = radius;
+        this.weaponType = weaponType;
+        width = drawSize;
+        height = drawSize;
+        this.headDamage = headDamage;
+        this.bodyDamage = bodyDamage;
+        this.limbDamage = limbDamage;
         considerWasted = false;
     }
 
+    public float getHeadDamage(){
+        return headDamage;
+    }
+
+    public float getBodyDamage(){
+        return bodyDamage;
+    }
+
+    public float getLimbDamage(){
+        return limbDamage;
+    }
+
+    public Weapon.WeaponType getWeaponType(){
+        return weaponType;
+    }
+
+
  
     public void update(float dt) {
+        previousPosition.set(position);
         position.x += direction.x * speed * dt;
         position.y += direction.y * speed * dt;
+    }
+
+    public Vector2 getPreviousPosition(){
+        return previousPosition;
     }
 
 
@@ -64,5 +101,4 @@ public class Bullet{
         return considerWasted;
     }
 
-    
 }

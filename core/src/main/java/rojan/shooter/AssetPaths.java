@@ -31,6 +31,12 @@ public final class AssetPaths {
 
         public static final String INVENTORY_WEAPON_LOCKED ="ui/inventory/weapon_locked.png";
         public static final String INVENTORY_WEAPON_EQUIPPED ="ui/inventory/weapon_equipped.png";
+
+        public static final String POWER_FRAME = "ui/hud/power/primary_frame.png";
+        public static final String POWER_NORMAL = "ui/hud/power/primary_tier_normal.png";
+        public static final String POWER_SPICY = "ui/hud/power/primary_tier_spicy.png";
+        public static final String POWER_MORE_SPICY = "ui/hud/power/primary_tier_more_spicy.png";
+        public static final String POWER_SPECIAL = "ui/hud/power/primary_tier_special.png";
 }
     
 
@@ -128,6 +134,16 @@ public final class AssetPaths {
 
         public static final String BOMBARDMENT_RAIN_IMPACT = BASE + "heavy_portal/bombardment_assets/impact/";
         public static final int BOMBARDMENT_RAIN_IMPACT_FRAMES = 8;
+
+        public static final String POWER_AURA_BASE = BASE+"power_auras/";
+
+        public static String powerAuraBack(String id){
+            return POWER_AURA_BASE+id+"/back.png";
+        }
+
+        public static String powerAuraFront(String id){
+            return POWER_AURA_BASE+id+"/front.png";
+        }
     }
 
     public static final class Map {
@@ -224,31 +240,25 @@ public final class AssetPaths {
 
     public static final class Weapons {
         private Weapons() {}
-        public static final class Rifles {
-            private Rifles() {}
-            public static final String AR = "sprites/guns/rifle/rifle.png";
-        }
+            public static final String BASE = "sprites/guns/gameplay/";
+            public static final String PISTOL = BASE+"pistol.png";
+            public static final String AR = BASE+"ar.png";
+            public static final String SMG = BASE+"smg.png";
+            public static final String SHOTGUN = BASE+"shotgun.png";
+            public static final String SNIPER =  BASE+"sniper.png";
+            public static final String ROCKET_LAUNCHER =BASE+"rocket_launcher.png";
     }
 
     public static final class Bullets {
         private Bullets() {}
         
         public static final String BASE = "sprites/bullet/";
-
-        public static final String ORANGE_SPIN = BASE + "OrangeSpin__";
-        public static final int ORANGE_SPIN_FRAMES = 10;
-
-        public static final String ORANGE_SCALE = BASE + "OrangeScale__";
-        public static final int ORANGE_SCALE_FRAMES = 10;
-
-        public static final String YELLOW_SPIN = BASE + "YellowSpin__";
-        public static final int YELLOW_SPIN_FRAMES = 10;
-
-        public static final String YELLOW_SCALE = BASE + "YellowScale__";
-        public static final int YELLOW_SCALE_FRAMES = 10;
-
-        public static final String GRENADE = BASE + "Grenade__";
-        public static final int GRENADE_FRAMES = 10;
+        public static final String PISTOL = BASE+"pistol.png";
+        public static final String AR = BASE+"ar.png";
+        public static final String SMG = BASE+"smg.png";
+        public static final String SHOTGUN = BASE+"shotgun.png";
+        public static final String SNIPER = BASE+"sniper.png";
+        public static final String ROCKET_LAUNCHER = BASE+"rocket_launcher.png";
     }
 
     public static final class Muzzle {

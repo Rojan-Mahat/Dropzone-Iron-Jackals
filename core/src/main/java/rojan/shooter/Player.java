@@ -727,7 +727,10 @@ public class Player{
 
     public Vector2 getCurrentGripWorldPosition() {
         GripPose pose = getCurrentGripPose();
-        return new Vector2(position.x+pose.position.x , position.y+pose.position.y);
+        float gripX = pose.position.x;
+        if(currentDirection == FacingDirection.LEFT)
+            gripX= width-pose.position.x;
+        return new Vector2(position.x+gripX, position.y+pose.position.y);
     }
 
     public float getPlayerWidth(){

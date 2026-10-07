@@ -3,8 +3,10 @@ package rojan.shooter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ObjectIntMap;
+import com.badlogic.gdx.utils.ObjectMap;
 
 public class Weapon{
     private Vector2 position;
@@ -86,6 +88,34 @@ public class Weapon{
     private final float BASE_BODY_DAMAGE_ROCKET = 30f;
     private final float BASE_LIMB_DAMAGE_ROCKET = 20f;
     private final boolean BASE_AUTOMATIC_ROCKET = false;
+    private final float BASE_SCOPE_ROCKET = 5f;
+    private final float BASE_FIRE_RATE_ROCKET_LAUNCHER = 0.75f;
+
+    private final float PISTOL_VISUAL_SCALE = 1.20f;
+    private final float SMG_VISUAL_SCALE = 1.15f;
+
+    private final float AR_VISUAL_SCALE = 1f;
+    private final float SHOTGUN_VISUAL_SCALE = 1f;
+    private final float SNIPER_VISUAL_SCALE = 1f;
+    private final float ROCKET_VISUAL_SCALE = 1f;
+
+    private final float PISTOL_OFFSET_X = 3f;
+    private final float PISTOL_OFFSET_Y = -1f;
+
+    private final float SMG_OFFSET_X = 2f;
+    private final float SMG_OFFSET_Y = 0f;
+
+    private final float AR_OFFSET_X = 0f;
+    private final float AR_OFFSET_Y = 0f;
+
+    private final float SHOTGUN_OFFSET_X = 0f;
+    private final float SHOTGUN_OFFSET_Y = 0f;
+
+    private final float SNIPER_OFFSET_X = 0f;
+    private final float SNIPER_OFFSET_Y = 0f;
+
+    private final float ROCKET_OFFSET_X = 0f;
+    private final float ROCKET_OFFSET_Y = 0f;
 
     private float reloadSpeed;
     private boolean automatic;
@@ -99,8 +129,8 @@ public class Weapon{
     private boolean facingLeft;
 
 
-    private Texture ARtexture;
-    private TextureRegion ARregion;
+    private ObjectMap<WeaponType,Texture> weaponTextures;
+    private ObjectMap<WeaponType,TextureRegion> weaponRegions;
 
     private Texture ammoPanel;
     private Texture ammoIcon;
@@ -115,6 +145,7 @@ public class Weapon{
         this.height = height * weaponScale;
         offset = new Vector2(offsetCoordinates).scl(weaponScale);
         weaponMagazineAmmo = new ObjectIntMap<>();
+        loadWeaponTextures();
         determineWeaponStats();
         currentAmmo = magazineSize;
         weaponMagazineAmmo.put(currentWeapon,currentAmmo);
@@ -125,20 +156,39 @@ public class Weapon{
 
     }
 
-    public void drawWeapon(SpriteBatch batch,Vector2 playerHoldingGunPosition ){
-        float originY = offset.y;
-        float originX = offset.x;
-        float scaleY;
-        if(facingLeft)
-            scaleY = -1f;
-        else
-            scaleY = 1f;
-        Vector2 drawPosition = determineWeaponDrawLocation(playerHoldingGunPosition);
-        batch.draw(ARregion, drawPosition.x, drawPosition.y, originX, originY ,width, height,1f,scaleY,angleOfRotation);
-    }
+    public void drawWeapon(SpriteBatch batch,Vector2 playerHoldingGunPosition){
+    TextureRegion region = weaponRegions.get(currentWeapon);
+    float visualScale = getWeaponVisualScale();
+    float drawWidth = width*visualScale;
+    float drawHeight = height*visualScale;
+    float originX = offset.x*visualScale;
+    float originY = offset.y*visualScale;
+    float visualOffsetX = getWeaponVisualOffsetX();
+    float visualOffsetY = getWeaponVisualOffsetY();
+    if(facingLeft)
+        visualOffsetX *= -1f;
+
+    float drawX = playerHoldingGunPosition.x - originX + visualOffsetX;
+    float drawY = playerHoldingGunPosition.y - originY + visualOffsetY;
+    float scaleY;
+    if(facingLeft)
+        scaleY = -1f;
+    else
+        scaleY = 1f;
+
+    batch.draw(region,drawX,drawY,originX,originY,drawWidth,drawHeight,1f,scaleY,angleOfRotation);
+}
 
     public void disposeWeapon(){
-        ARtexture.dispose();
+        if(weaponTextures != null){
+            for(Texture texture : weaponTextures.values())
+                texture.dispose();
+            weaponTextures.clear();
+            weaponRegions.clear();
+        }
+        ammoPanel.dispose();
+        ammoIcon.dispose();
+        noAmmoIcon.dispose();
     }
 
     public Vector2 determineWeaponDrawLocation(Vector2 playerHoldingGunPosition){
@@ -164,6 +214,25 @@ public class Weapon{
         return angleOfRotation;
     }
 
+    private void loadWeaponTextures(){
+        weaponTextures = new ObjectMap<>();
+        weaponRegions = new ObjectMap<>();
+
+        weaponTextures.put(WeaponType.PISTOL,new Texture(AssetPaths.Weapons.PISTOL));
+        weaponTextures.put(WeaponType.AR,new Texture(AssetPaths.Weapons.AR));
+        weaponTextures.put(WeaponType.SMG,new Texture(AssetPaths.Weapons.SMG));
+        weaponTextures.put(WeaponType.SHOTGUN,new Texture(AssetPaths.Weapons.SHOTGUN));
+        weaponTextures.put(WeaponType.SNIPER,new Texture(AssetPaths.Weapons.SNIPER));
+        weaponTextures.put(WeaponType.ROCKET_LAUNCHER,new Texture(AssetPaths.Weapons.ROCKET_LAUNCHER));
+
+
+        for(ObjectMap.Entry<WeaponType,Texture> entry :
+            weaponTextures.entries()){
+            entry.value.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+            weaponRegions.put(entry.key,new TextureRegion(entry.value));
+        }
+    }
+
     private void determineWeaponStats(){
         if(currentWeapon == WeaponType.PISTOL){
             magazineSize = BASE_MAGAZINE_PISTOL;
@@ -185,9 +254,6 @@ public class Weapon{
             automatic = BASE_AUTOMATIC_AR;
             fireRate = BASE_FIRE_RATE_AR;
             maxScope = BASE_SCOPE_AR;
-
-            ARtexture = new Texture(AssetPaths.Weapons.Rifles.AR);
-            ARregion = new TextureRegion(ARtexture);
         }
 
         if(currentWeapon == WeaponType.SHOTGUN){
@@ -222,6 +288,17 @@ public class Weapon{
             fireRate = BASE_FIRE_RATE_SNIPER;
             maxScope = BASE_SCOPE_SNIPER;
         }
+
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER){
+            magazineSize = BASE_MAGAZINE_ROCKET;
+            reloadSpeed = BASE_RELOAD_ROCKET;
+            headDamage = BASE_HEAD_DAMAGE_ROCKET;
+            bodyDamage = BASE_BODY_DAMAGE_ROCKET;
+            limbDamage = BASE_LIMB_DAMAGE_ROCKET;
+            automatic = BASE_AUTOMATIC_ROCKET;
+            fireRate = BASE_FIRE_RATE_ROCKET_LAUNCHER;
+            maxScope = BASE_SCOPE_ROCKET;
+}
     }
 
     public int getBaseMagazineSize(WeaponType type){
@@ -286,9 +363,9 @@ public class Weapon{
             return BASE_FIRE_RATE_SHOTGUN;
         if(type == WeaponType.SNIPER)
             return BASE_FIRE_RATE_SNIPER;
-
-        // Rocket fire rate isn't finalized yet.
-        return -1f;
+        if(type == WeaponType.ROCKET_LAUNCHER)
+            return BASE_FIRE_RATE_ROCKET_LAUNCHER;
+        return 0;
     }
 
     public float getBaseReloadSpeed(WeaponType type){
@@ -378,7 +455,7 @@ public class Weapon{
         if(currentWeapon == WeaponType.SNIPER)
             fireRate = BASE_FIRE_RATE_SNIPER;
         if(currentWeapon == WeaponType.ROCKET_LAUNCHER){}
-            //fireRate = BASE_FIRE_RATE_ROCKET_LAUNCHER
+            fireRate = BASE_FIRE_RATE_ROCKET_LAUNCHER;
         if(currentWeapon == WeaponType.SHOTGUN)
             fireRate = BASE_FIRE_RATE_SHOTGUN;
     }
@@ -429,6 +506,108 @@ public class Weapon{
         currentWeapon = type;
         determineWeaponStats();
         currentAmmo = weaponMagazineAmmo.get(type,0);
+    }
+
+
+    private float getWeaponVisualScale(){
+        if(currentWeapon == WeaponType.PISTOL)
+            return PISTOL_VISUAL_SCALE;
+
+        if(currentWeapon == WeaponType.SMG)
+            return SMG_VISUAL_SCALE;
+
+        if(currentWeapon == WeaponType.SHOTGUN)
+            return SHOTGUN_VISUAL_SCALE;
+
+        if(currentWeapon == WeaponType.SNIPER)
+            return SNIPER_VISUAL_SCALE;
+
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER)
+            return ROCKET_VISUAL_SCALE;
+
+        return AR_VISUAL_SCALE;
+    }
+
+    private float getWeaponVisualOffsetX(){
+        if(currentWeapon == WeaponType.PISTOL)
+            return PISTOL_OFFSET_X;
+
+        if(currentWeapon == WeaponType.SMG)
+            return SMG_OFFSET_X;
+
+        if(currentWeapon == WeaponType.SHOTGUN)
+            return SHOTGUN_OFFSET_X;
+
+        if(currentWeapon == WeaponType.SNIPER)
+            return SNIPER_OFFSET_X;
+
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER)
+            return ROCKET_OFFSET_X;
+
+        return AR_OFFSET_X;
+    }
+
+    private float getWeaponVisualOffsetY(){
+        if(currentWeapon == WeaponType.PISTOL)
+            return PISTOL_OFFSET_Y;
+
+        if(currentWeapon == WeaponType.SMG)
+            return SMG_OFFSET_Y;
+
+        if(currentWeapon == WeaponType.SHOTGUN)
+            return SHOTGUN_OFFSET_Y;
+
+        if(currentWeapon == WeaponType.SNIPER)
+            return SNIPER_OFFSET_Y;
+
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER)
+            return ROCKET_OFFSET_Y;
+
+        return AR_OFFSET_Y;
+    }
+
+    private Vector2 getBaseMuzzleOffset(){
+        if(currentWeapon == WeaponType.PISTOL)
+            return new Vector2( 23.89533f,-1.08177f);
+
+        if(currentWeapon == WeaponType.AR)
+            return new Vector2(51.53433f,-2.46548f);
+
+        if(currentWeapon == WeaponType.SMG)
+            return new Vector2(38.65111f, -2.94446f);
+
+        if(currentWeapon == WeaponType.SHOTGUN)
+            return new Vector2(51.98374f,0.62127f);
+
+        if(currentWeapon == WeaponType.SNIPER)
+            return new Vector2(54.30572f,-1.61397f);
+
+        if(currentWeapon == WeaponType.ROCKET_LAUNCHER)
+            return new Vector2(53.48179f, -1.18821f);
+        return new Vector2();
+    }
+
+    public Vector2 getMuzzleWorldPosition(Vector2 playerGrip){
+        Vector2 muzzleOffset = getBaseMuzzleOffset();
+        float visualScale = getWeaponVisualScale();
+        float dx = muzzleOffset.x*visualScale;
+        float dy = muzzleOffset.y*visualScale;
+        if(facingLeft)
+            dy *= -1f;
+
+        float visualOffsetX = getWeaponVisualOffsetX();
+        float visualOffsetY = getWeaponVisualOffsetY();
+        if(facingLeft)
+            visualOffsetX *= -1f;
+
+        float pivotX = playerGrip.x+visualOffsetX;
+        float pivotY = playerGrip.y+visualOffsetY;
+        float cos = MathUtils.cosDeg(angleOfRotation);
+        float sin = MathUtils.sinDeg(angleOfRotation);
+        float rotatedX = dx*cos-dy*sin;
+        float rotatedY = dx*sin+dy*cos;
+        
+        return new Vector2( pivotX+rotatedX, pivotY+rotatedY);
     }
 
 
