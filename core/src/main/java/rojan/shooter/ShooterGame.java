@@ -89,7 +89,6 @@ public class ShooterGame extends ApplicationAdapter {
     private int drillerCount = 0;
     private int droneCount = 0;
 
-    private int currentScore = 0;
     private LootCrate activeLootCrate;
 
     private final int WEAPON_INITIAL_CAPACITY =5;
@@ -130,8 +129,12 @@ public class ShooterGame extends ApplicationAdapter {
     private Array<Rectangle> groundEnemySpawnPoints;
     private Array<Rectangle> drillerSpawnPoints;
     private Array<LootCrate> lootCrates;
+
     private Inventory inventory;
     private RunState runState;
+    private SaveManager saveManager;
+    private PlayerProfile playerProfile;
+
     private Array<Rectangle> specialCrateSpawnPoints;
     private float SPECIAL_CRATE_TIMER = 0f;
     //private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,75f);
@@ -332,137 +335,18 @@ public class ShooterGame extends ApplicationAdapter {
     private float reloadTimer = 0f;
 
     private boolean pauseMenuOpen = false;
-    private PlayerProfile playerProfile;
-        
+
 
     @Override
     public void create(){
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = 20;
-        hudFont = generator.generateFont(parameter);
-        generator.dispose();
+        loadFonts();
+        initializeGame();
+        loadPlayerProfile();
 
-        FreeTypeFontGenerator lootGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter lootParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        lootParameter.size = 48;
-        lootParameter.minFilter = Texture.TextureFilter.Linear;
-        lootParameter.magFilter = Texture.TextureFilter.Linear;
-        lootFont = lootGenerator.generateFont(lootParameter);
-        lootGenerator.dispose();
-
-
-        FreeTypeFontGenerator lootCountGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter lootCountParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        lootCountParameter.size = 26;
-        lootCountParameter.minFilter = Texture.TextureFilter.Linear;
-        lootCountParameter.magFilter = Texture.TextureFilter.Linear;
-        lootCountFont = lootCountGenerator.generateFont(lootCountParameter);
-        lootCountGenerator.dispose();
-        lootCountFont.setUseIntegerPositions(false);
-
-        FreeTypeFontGenerator inventoryGenerator =new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter inventoryTitleParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        inventoryTitleParameter.size = 28;
-        inventoryTitleParameter.minFilter = Texture.TextureFilter.Linear;
-        inventoryTitleParameter.magFilter = Texture.TextureFilter.Linear;
-        inventoryTitleFont = inventoryGenerator.generateFont(inventoryTitleParameter);
-
-        FreeTypeFontGenerator.FreeTypeFontParameter inventoryBodyParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        inventoryBodyParameter.size = 17;
-        inventoryBodyParameter.minFilter = Texture.TextureFilter.Linear;
-        inventoryBodyParameter.magFilter = Texture.TextureFilter.Linear;
-        inventoryBodyFont = inventoryGenerator.generateFont(inventoryBodyParameter);
-
-        FreeTypeFontGenerator.FreeTypeFontParameter inventoryInfoParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        inventoryInfoParameter.size = 16;
-        inventoryInfoParameter.minFilter = Texture.TextureFilter.Linear;
-        inventoryInfoParameter.magFilter = Texture.TextureFilter.Linear;
-        inventoryInfoFont = inventoryGenerator.generateFont(inventoryInfoParameter);
-
-        FreeTypeFontGenerator.FreeTypeFontParameter inventoryButtonParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        inventoryButtonParameter.size = 20;
-        inventoryButtonParameter.minFilter = Texture.TextureFilter.Linear;
-        inventoryButtonParameter.magFilter = Texture.TextureFilter.Linear;
-        inventoryButtonFont = inventoryGenerator.generateFont(inventoryButtonParameter);
-
-        inventoryGenerator.dispose();
-        inventoryGlyphLayout = new GlyphLayout();
-
-        map = loadMap();
-        createShopFromMap(map);
-        mapRenderer = new OrthogonalTiledMapRenderer(map); 
-        camera = createCameraFromMap(map);
-        mapRenderer.setView(camera);
-
-        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
-        hudCamera.position.set(Gdx.graphics.getWidth()/2f,Gdx.graphics.getHeight()/2f,0);
-        hudCamera.update();
-
-        terrain = getTerrainObjectArray(map);
-        terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
-
-        player = createPlayerFromMap(map);
-        player.receiveJetPackDrawData(extractJetpackFromMap(map));
-        weapon = createWeaponFromMap(map);
-        player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
-        player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
-        player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
-
-        Enemy.loadEnemyAssetOnce();
-        extractAllEnemyHitboxes();
-        enemies = new Array<>();
-        Enemy rifleman = create_Jackal_RifleMan_FromMap(map);
-        Enemy heavy = create_Jackal_Heavy_FromMap(map);
-        Enemy hoverDrone = create_Jackal_HoverDrone_FromMap(map);
-        Enemy drillCrawler = create_Jackal_DrillCrawler_FromMap(map);
-        enemies.add(rifleman);
-        enemies.add(heavy);
-        enemies.add(hoverDrone);
-        enemies.add(drillCrawler);
-
-        groundEnemySpawnPoints = extractGroundEnemySpawnPoints();
-        drillerSpawnPoints = extractDrillerSpawnPoints();
-        
-
-        shapeRenderer = new ShapeRenderer();
-        
-
-        batch = new SpriteBatch();
-        batch.setProjectionMatrix(camera.combined);
-        solidPlatforms = extractSolidPlatformsFromMap(map);
-        bullets = new Array<>();
-        loadBulletTextures();
-        riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
-        heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
-
-        playerProfile = new PlayerProfile();
-        inventory = playerProfile.getInventory();
-        runState = new RunState();
-        int roll = MathUtils.random(1,1);
-        if(roll == 1){
-            inventory.addWeapon(weapon.getCurrentWeapon());
-            runState.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY* weapon.getMagazineSize());
-        }
-        lootCrates = new Array<>();
-        FxAssets.loadOnce();
-        LootCrate.loadAssetsOnce();
-        specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
-        inventory.addWeapon(WeaponType.PISTOL);
-        inventory.addWeapon(WeaponType.AR);
-        inventory.addWeapon(WeaponType.SMG);
-        inventory.addWeapon(WeaponType.SHOTGUN);
-        inventory.addWeapon(WeaponType.SNIPER);
-        inventory.addWeapon(WeaponType.ROCKET_LAUNCHER);
-
-        runState.addAmmo(weapon.getCurrentWeapon(),WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize());
-        runState.addAmmo(WeaponType.PISTOL,5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
-        runState.addAmmo(WeaponType.AR,5*weapon.getBaseMagazineSize(WeaponType.AR));
-        runState.addAmmo(WeaponType.SMG,5*weapon.getBaseMagazineSize(WeaponType.SMG));
-        runState.addAmmo(WeaponType.SHOTGUN,5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
-        runState.addAmmo(WeaponType.SNIPER,5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
-        runState.addAmmo(WeaponType.ROCKET_LAUNCHER,5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
+        giveTestWeapons();
+        startNewRun();
     }
+    
 
     @Override
     public void render() {
@@ -532,6 +416,8 @@ public class ShooterGame extends ApplicationAdapter {
                 player.setAirTime(0f);
                 player.stopJetpack();
             }
+            if(Gdx.input.isKeyJustPressed(Input.Keys.K))
+                restartGame();
 
             player.move(direction,dt,getWorldSize(),solidPlatforms);
             player.ensureGrounding(solidPlatforms);
@@ -718,6 +604,9 @@ public class ShooterGame extends ApplicationAdapter {
 
     @Override
     public void dispose() {
+        saveManager.saveProfile(playerProfile);
+        System.out.println("SAVING PROFILE: "+inventory.getGold());
+
         mapRenderer.dispose();
         map.dispose();
         batch.dispose();
@@ -1737,25 +1626,25 @@ private void drawJetpackDisabledHud(){
 
             if(runState.getHeadshotCount()>= runState.getNextHeadshotReward()){
                 runState.addPendingScore(40);
-                inventory.addGold(modifyGoldReward(5));
+                giveGold(5);
                 runState.advanceHeadshotReward();
             }
 
             if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
                 runState.addPendingScore(25);
-                inventory.addGold(modifyGoldReward(3));
+                giveGold(3);
                 runState.advanceBodyshotReward();
             }
 
             if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
                 runState.addPendingScore(15);
-                inventory.addGold(modifyGoldReward(2));
+                giveGold(2);
                 runState.advanceLimbshotReward();
             }
 
             if(runState.getKillCount() >= runState.getNextKillReward()){
                 runState.addPendingScore(100);
-                inventory.addGold(modifyGoldReward(10));
+                giveGold(10);
                 runState.advanceKillReward();
             }
         }
@@ -1774,25 +1663,25 @@ private void drawJetpackDisabledHud(){
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
                 runState.addPendingScore(50);
-                inventory.addGold(modifyGoldReward(7));
+                giveGold(7);
                 runState.advanceHeadshotReward();
             }
 
             if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
                 runState.addPendingScore(30);
-                inventory.addGold(modifyGoldReward(4));
+                giveGold(4);
                 runState.advanceBodyshotReward();
             }
 
             if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
                 runState.addPendingScore(20);
-                inventory.addGold(modifyGoldReward(3));
+                giveGold(3);
                 runState.advanceLimbshotReward();
             }
 
             if(runState.getKillCount() >= runState.getNextKillReward()){
                 runState.addPendingScore(140);
-                inventory.addGold(modifyGoldReward(15));
+                giveGold(15);
                 runState.advanceKillReward();
             }
         }
@@ -1811,25 +1700,25 @@ private void drawJetpackDisabledHud(){
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
                 runState.addPendingScore(70);
-                inventory.addGold(modifyGoldReward(10));
+                giveGold(10);
                 runState.advanceHeadshotReward();
             }
 
             if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
                 runState.addPendingScore(45);
-                inventory.addGold(modifyGoldReward(6));
+                giveGold(6);
                 runState.advanceBodyshotReward();
             }
 
             if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
                 runState.addPendingScore(30);
-                inventory.addGold(modifyGoldReward(4));
+                giveGold(4);
                 runState.advanceLimbshotReward();
             }
 
             if(runState.getKillCount() >= runState.getNextKillReward()){
                 runState.addPendingScore(200);
-                inventory.addGold(modifyGoldReward(20));
+                giveGold(20);
                 runState.advanceKillReward();
             }
         }
@@ -1848,25 +1737,25 @@ private void drawJetpackDisabledHud(){
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
                 runState.addPendingScore(100);
-                inventory.addGold(modifyGoldReward(15));
+                giveGold(15);
                 runState.advanceHeadshotReward();
             }
 
             if(runState.getBodyshotCount() >= runState.getNextBodyshotReward()){
                 runState.addPendingScore(60);
-                inventory.addGold(modifyGoldReward(8));
+                giveGold(8);
                 runState.advanceBodyshotReward();
             }
 
             if(runState.getLimbshotCount() >= runState.getNextLimbshotReward()){
                 runState.addPendingScore(40);
-                inventory.addGold(modifyGoldReward(15));
+                giveGold(15);
                 runState.advanceLimbshotReward();
             }
 
             if(runState.getKillCount() >= runState.getNextKillReward()){
                 runState.addPendingScore(300);
-                inventory.addGold(modifyGoldReward(30));
+                giveGold(30);
                 runState.advanceKillReward();
             }
         }
@@ -1961,8 +1850,6 @@ private void drawJetpackDisabledHud(){
             }
         }
     }
-
-    
 
     private void removeBullets(){
         for(int i = bullets.size-1 ; i >= 0 ; i--){
@@ -2699,7 +2586,7 @@ private void claimActiveCrate(){
 private void updatePendingLoot(LootCrate.Contents loot){
     runState.addScore(modifyScoreReward(loot.getScore()));
     playerProfile.updateBestScore(runState.getCurrentScore());
-    inventory.addGold(modifyGoldReward(loot.getGold()));
+    giveGold(loot.getGold());
     runState.addAmmo(weapon.getCurrentWeapon(), (loot.getAmmoReward()* WEAPON_INITIAL_CAPACITY*weapon.getMagazineSize())/100);
     inventory.addPowerupFromArray(loot.getPowerups());
 
@@ -2715,11 +2602,11 @@ private void updatePendingLoot(LootCrate.Contents loot){
 
     if(loot.hasJackpot()){
         int goldCount = MathUtils.random(200,350);
-        inventory.addGold(modifyGoldReward(goldCount));
+        giveGold(goldCount);
     }
     if(loot.hasBiggerJackpot()){
         int goldCount = MathUtils.random(600,800);
-        inventory.addGold(modifyGoldReward(goldCount));
+        giveGold(goldCount);
     }
     player.heal(loot.getHpBoost());
     
@@ -4378,10 +4265,302 @@ private void resumeGame(){
     pauseMenuOpen = false;
 }
 
-private void restartGame(){
+private void giveGold(int amount){
+    int finalAmount = modifyGoldReward(amount);
 
+    inventory.addGold(finalAmount);
+    runState.addGoldEarned(finalAmount);
 }
 
+private void startNewRun(){
+    resetRunSystems();
+    runState = new RunState();
+
+    player = createPlayerFromMap(map);
+    player.receiveJetPackDrawData(extractJetpackFromMap(map));
+    player.receivePlayerMoveBox(extractPlayerMovementColliderFromMap(map));
+    player.receivePlayerCrouchMoveBox(extractPlayerCrouchMovementColliderFromMap(map));
+    player.receivePlayerGunHoldingOffset(extractPlayerGunHoldingOffsetFromMap(map));
+
+    weapon = createWeaponFromMap(map);
+
+    Vector2 playerCenter = player.getPlayerCentrePosition();
+    camera.position.set(playerCenter.x,playerCenter.y,0f);
+    camera.zoom = 1f;
+    camera.update();
+    mapRenderer.setView(camera);
+
+    bullets = new Array<>();
+    enemyProjectiles = new Array<>();
+    lootCrates = new Array<>();
+    bombardmentImpactFx = new Array<>();
+    rocketExplosionFx = new Array<>();
+
+    riflemanCount = 0;
+    heavyCount = 0;
+    drillerCount = 0;
+    droneCount = 0;
+
+    enemies = new Array<>();
+
+    enemies.add(create_Jackal_RifleMan_FromMap(map));
+    enemies.add(create_Jackal_Heavy_FromMap(map));
+    enemies.add(create_Jackal_HoverDrone_FromMap(map));
+    enemies.add(create_Jackal_DrillCrawler_FromMap(map));
+
+    activeLootCrate = null;
+    pendingLoot = null;
+
+    reloading = false;
+    reloadTimer = 0f;
+
+    mouseHeld = 0f;
+    horizontalHoldTime = 0f;
+
+    scopeStage = 0;
+    targetCameraZoom = 1f;
+
+    inventoryOpen = false;
+    inventoryAnimation = 0f;
+    pauseMenuOpen = false;
+
+    giveStartingAmmo();
+}
+
+private void giveStartingAmmo(){
+    runState.addAmmo(WeaponType.PISTOL,5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
+    runState.addAmmo(WeaponType.AR,5*weapon.getBaseMagazineSize(WeaponType.AR));
+    runState.addAmmo(WeaponType.SMG,5*weapon.getBaseMagazineSize(WeaponType.SMG));
+    runState.addAmmo(WeaponType.SHOTGUN,5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
+    runState.addAmmo(WeaponType.SNIPER,5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
+    runState.addAmmo(WeaponType.ROCKET_LAUNCHER,5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
+}
+
+private void loadFonts(){
+    FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+    FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    parameter.size = 20;
+    hudFont = generator.generateFont(parameter);
+    generator.dispose();
+
+    FreeTypeFontGenerator lootGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+    FreeTypeFontGenerator.FreeTypeFontParameter lootParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    lootParameter.size = 48;
+    lootParameter.minFilter = Texture.TextureFilter.Linear;
+    lootParameter.magFilter = Texture.TextureFilter.Linear;
+    lootFont = lootGenerator.generateFont(lootParameter);
+    lootGenerator.dispose();
+
+    FreeTypeFontGenerator lootCountGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+    FreeTypeFontGenerator.FreeTypeFontParameter lootCountParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    lootCountParameter.size = 26;
+    lootCountParameter.minFilter = Texture.TextureFilter.Linear;
+    lootCountParameter.magFilter = Texture.TextureFilter.Linear;
+    lootCountFont = lootCountGenerator.generateFont(lootCountParameter);
+    lootCountGenerator.dispose();
+    lootCountFont.setUseIntegerPositions(false);
+
+    FreeTypeFontGenerator inventoryGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+
+    FreeTypeFontGenerator.FreeTypeFontParameter inventoryTitleParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    inventoryTitleParameter.size = 28;
+    inventoryTitleParameter.minFilter = Texture.TextureFilter.Linear;
+    inventoryTitleParameter.magFilter = Texture.TextureFilter.Linear;
+    inventoryTitleFont = inventoryGenerator.generateFont(inventoryTitleParameter);
+
+    FreeTypeFontGenerator.FreeTypeFontParameter inventoryBodyParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    inventoryBodyParameter.size = 17;
+    inventoryBodyParameter.minFilter = Texture.TextureFilter.Linear;
+    inventoryBodyParameter.magFilter = Texture.TextureFilter.Linear;
+    inventoryBodyFont = inventoryGenerator.generateFont(inventoryBodyParameter);
+
+    FreeTypeFontGenerator.FreeTypeFontParameter inventoryInfoParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    inventoryInfoParameter.size = 16;
+    inventoryInfoParameter.minFilter = Texture.TextureFilter.Linear;
+    inventoryInfoParameter.magFilter = Texture.TextureFilter.Linear;
+    inventoryInfoFont = inventoryGenerator.generateFont(inventoryInfoParameter);
+
+    FreeTypeFontGenerator.FreeTypeFontParameter inventoryButtonParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    inventoryButtonParameter.size = 20;
+    inventoryButtonParameter.minFilter = Texture.TextureFilter.Linear;
+    inventoryButtonParameter.magFilter = Texture.TextureFilter.Linear;
+    inventoryButtonFont = inventoryGenerator.generateFont(inventoryButtonParameter);
+
+    inventoryGenerator.dispose();
+    inventoryGlyphLayout = new GlyphLayout();
+}
+
+
+private void initializeGame(){
+    map = loadMap();
+    createShopFromMap(map);
+
+    mapRenderer = new OrthogonalTiledMapRenderer(map);
+
+    camera = createCameraFromMap(map);
+    mapRenderer.setView(camera);
+
+    hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+    hudCamera.position.set(Gdx.graphics.getWidth()/2f,Gdx.graphics.getHeight()/2f,0);
+    hudCamera.update();
+
+    terrain = getTerrainObjectArray(map);
+    terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
+
+    Enemy.loadEnemyAssetOnce();
+    extractAllEnemyHitboxes();
+
+    groundEnemySpawnPoints = extractGroundEnemySpawnPoints();
+    drillerSpawnPoints = extractDrillerSpawnPoints();
+    specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
+
+    solidPlatforms = extractSolidPlatformsFromMap(map);
+
+    shapeRenderer = new ShapeRenderer();
+
+    batch = new SpriteBatch();
+    batch.setProjectionMatrix(camera.combined);
+
+    loadBulletTextures();
+
+    riflemanProjectileTexture = new Texture(AssetPaths.EnemyProjectile.RIFLEMAN_PROJECTILE);
+    heavyProjectileTexture = new Texture(AssetPaths.EnemyProjectile.HEAVY_PROJECTILE);
+
+    FxAssets.loadOnce();
+    LootCrate.loadAssetsOnce();
+}
+
+private void loadPlayerProfile(){
+    saveManager = new SaveManager();
+    playerProfile = saveManager.loadProfile();
+    inventory = playerProfile.getInventory();
+}
+
+private void giveTestWeapons(){
+    inventory.addWeapon(WeaponType.PISTOL);
+    inventory.addWeapon(WeaponType.AR);
+    inventory.addWeapon(WeaponType.SMG);
+    inventory.addWeapon(WeaponType.SHOTGUN);
+    inventory.addWeapon(WeaponType.SNIPER);
+    inventory.addWeapon(WeaponType.ROCKET_LAUNCHER);
+}
+
+private void endCurrentRun(){
+    saveManager.saveProfile(playerProfile);
+    if(player != null)
+        player.disposePlayer();
+
+    if(weapon != null)
+        weapon.disposeWeapon();
+}
+
+private void resetRunSystems(){
+    RIFLEMAN_RESPAWN_TIMER = 0f;
+    HEAVY_RESPAWN_TIMER = 0f;
+    DRILLER_RESPAWN_TIMER = 0f;
+    DRONE_RESPAWN_TIMER = 0f;
+
+    RIFLEMAN_RESPAWN_TIME = 12f;
+    HEAVY_RESPAWN_TIME = 28f;
+    DRILLER_RESPAWN_TIME = 22f;
+    DRONE_RESPAWN_TIME = 17f;
+
+    MAX_ACTIVE_ENEMIES = 6;
+
+    difficulty = 0f;
+    easyMode = true;
+    mediumMode = false;
+    hardMode = false;
+    impossibleMode = false;
+
+    SPECIAL_CRATE_TIMER = 0f;
+
+    FIRE_RATE_ACTIVE = false;
+    FIRE_RATE_TIMER = 0f;
+
+    SHIELD_ACTIVE = false;
+    SHIELD_AMOUNT = 0f;
+
+    OVERDRIVE_ACTIVE = false;
+    OVERDRIVE_TIMER = 0f;
+
+    RAPID_MOBILITY_ACTIVE = false;
+    RAPID_MOBILITY_TIMER = 0f;
+
+    BOTTOMLESS_MAG_ACTIVE = false;
+    BOTTOMLESS_MAG_TIMER = 0f;
+
+    DAMAGE_SURGE_ACTIVE = false;
+    DAMAGE_SURGE_TIMER = 0f;
+
+    GOLD_RUSH_ACTIVE = false;
+    GOLD_RUSH_TIMER = 0f;
+
+    SCORE_FRENZY_ACTIVE = false;
+    SCORE_FRENZY_TIMER = 0f;
+
+    BERSERK_ACTIVE = false;
+    BERSERK_TIMER = 0f;
+
+    INFINITE_ASSAULT_ACTIVE = false;
+    INFINITE_ASSAULT_TIMER = 0f;
+
+    HYPERDRIVE_ACTIVE = false;
+    HYPERDRIVE_TIMER = 0f;
+
+    FORTRESS_ACTIVE = false;
+    FORTRESS_TIMER = 0f;
+
+    DOUBLE_FORTUNE_ACTIVE = false;
+    DOUBLE_FORTUNE_TIMER = 0f;
+
+    GOD_MODE_ACTIVE = false;
+    GOD_MODE_TIMER = 0f;
+
+    POWER_AURA_VISUAL_TIMER = 0f;
+    POWER_AURA_BURST = null;
+    POWER_AURA_BURST_TIMER = 0f;
+
+    poisonStatusFxTimer = 0f;
+    poisonStatusWasActive = false;
+    poisonStatusEnding = false;
+
+    stunStatusFxTimer = 0f;
+    stunStatusWasActive = false;
+    stunStatusEnding = false;
+
+    jetpackThrust = BASE_JETPACK_THRUST;
+
+    reloading = false;
+    reloadTimer = 0f;
+
+    mouseHeld = 0f;
+    horizontalHoldTime = 0f;
+
+    scopeStage = 0;
+    targetCameraZoom = 1f;
+    camera.zoom = 1f;
+
+    activeLootCrate = null;
+    pendingLoot = null;
+
+    inventoryOpen = false;
+    inventoryAnimation = 0f;
+
+    inventorySelectionType = InventorySelectionType.NONE;
+    selectedWeapon = null;
+    selectedPowerup = null;
+    selectedSpicy = null;
+    selectedMoreSpicy = null;
+    selectedGodMode = false;
+
+    pauseMenuOpen = false;
+}
+
+private void restartGame(){
+    endCurrentRun();
+    startNewRun();
+}
  
 
 

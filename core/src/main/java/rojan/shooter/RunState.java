@@ -19,6 +19,8 @@ public class RunState{
     private int nextLimbshotReward = 15;
     private int nextKillReward = 10;
 
+    private int goldEarned;
+
     RunState(){
         ammo = new ObjectIntMap<>();
     }
@@ -135,5 +137,13 @@ public class RunState{
 
     public void advanceKillReward(){
         nextKillReward+=10;
+    }
+
+    public void addGoldEarned(int amount){
+        goldEarned+=amount;
+    }
+
+    public int getGoldEarned(){
+        return goldEarned;
     }
 }
