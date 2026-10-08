@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
+import rojan.shooter.Weapon.WeaponType;
+
 public final class FxAssets{
     private FxAssets(){}
     private static Array<Texture> loadedTextures;
@@ -117,6 +119,26 @@ public final class FxAssets{
     public static Texture pauseMainMenuPressed;
     public static Texture pauseMainMenuDisabled;
 
+    public static Texture shopWeaponsCatalog;
+    public static Texture shopAmmoCatalog;
+    public static Texture shopSpecialCatalog;
+
+    public static Texture shopWeaponHover;
+    public static Texture shopWeaponSelected;
+    public static Texture shopWeaponLocked;
+    public static Texture shopWeaponUnavailable;
+    public static Texture shopWeaponOwned;
+    public static Texture shopWeaponEquipped;
+
+    public static Texture shopAmmoHover;
+    public static Texture shopAmmoSelected;
+    public static Texture shopAmmoUnavailable;
+
+    public static Texture shopSpecialHover;
+    public static Texture shopSpecialSelected;
+    public static Texture shopSpecialLocked;
+    public static Texture shopSpecialUnavailable;
+
     public static class PowerAuraAnimation{
         Texture backTexture;
         Texture frontTexture;
@@ -178,7 +200,6 @@ public final class FxAssets{
     public static Texture runMainMenuHover;
     public static Texture runMainMenuPressed;
 
-
     public static Texture mainMenuShell;
     public static Texture mainStartNormal;
     public static Texture mainStartHover;
@@ -223,6 +244,25 @@ public final class FxAssets{
     public static Texture shopCloseNormal;
     public static Texture shopCloseHover;
     public static Texture shopClosePressed;
+
+    public static Texture armoryIconsGrid;
+    public static Texture armoryIconCardHover;
+    public static Texture armoryIconCardSelected;
+
+    public static Texture armoryActionBuy;
+    public static Texture armoryActionBuyHover;
+    public static Texture armoryActionBuyPressed;
+
+    public static Texture armoryActionEquip;
+    public static Texture armoryActionEquipHover;
+    public static Texture armoryActionEquipPressed;
+
+    public static Texture armoryActionOwned;
+    public static Texture armoryActionEquipped;
+    public static Texture armoryActionInsufficientGold;
+
+    public static ObjectMap<WeaponType,Texture> shopAmmoIcons;
+    public static Texture[] shopSpecialIcons;
 
     public static void loadOnce(){
         if(loadedTextures != null)
@@ -441,6 +481,58 @@ public final class FxAssets{
         shopCloseNormal = loadUiTexture(AssetPaths.Shop.CLOSE_NORMAL);
         shopCloseHover = loadUiTexture(AssetPaths.Shop.CLOSE_HOVER);
         shopClosePressed = loadUiTexture(AssetPaths.Shop.CLOSE_PRESSED);
+
+        shopWeaponsCatalog = loadUiTexture(AssetPaths.Shop.WEAPONS_CATALOG);
+        shopAmmoCatalog = loadUiTexture(AssetPaths.Shop.AMMO_CATALOG);
+        shopSpecialCatalog = loadUiTexture(AssetPaths.Shop.SPECIAL_CATALOG);
+
+        shopWeaponHover = loadUiTexture(AssetPaths.Shop.WEAPON_HOVER);
+        shopWeaponSelected = loadUiTexture(AssetPaths.Shop.WEAPON_SELECTED);
+        shopWeaponLocked = loadUiTexture(AssetPaths.Shop.WEAPON_LOCKED);
+        shopWeaponUnavailable = loadUiTexture(AssetPaths.Shop.WEAPON_UNAVAILABLE);
+        shopWeaponOwned = loadUiTexture(AssetPaths.Shop.WEAPON_OWNED);
+        shopWeaponEquipped = loadUiTexture(AssetPaths.Shop.WEAPON_EQUIPPED);
+
+        shopAmmoHover = loadUiTexture(AssetPaths.Shop.AMMO_HOVER);
+        shopAmmoSelected = loadUiTexture(AssetPaths.Shop.AMMO_SELECTED);
+        shopAmmoUnavailable = loadUiTexture(AssetPaths.Shop.AMMO_UNAVAILABLE);
+
+        shopSpecialHover = loadUiTexture(AssetPaths.Shop.SPECIAL_HOVER);
+        shopSpecialSelected = loadUiTexture(AssetPaths.Shop.SPECIAL_SELECTED);
+        shopSpecialLocked = loadUiTexture(AssetPaths.Shop.SPECIAL_LOCKED);
+        shopSpecialUnavailable = loadUiTexture(AssetPaths.Shop.SPECIAL_UNAVAILABLE);
+
+        shopAmmoIcons = new ObjectMap<>();
+        shopAmmoIcons.put(WeaponType.PISTOL,loadUiTexture(AssetPaths.Shop.AMMO_PISTOL));
+        shopAmmoIcons.put(WeaponType.AR,loadUiTexture(AssetPaths.Shop.AMMO_AR));
+        shopAmmoIcons.put(WeaponType.SMG,loadUiTexture(AssetPaths.Shop.AMMO_SMG));
+        shopAmmoIcons.put(WeaponType.SHOTGUN,loadUiTexture(AssetPaths.Shop.AMMO_SHOTGUN));
+        shopAmmoIcons.put(WeaponType.SNIPER,loadUiTexture(AssetPaths.Shop.AMMO_SNIPER));
+        shopAmmoIcons.put(WeaponType.ROCKET_LAUNCHER,loadUiTexture(AssetPaths.Shop.AMMO_ROCKET));
+
+        shopSpecialIcons = new Texture[6];
+        shopSpecialIcons[0] = loadUiTexture(AssetPaths.Shop.SPECIAL_FIELD_KEY);
+        shopSpecialIcons[1] = loadUiTexture(AssetPaths.Shop.SPECIAL_FULL_RESTOCK);
+        shopSpecialIcons[2] = loadUiTexture(AssetPaths.Shop.SPECIAL_COMBAT_CACHE);
+        shopSpecialIcons[3] = loadUiTexture(AssetPaths.Shop.SPECIAL_ELITE_CACHE);
+        shopSpecialIcons[4] = loadUiTexture(AssetPaths.Shop.SPECIAL_CLASSIFIED);
+        shopSpecialIcons[5] = loadUiTexture(AssetPaths.Shop.SPECIAL_LOCKED_FUTURE);
+
+        armoryIconsGrid = loadUiTexture(AssetPaths.Armory.ICONS_GRID);
+        armoryIconCardHover = loadUiTexture(AssetPaths.Armory.ICON_CARD_HOVER);
+        armoryIconCardSelected = loadUiTexture(AssetPaths.Armory.ICON_CARD_SELECTED);
+
+        armoryActionBuy = loadUiTexture(AssetPaths.Armory.ACTION_BUY);
+        armoryActionBuyHover = loadUiTexture(AssetPaths.Armory.ACTION_BUY_HOVER);
+        armoryActionBuyPressed = loadUiTexture(AssetPaths.Armory.ACTION_BUY_PRESSED);
+
+        armoryActionEquip = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP);
+        armoryActionEquipHover = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP_HOVER);
+        armoryActionEquipPressed = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP_PRESSED);
+
+        armoryActionOwned = loadUiTexture(AssetPaths.Armory.ACTION_OWNED);
+        armoryActionEquipped = loadUiTexture(AssetPaths.Armory.ACTION_EQUIPPED);
+        armoryActionInsufficientGold = loadUiTexture(AssetPaths.Armory.ACTION_INSUFFICIENT_GOLD);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -530,6 +622,107 @@ public final class FxAssets{
         shopCloseNormal.dispose();
         shopCloseHover.dispose();
         shopClosePressed.dispose();
+
+        playerJetpackFrameTexture.dispose();
+        playerJetpackFillTexture.dispose();
+        playerJetpackIconTexture.dispose();
+
+        goldRewardIcon.dispose();
+        scoreRewardIcon.dispose();
+        ammoRewardIcon.dispose();
+        jackpotIcon.dispose();
+        biggerJackpotIcon.dispose();
+        godModeIcon.dispose();
+
+        for(Texture texture : powerupIcons.values())
+            texture.dispose();
+
+        for(Texture texture : spicyIcons.values())
+            texture.dispose();
+
+        for(Texture texture : moreSpicyIcons.values())
+            texture.dispose();
+
+        for(Texture texture : weaponRewardIcons.values())
+            texture.dispose();
+
+        powerupIcons.clear();
+        spicyIcons.clear();
+        moreSpicyIcons.clear();
+        weaponRewardIcons.clear();
+
+        powerFrame.dispose();
+        powerNormal.dispose();
+        powerSpicy.dispose();
+        powerMoreSpicy.dispose();
+        powerSpecial.dispose();
+
+        runSummaryShell.dispose();
+        runRestartNormal.dispose();
+        runRestartHover.dispose();
+        runRestartPressed.dispose();
+        runArmoryNormal.dispose();
+        runArmoryHover.dispose();
+        runArmoryPressed.dispose();
+        runMainMenuNormal.dispose();
+        runMainMenuHover.dispose();
+        runMainMenuPressed.dispose();
+
+        mainMenuShell.dispose();
+        mainStartNormal.dispose();
+        mainStartHover.dispose();
+        mainStartPressed.dispose();
+        mainStartDisabled.dispose();
+        mainArmoryNormal.dispose();
+        mainArmoryHover.dispose();
+        mainArmoryPressed.dispose();
+        mainArmoryDisabled.dispose();
+        mainSettingsNormal.dispose();
+        mainSettingsHover.dispose();
+        mainSettingsPressed.dispose();
+        mainSettingsDisabled.dispose();
+        mainExitNormal.dispose();
+        mainExitHover.dispose();
+        mainExitPressed.dispose();
+        mainExitDisabled.dispose();
+
+        armoryShell.dispose();
+        armoryWeaponsGrid.dispose();
+        armoryCloseNormal.dispose();
+        armoryCloseHover.dispose();
+        armoryClosePressed.dispose();
+        armoryCategoryHover.dispose();
+        armoryCategorySelected.dispose();
+        armoryWeaponCardHover.dispose();
+        armoryWeaponCardSelected.dispose();
+        armoryActionUnavailable.dispose();
+
+        shopWeaponsCatalog.dispose();
+        shopAmmoCatalog.dispose();
+        shopSpecialCatalog.dispose();
+
+        shopWeaponHover.dispose();
+        shopWeaponSelected.dispose();
+        shopWeaponLocked.dispose();
+        shopWeaponUnavailable.dispose();
+        shopWeaponOwned.dispose();
+        shopWeaponEquipped.dispose();
+
+        shopAmmoHover.dispose();
+        shopAmmoSelected.dispose();
+        shopAmmoUnavailable.dispose();
+
+        shopSpecialHover.dispose();
+        shopSpecialSelected.dispose();
+        shopSpecialLocked.dispose();
+        shopSpecialUnavailable.dispose();
+
+        for(Texture texture : shopAmmoIcons.values())
+            texture.dispose();
+        shopAmmoIcons.clear();
+
+        for(Texture texture : shopSpecialIcons)
+            texture.dispose();
     }
 
 

@@ -112,6 +112,13 @@ public class Inventory{
         return true;
     }
 
+    public boolean spendGold(int amount){
+        if(gold < amount)
+            return false;
+        gold-=amount;
+        return true;
+    }
+
 
 
 

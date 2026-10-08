@@ -56,7 +56,7 @@ public final class AssetPaths {
 
     public static final class Shop{
         private Shop(){}
-        
+
         public static final String BASE = "ui/shop/";
         public static final String ICON = BASE+"shopICon.png";
         public static final String PANEL = BASE+"shop_panel.png";
@@ -73,27 +73,49 @@ public final class AssetPaths {
         public static final String CLOSE_NORMAL = BASE+"close_normal.png";
         public static final String CLOSE_HOVER = BASE+"close_hover.png";
         public static final String CLOSE_PRESSED = BASE+"close_pressed.png";
+        public static final String WEAPONS_CATALOG = BASE+"weapons_catalog.png";
+        public static final String AMMO_CATALOG = BASE+"ammo_catalog.png";
+        public static final String SPECIAL_CATALOG = BASE+"special_catalog.png";
+        public static final String WEAPON_HOVER = BASE+"weapon_hover.png";
+        public static final String WEAPON_SELECTED = BASE+"weapon_selected.png";
+        public static final String WEAPON_LOCKED = BASE+"weapon_locked.png";
+        public static final String WEAPON_UNAVAILABLE = BASE+"weapon_unavailable.png";
+        public static final String WEAPON_OWNED = BASE+"weapon_owned.png";
+        public static final String WEAPON_EQUIPPED = BASE+"weapon_equipped.png";
+        public static final String AMMO_HOVER = BASE+"ammo_hover.png";
+        public static final String AMMO_SELECTED = BASE+"ammo_selected.png";
+        public static final String AMMO_UNAVAILABLE = BASE+"ammo_unavailable.png";
+        public static final String SPECIAL_HOVER = BASE+"special_hover.png";
+        public static final String SPECIAL_SELECTED = BASE+"special_selected.png";
+        public static final String SPECIAL_LOCKED = BASE+"special_locked.png";
+        public static final String SPECIAL_UNAVAILABLE = BASE+"special_unavailable.png";
+        public static final String AMMO_PISTOL = BASE+"ammo_pistol.png";
+        public static final String AMMO_AR = BASE+"ammo_ar.png";
+        public static final String AMMO_SMG = BASE+"ammo_smg.png";
+        public static final String AMMO_SHOTGUN = BASE+"ammo_shotgun.png";
+        public static final String AMMO_SNIPER = BASE+"ammo_sniper.png";
+        public static final String AMMO_ROCKET = BASE+"ammo_rocket.png";
+        public static final String SPECIAL_FIELD_KEY = BASE+"special_field_key.png";
+        public static final String SPECIAL_FULL_RESTOCK = BASE+"special_full_restock.png";
+        public static final String SPECIAL_COMBAT_CACHE = BASE+"special_combat_cache.png";
+        public static final String SPECIAL_ELITE_CACHE = BASE+"special_elite_cache.png";
+        public static final String SPECIAL_CLASSIFIED = BASE+"special_classified.png";
+        public static final String SPECIAL_LOCKED_FUTURE = BASE+"special_locked_future.png";
     }
 
     public static final class FX{
         private FX(){}
         public static final String BASE = "sprites/fx/";
-
         public static final String PHASE_BEAM = BASE + "phase_beam_";
         public static final int PHASE_BEAM_FRAMES = 8;
-
         public static final String EMITTER_FLASH = BASE + "emitter_flash_";
         public static final int EMITTER_FLASH_FRAMES = 8;
-
         public static final String BEAM_CONTACT = BASE + "beam_contact_";
         public static final int BEAM_CONTACT_FRAMES = 8;
-
         public static final String TARGET_RETICLE = BASE + "target_reticle_";
         public static final int TARGET_RETICLE_FRAMES = 8;
-
         public static final String DRONE_BURST = BASE + "drone_burst_";
         public static final int DRONE_BURST_FRAMES = 10;
-
         public static final String HEAVY_PORTAL_BASE = BASE + "heavy_portal/";
         public static final String BOMBARDMENT_PORTAL_BASE = HEAVY_PORTAL_BASE + "bombardment/";
         public static final String BOMBARDMENT_PORTAL_OPEN = BOMBARDMENT_PORTAL_BASE + "open_";
@@ -102,7 +124,6 @@ public final class AssetPaths {
         public static final int BOMBARDMENT_PORTAL_ACTIVE_FRAMES = 12;
         public static final String BOMBARDMENT_PORTAL_CLOSE = BOMBARDMENT_PORTAL_BASE + "close_";
         public static final int BOMBARDMENT_PORTAL_CLOSE_FRAMES = 8;
-
         public static final String POISON_PORTAL_BASE = HEAVY_PORTAL_BASE + "poison/";
         public static final String POISON_PORTAL_OPEN = POISON_PORTAL_BASE + "open_";
         public static final int POISON_PORTAL_OPEN_FRAMES = 8;
@@ -112,7 +133,6 @@ public final class AssetPaths {
         public static final int POISON_PORTAL_RELEASE_FRAMES = 8;
         public static final String POISON_PORTAL_CLOSE = POISON_PORTAL_BASE + "close_";
         public static final int POISON_PORTAL_CLOSE_FRAMES = 8;
-
         public static final String EMP_PORTAL_BASE = HEAVY_PORTAL_BASE + "emp/";
         public static final String EMP_PORTAL_OPEN = EMP_PORTAL_BASE + "open_";
         public static final int EMP_PORTAL_OPEN_FRAMES = 8;
@@ -120,58 +140,41 @@ public final class AssetPaths {
         public static final int EMP_PORTAL_ACTIVE_FRAMES = 12;
         public static final String EMP_PORTAL_CLOSE = EMP_PORTAL_BASE + "close_";
         public static final int EMP_PORTAL_CLOSE_FRAMES = 8;
-
         public static final String POISON_FIELD_BASE =HEAVY_PORTAL_BASE + "poison_field/";
-
         public static final String POISON_FIELD_START =POISON_FIELD_BASE + "poison_field_start/";
         public static final int POISON_FIELD_START_FRAMES = 8;
-
         public static final String POISON_FIELD_LOOP =POISON_FIELD_BASE + "poison_field_loop/";
         public static final int POISON_FIELD_LOOP_FRAMES = 12;
-
         public static final String POISON_FIELD_END =POISON_FIELD_BASE + "poison_field_end/";
         public static final int POISON_FIELD_END_FRAMES = 8;
-
         public static final String PLAYER_STATUS_BASE = BASE + "player_status/";
         public static final String PLAYER_POISON_BASE = PLAYER_STATUS_BASE + "poison/";
-
         public static final String PLAYER_POISON_START = PLAYER_POISON_BASE + "start/";
         public static final int PLAYER_POISON_START_FRAMES = 6;
-
         public static final String PLAYER_POISON_LINGERING = PLAYER_POISON_BASE + "lingering/";
         public static final int PLAYER_POISON_LINGERING_FRAMES = 12;
-
         public static final String PLAYER_POISON_END = PLAYER_POISON_BASE + "end/";
         public static final int PLAYER_POISON_END_FRAMES = 6;
-
         public static final String PLAYER_STUN_BASE = PLAYER_STATUS_BASE + "stun/";
         public static final String PLAYER_STUN_START = PLAYER_STUN_BASE + "start/";
         public static final int PLAYER_STUN_START_FRAMES = 6;
-
         public static final String PLAYER_STUN_LINGERING = PLAYER_STUN_BASE + "lingering/";
         public static final int PLAYER_STUN_LINGERING_FRAMES = 12;
-
         public static final String PLAYER_STUN_END = PLAYER_STUN_BASE + "end/";
         public static final int PLAYER_STUN_END_FRAMES = 6;
-
         public static final String EMP_PULSE = HEAVY_PORTAL_BASE + "emp_pulse/";
         public static final int EMP_PULSE_FRAMES = 12;
-
         public static final String BOMBARDMENT_RAIN_BOLT = BASE + "heavy_portal/bombardment_assets/projectile/";
         public static final int BOMBARDMENT_RAIN_BOLT_FRAMES = 6;
-
         public static final String BOMBARDMENT_RAIN_IMPACT = BASE + "heavy_portal/bombardment_assets/impact/";
         public static final int BOMBARDMENT_RAIN_IMPACT_FRAMES = 8;
-
         public static final String POWER_AURA_BASE = BASE+"power_auras/";
-
         public static String powerAuraBack(String id){
             return POWER_AURA_BASE+id+"/back.png";
         }
         public static String powerAuraFront(String id){
             return POWER_AURA_BASE+id+"/front.png";
         }
-
         public static final String RELOAD_LOCK_BASE = BASE+"reload_lock/";
         public static final String RELOAD_RECEIVER = RELOAD_LOCK_BASE+"receiver_2x.png";
         public static final String RELOAD_MUZZLE = RELOAD_LOCK_BASE+"muzzle_2x.png";
@@ -262,7 +265,6 @@ public final class AssetPaths {
         public static final String jetpack = "sprites/jetpack/jetPack.png";
         public static final String jetpackFlames = "sprites/jetpack/jetpackFlames.png";
         public static final String jetpackDisabled = "sprites/jetpack/jetpack_disabled.png";
-
     }
 
     public static final class Data {
@@ -282,7 +284,6 @@ public final class AssetPaths {
 
     public static final class Bullets {
         private Bullets() {}
-        
         public static final String BASE = "sprites/bullet/";
         public static final String PISTOL = BASE+"pistol.png";
         public static final String AR = BASE+"ar.png";
@@ -588,18 +589,30 @@ public final class AssetPaths {
     }
 
     public static final class Armory{
-        private Armory(){}
-        public static final String BASE = "ui/armory/";
-        public static final String SHELL = BASE+"armory_shell.png";
-        public static final String WEAPONS_GRID = BASE+"weapons_grid.png";
-        public static final String CLOSE_NORMAL = BASE+"close_normal.png";
-        public static final String CLOSE_HOVER = BASE+"close_hover.png";
-        public static final String CLOSE_PRESSED = BASE+"close_pressed.png";
-        public static final String CATEGORY_HOVER = BASE+"category_hover.png";
-        public static final String CATEGORY_SELECTED = BASE+"category_selected.png";
-        public static final String WEAPON_CARD_HOVER = BASE+"weapon_card_hover.png";
-        public static final String WEAPON_CARD_SELECTED = BASE+"weapon_card_selected.png";
-        public static final String ACTION_UNAVAILABLE = BASE+"action_unavailable.png";
+    private Armory(){}
+    public static final String BASE = "ui/armory/";
+    public static final String SHELL = BASE+"shell.png";
+    public static final String WEAPONS_GRID = BASE+"weapons_grid.png";
+    public static final String ICONS_GRID = BASE+"icons_grid.png";
+    public static final String CLOSE_NORMAL = BASE+"close_normal.png";
+    public static final String CLOSE_HOVER = BASE+"close_hover.png";
+    public static final String CLOSE_PRESSED = BASE+"close_pressed.png";
+    public static final String CATEGORY_HOVER = BASE+"category_hover.png";
+    public static final String CATEGORY_SELECTED = BASE+"category_selected.png";
+    public static final String WEAPON_CARD_HOVER = BASE+"weapon_card_hover.png";
+    public static final String WEAPON_CARD_SELECTED = BASE+"weapon_card_selected.png";
+    public static final String ICON_CARD_HOVER = BASE+"icon_card_hover.png";
+    public static final String ICON_CARD_SELECTED = BASE+"icon_card_selected.png";
+    public static final String ACTION_BUY = BASE+"action_buy.png";
+    public static final String ACTION_BUY_HOVER = BASE+"action_buy_hover.png";
+    public static final String ACTION_BUY_PRESSED = BASE+"action_buy_pressed.png";
+    public static final String ACTION_EQUIP = BASE+"action_equip.png";
+    public static final String ACTION_EQUIP_HOVER = BASE+"action_equip_hover.png";
+    public static final String ACTION_EQUIP_PRESSED = BASE+"action_equip_pressed.png";
+    public static final String ACTION_OWNED = BASE+"action_owned.png";
+    public static final String ACTION_EQUIPPED = BASE+"action_equipped.png";
+    public static final String ACTION_INSUFFICIENT_GOLD = BASE+"action_insufficient_gold.png";
+    public static final String ACTION_UNAVAILABLE = BASE+"action_unavailable.png";
 }
 
 

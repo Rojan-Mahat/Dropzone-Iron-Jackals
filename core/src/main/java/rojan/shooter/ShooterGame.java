@@ -365,12 +365,14 @@ public class ShooterGame extends ApplicationAdapter {
     private Rectangle armoryPowerupsCategoryBounds = new Rectangle();
     private Rectangle armorySpecialCategoryBounds = new Rectangle();
     private Rectangle[] armoryWeaponBounds = new Rectangle[6];
-    private int selectedArmoryWeapon = -1;
 
     private Rectangle settingsBackBounds = new Rectangle();
     
     private BitmapFont runSummaryFont;
     private GlyphLayout runSummaryLayout = new GlyphLayout();
+    private BitmapFont fieldShopTitleFont;
+    private BitmapFont fieldShopBodyFont;
+    private BitmapFont fieldShopInfoFont;
 
     private enum GameScreen{
                     MAIN_MENU,
@@ -385,7 +387,10 @@ public class ShooterGame extends ApplicationAdapter {
     private Rectangle shopInteractionZone;
     private boolean fieldShopOpen = false;
     private Rectangle fieldShopCloseBounds = new Rectangle();
-    private Rectangle[] productRectangleBounds = new Rectangle[16];
+    private Rectangle[] fieldShopPowerupBounds = new Rectangle[16];
+    private Rectangle[] fieldShopWeaponProductBounds = new Rectangle[6];
+    private Rectangle[] fieldShopAmmoProductBounds = new Rectangle[6];
+    private Rectangle[] fieldShopSpecialProductBounds = new Rectangle[6];
     private int selectedFieldShopProduct = -1;
 
     private Rectangle fieldShopWeaponsBounds = new Rectangle();
@@ -398,7 +403,33 @@ public class ShooterGame extends ApplicationAdapter {
                         POWERUPS,
                         SPECIAL
                     }
-    private FieldShopCategory selectedFieldShopCategory = FieldShopCategory.WEAPONS;
+    private FieldShopCategory selectedFieldShopCategory = FieldShopCategory.POWERUPS;
+    private final WeaponType[] FIELD_SHOP_WEAPONS = {
+                                WeaponType.PISTOL,
+                                WeaponType.AR,
+                                WeaponType.SMG,
+                                WeaponType.SHOTGUN,
+                                WeaponType.SNIPER,
+                                WeaponType.ROCKET_LAUNCHER};
+    private final WeaponType[] FIELD_SHOP_AMMO = {
+                                WeaponType.PISTOL,
+                                WeaponType.AR,
+                                WeaponType.SMG,
+                                WeaponType.SHOTGUN,
+                                WeaponType.SNIPER,
+                                WeaponType.ROCKET_LAUNCHER};
+    private Rectangle fieldShopActionBounds = new Rectangle();
+    private int selectedArmoryWeapon = -1;
+    private enum ArmoryCategory{
+                        WEAPONS,
+                        POWERUPS,
+                        SPECIAL
+                    }
+private ArmoryCategory selectedArmoryCategory = ArmoryCategory.WEAPONS;
+private int selectedArmoryProduct = -1;
+private Rectangle[] armoryIconBounds = new Rectangle[16];
+private Rectangle armoryActionBounds = new Rectangle();
+
     
         
     
@@ -409,7 +440,7 @@ public class ShooterGame extends ApplicationAdapter {
         initializeGame();
         loadPlayerProfile();
 
-        giveTestWeapons();
+       // giveTestWeapons();
         AudioAssets.playMenuMusic();
     }
     
@@ -752,6 +783,9 @@ public class ShooterGame extends ApplicationAdapter {
         reloadProgressPixel.dispose();
         AudioAssets.dispose();
         runSummaryFont.dispose();
+        fieldShopTitleFont.dispose();
+        fieldShopBodyFont.dispose();
+        fieldShopInfoFont.dispose();
     }
 
     @Override
@@ -4606,7 +4640,29 @@ private void loadFonts(){
 
     inventoryGenerator.dispose();
     inventoryGlyphLayout = new GlyphLayout();
-}
+
+    FreeTypeFontGenerator shopGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Oxanium-SemiBold.ttf"));
+
+    FreeTypeFontGenerator.FreeTypeFontParameter shopTitleParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    shopTitleParameter.size = 40;
+    shopTitleParameter.minFilter = Texture.TextureFilter.Linear;
+    shopTitleParameter.magFilter = Texture.TextureFilter.Linear;
+    fieldShopTitleFont = shopGenerator.generateFont(shopTitleParameter);
+
+    FreeTypeFontGenerator.FreeTypeFontParameter shopBodyParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    shopBodyParameter.size = 24;
+    shopBodyParameter.minFilter = Texture.TextureFilter.Linear;
+    shopBodyParameter.magFilter = Texture.TextureFilter.Linear;
+    fieldShopBodyFont = shopGenerator.generateFont(shopBodyParameter);
+
+    FreeTypeFontGenerator.FreeTypeFontParameter shopInfoParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+    shopInfoParameter.size = 20;
+    shopInfoParameter.minFilter = Texture.TextureFilter.Linear;
+    shopInfoParameter.magFilter = Texture.TextureFilter.Linear;
+    fieldShopInfoFont = shopGenerator.generateFont(shopInfoParameter);
+
+    shopGenerator.dispose();
+    }
 
 
 private void initializeGame(){
@@ -4659,9 +4715,24 @@ private void initializeGame(){
     for(int i = 0 ; i < armoryWeaponBounds.length ; i++)
         armoryWeaponBounds[i] = new Rectangle();
 
-    for(int i = 0 ; i < productRectangleBounds.length ; i++)
-        productRectangleBounds[i] = new Rectangle();
-}
+    for(int i = 0 ; i < fieldShopPowerupBounds.length ; i++)
+        fieldShopPowerupBounds[i] = new Rectangle();
+
+    for(int i=0;i<fieldShopWeaponProductBounds.length;i++)
+        fieldShopWeaponProductBounds[i] = new Rectangle();
+
+    for(int i=0;i<fieldShopAmmoProductBounds.length;i++)
+        fieldShopAmmoProductBounds[i] = new Rectangle();
+
+    for(int i=0;i<fieldShopSpecialProductBounds.length;i++)
+        fieldShopSpecialProductBounds[i] = new Rectangle();
+    
+    for(int i=0;i<armoryWeaponBounds.length;i++)
+        armoryWeaponBounds[i] = new Rectangle();
+
+    for(int i=0;i<armoryIconBounds.length;i++)
+        armoryIconBounds[i] = new Rectangle();
+    }
 
 private void loadPlayerProfile(){
     saveManager = new SaveManager();
@@ -5002,17 +5073,15 @@ private void handlePauseClick(float mouseX,float mouseY){
     }
 }
 
+private boolean fieldShopAmmoAvailable(int index){
+    WeaponType type = FIELD_SHOP_WEAPONS[index];
+    return inventory.ownsWeapon(type);
+}
+
 private void fieldShopMouseClick(float mouseX, float mouseY){
     if(fieldShopCloseBounds.contains(mouseX,mouseY)){
         fieldShopOpen = false;
         return;
-    }
-    
-    for(int i = 0 ; i < productRectangleBounds.length ; i++){
-        if(productRectangleBounds[i].contains(mouseX,mouseY)){
-            selectedFieldShopProduct = i;
-            return;
-        }
     }
 
     if(fieldShopWeaponsBounds.contains(mouseX,mouseY)){
@@ -5039,10 +5108,41 @@ private void fieldShopMouseClick(float mouseX, float mouseY){
         return;
     }
 
-    
-       
+    if(selectedFieldShopCategory == FieldShopCategory.AMMO && fieldShopActionBounds.contains(mouseX,mouseY)){
+        buySelectedFieldShopAmmo();
+        return;
+    }
 
+    Rectangle[] currentBounds = getCurrentFieldShopProductBounds();
+    for(int i=0;i<currentBounds.length;i++){
+        if(!currentBounds[i].contains(mouseX,mouseY))
+            continue;
+        if(selectedFieldShopCategory == FieldShopCategory.AMMO && !fieldShopAmmoAvailable(i))
+            return;
+        if(currentBounds[i].contains(mouseX,mouseY)){
+            selectedFieldShopProduct = i;
+            return;
+        }
+    }
 
+    if(selectedFieldShopCategory == FieldShopCategory.WEAPONS && fieldShopActionBounds.contains(mouseX,mouseY)){
+        buySelectedFieldShopWeapon();
+        return;
+    }
+    if(selectedFieldShopCategory == FieldShopCategory.POWERUPS && fieldShopActionBounds.contains(mouseX,mouseY)){
+        buySelectedFieldShopPowerup();
+        return;
+    }
+}
+
+private Rectangle[] getCurrentFieldShopProductBounds(){
+    if(selectedFieldShopCategory == FieldShopCategory.WEAPONS)
+        return fieldShopWeaponProductBounds;
+    if(selectedFieldShopCategory == FieldShopCategory.AMMO)
+        return fieldShopAmmoProductBounds;
+    if(selectedFieldShopCategory == FieldShopCategory.POWERUPS)
+        return fieldShopPowerupBounds;
+    return fieldShopSpecialProductBounds;
 }
 
 
@@ -5252,7 +5352,6 @@ private void handleMainMenuClick(float mouseX,float mouseY){
         Gdx.app.exit();
     }
 }
-
 private void renderArmory(float mouseX,float mouseY){
     ScreenUtils.clear(0.03f,0.05f,0.08f,1f);
 
@@ -5272,21 +5371,24 @@ private void renderArmory(float mouseX,float mouseY){
 
     batch.draw(FxAssets.armoryShell,x,y,width,height);
 
-    batch.draw(FxAssets.armoryWeaponsGrid,x+328f*scale,y+106f*scale,928f*scale,718f*scale);
+    if(selectedArmoryCategory == ArmoryCategory.WEAPONS)
+        batch.draw(FxAssets.armoryWeaponsGrid,x+328f*scale,y+106f*scale,928f*scale,718f*scale);
+    else
+        batch.draw(FxAssets.armoryIconsGrid,x+328f*scale,y+106f*scale,928f*scale,718f*scale);
 
-    armoryWeaponsCategoryBounds.set(x+72f*scale,y+740f*scale,220f*scale,88f*scale);
-    armoryPowerupsCategoryBounds.set(x+72f*scale,y+628f*scale,220f*scale,88f*scale);
-    armorySpecialCategoryBounds.set(x+72f*scale,y+516f*scale,220f*scale,88f*scale);
+    drawArmoryCategories(x,y,scale,mouseX,mouseY);
 
-    batch.draw(FxAssets.armoryCategorySelected,armoryWeaponsCategoryBounds.x,armoryWeaponsCategoryBounds.y,armoryWeaponsCategoryBounds.width,armoryWeaponsCategoryBounds.height);
+    armoryActionBounds.set(x+1328f*scale,y+96f*scale,496f*scale,78f*scale);
+    batch.draw(FxAssets.armoryActionUnavailable,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
 
-    if(armoryPowerupsCategoryBounds.contains(mouseX,mouseY))
-        batch.draw(FxAssets.armoryCategoryHover,armoryPowerupsCategoryBounds.x,armoryPowerupsCategoryBounds.y,armoryPowerupsCategoryBounds.width,armoryPowerupsCategoryBounds.height);
+    if(selectedArmoryCategory == ArmoryCategory.WEAPONS)
+        drawArmoryWeapons(x,y,scale,mouseX,mouseY);
 
-    if(armorySpecialCategoryBounds.contains(mouseX,mouseY))
-        batch.draw(FxAssets.armoryCategoryHover,armorySpecialCategoryBounds.x,armorySpecialCategoryBounds.y,armorySpecialCategoryBounds.width,armorySpecialCategoryBounds.height);
+    else if(selectedArmoryCategory == ArmoryCategory.POWERUPS)
+        drawArmoryPowerups(x,y,scale,mouseX,mouseY);
 
-    drawArmoryWeaponBounds(x,y,scale,mouseX,mouseY);
+    else if(selectedArmoryCategory == ArmoryCategory.SPECIAL)
+        drawArmorySpecial(x,y,scale,mouseX,mouseY);
 
     armoryCloseBounds.set(x+1780f*scale,y+938f*scale,68f*scale,68f*scale);
 
@@ -5299,8 +5401,6 @@ private void renderArmory(float mouseX,float mouseY){
 
     batch.draw(close,armoryCloseBounds.x,armoryCloseBounds.y,armoryCloseBounds.width,armoryCloseBounds.height);
 
-    batch.draw(FxAssets.armoryActionUnavailable,x+1328f*scale,y+96f*scale,496f*scale,78f*scale);
-
     drawArmoryGold(x,y,scale);
 
     batch.end();
@@ -5309,8 +5409,28 @@ private void renderArmory(float mouseX,float mouseY){
         handleArmoryClick(mouseX,mouseY);
 }
 
+private void drawArmoryCategories(float x,float y,float scale,float mouseX,float mouseY){
+    armoryWeaponsCategoryBounds.set(x+72f*scale,y+740f*scale,220f*scale,88f*scale);
+    armoryPowerupsCategoryBounds.set(x+72f*scale,y+628f*scale,220f*scale,88f*scale);
+    armorySpecialCategoryBounds.set(x+72f*scale,y+516f*scale,220f*scale,88f*scale);
 
-private void drawArmoryWeaponBounds(float x,float y,float scale,float mouseX,float mouseY){
+    if(selectedArmoryCategory == ArmoryCategory.WEAPONS)
+        batch.draw(FxAssets.armoryCategorySelected,armoryWeaponsCategoryBounds.x,armoryWeaponsCategoryBounds.y,armoryWeaponsCategoryBounds.width,armoryWeaponsCategoryBounds.height);
+    else if(armoryWeaponsCategoryBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.armoryCategoryHover,armoryWeaponsCategoryBounds.x,armoryWeaponsCategoryBounds.y,armoryWeaponsCategoryBounds.width,armoryWeaponsCategoryBounds.height);
+
+    if(selectedArmoryCategory == ArmoryCategory.POWERUPS)
+        batch.draw(FxAssets.armoryCategorySelected,armoryPowerupsCategoryBounds.x,armoryPowerupsCategoryBounds.y,armoryPowerupsCategoryBounds.width,armoryPowerupsCategoryBounds.height);
+    else if(armoryPowerupsCategoryBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.armoryCategoryHover,armoryPowerupsCategoryBounds.x,armoryPowerupsCategoryBounds.y,armoryPowerupsCategoryBounds.width,armoryPowerupsCategoryBounds.height);
+
+    if(selectedArmoryCategory == ArmoryCategory.SPECIAL)
+        batch.draw(FxAssets.armoryCategorySelected,armorySpecialCategoryBounds.x,armorySpecialCategoryBounds.y,armorySpecialCategoryBounds.width,armorySpecialCategoryBounds.height);
+    else if(armorySpecialCategoryBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.armoryCategoryHover,armorySpecialCategoryBounds.x,armorySpecialCategoryBounds.y,armorySpecialCategoryBounds.width,armorySpecialCategoryBounds.height);
+}
+
+private void setArmoryWeaponBounds(float x,float y,float scale){
     armoryWeaponBounds[0].set(x+328f*scale,y+606f*scale,448f*scale,218f*scale);
     armoryWeaponBounds[1].set(x+808f*scale,y+606f*scale,448f*scale,218f*scale);
 
@@ -5319,16 +5439,244 @@ private void drawArmoryWeaponBounds(float x,float y,float scale,float mouseX,flo
 
     armoryWeaponBounds[4].set(x+328f*scale,y+118f*scale,448f*scale,218f*scale);
     armoryWeaponBounds[5].set(x+808f*scale,y+118f*scale,448f*scale,218f*scale);
+}
 
-    for(int i = 0 ; i < armoryWeaponBounds.length ; i++){
+private void drawArmoryWeapons(float x,float y,float scale,float mouseX,float mouseY){
+    setArmoryWeaponBounds(x,y,scale);
+
+    for(int i=0;i<armoryWeaponBounds.length;i++){
         Rectangle bounds = armoryWeaponBounds[i];
+        WeaponType type = INVENTORY_WEAPONS[i];
 
-        if(i == selectedArmoryWeapon)
+        Texture gun = FxAssets.weaponRewardIcons.get(type);
+        drawContain(gun,bounds.x+20f*scale,bounds.y+80f*scale,408f*scale,120f*scale);
+
+        runSummaryFont.getData().setScale((26f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,getWeaponName(type),bounds.x+20f*scale,bounds.y+40f*scale,408f*scale,28f*scale);
+
+        runSummaryFont.getData().setScale((24f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,Integer.toString(getWeaponPrice(type)),bounds.x+20f*scale,bounds.y+8f*scale,408f*scale,26f*scale);
+
+        if(i == selectedArmoryProduct)
             batch.draw(FxAssets.armoryWeaponCardSelected,bounds.x,bounds.y,bounds.width,bounds.height);
 
         else if(bounds.contains(mouseX,mouseY))
             batch.draw(FxAssets.armoryWeaponCardHover,bounds.x,bounds.y,bounds.width,bounds.height);
     }
+
+    drawArmoryWeaponDetails(x,y,scale,mouseX,mouseY);
+}
+
+private WeaponType getSelectedArmoryWeapon(){
+    if(selectedArmoryCategory != ArmoryCategory.WEAPONS)
+        return null;
+    if(selectedArmoryProduct < 0 || selectedArmoryProduct >= INVENTORY_WEAPONS.length)
+        return null;
+    return INVENTORY_WEAPONS[selectedArmoryProduct];
+}
+
+private void drawArmoryWeaponDetails(float x,float y,float scale,float mouseX,float mouseY){
+    WeaponType type = getSelectedArmoryWeapon();
+
+    if(type == null)
+        return;
+
+    fieldShopTitleFont.getData().setScale(0.75f*scale);
+    fieldShopBodyFont.getData().setScale(scale);
+    fieldShopInfoFont.getData().setScale(1.1f*scale);
+
+    Texture gun = FxAssets.weaponRewardIcons.get(type);
+    drawContain(gun,x+1344f*scale,y+672f*scale,464f*scale,148f*scale);
+    drawFieldShopCenteredText(fieldShopTitleFont,getWeaponName(type),x+1328f*scale,y+572f*scale,496f*scale,68f*scale);
+    drawInventoryCenteredText(fieldShopBodyFont,getWeaponDescription(type),x+1328f*scale,y+448f*scale,496f*scale,84f*scale,true);
+
+    String effect = "PERMANENT WEAPON UNLOCK\nAVAILABLE FOR EVERY RUN";
+    drawInventoryCenteredText(fieldShopInfoFont,effect,x+1328f*scale,y+292f*scale,496f*scale,116f*scale,true);
+
+    int price = getWeaponPrice(type);
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(price),x+1328f*scale,y+194f*scale,206f*scale,40f*scale);
+
+    String status = inventory.ownsWeapon(type) ? "OWNED" : "NOT OWNED";
+    drawFieldShopCenteredText(fieldShopInfoFont,status,x+1568f*scale,y+194f*scale,256f*scale,40f*scale);
+
+    drawArmoryWeaponButton(type,price,mouseX,mouseY);
+}
+private void drawArmoryWeaponButton(WeaponType type,int price,float mouseX,float mouseY){
+    if(inventory.ownsWeapon(type)){
+        batch.draw(FxAssets.armoryActionOwned,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
+        return;
+    }
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.armoryActionInsufficientGold,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
+        return;
+    }
+
+    Texture button = FxAssets.armoryActionBuy;
+
+    if(armoryActionBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.armoryActionBuyPressed;
+    else if(armoryActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.armoryActionBuyHover;
+
+    batch.draw(button,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
+}
+
+private void buySelectedArmoryWeapon(){
+    WeaponType type = getSelectedArmoryWeapon();
+    if(type == null)
+        return;
+    if(inventory.ownsWeapon(type))
+        return;
+    int price = getWeaponPrice(type);
+
+    if(!inventory.spendGold(price))
+        return;
+    inventory.addWeapon(type);
+
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playUiConfirm();
+}
+
+private void drawArmoryPowerups(float x,float y,float scale,float mouseX,float mouseY){
+    setArmoryIconBounds(x,y,scale);
+
+    for(int i=0;i<armoryIconBounds.length;i++){
+        Rectangle bounds = armoryIconBounds[i];
+        Texture icon = getFieldShopPowerupIcon(i);
+
+        drawContain(icon,bounds.x+64f*scale,bounds.y+64f*scale,92f*scale,92f*scale);
+
+        runSummaryFont.getData().setScale((24f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,getFieldShopPowerupName(i),bounds.x+14f*scale,bounds.y+30f*scale,192f*scale,28f*scale);
+
+        runSummaryFont.getData().setScale((22f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,Integer.toString(getFieldShopPowerupPrice(i)),bounds.x+14f*scale,bounds.y+4f*scale,192f*scale,24f*scale);
+
+        if(i == selectedArmoryProduct)
+            batch.draw(FxAssets.armoryIconCardSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+
+        else if(bounds.contains(mouseX,mouseY))
+            batch.draw(FxAssets.armoryIconCardHover,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+
+    drawArmoryPowerupDetails(x,y,scale,mouseX,mouseY);
+}
+
+private void drawArmoryPowerupDetails(float x,float y,float scale,float mouseX,float mouseY){
+    if(selectedArmoryCategory != ArmoryCategory.POWERUPS)
+        return;
+
+    if(selectedArmoryProduct < 0 || selectedArmoryProduct >= 16)
+        return;
+
+    int index = selectedArmoryProduct;
+
+    fieldShopTitleFont.getData().setScale(0.75f*scale);
+    fieldShopBodyFont.getData().setScale(scale);
+    fieldShopInfoFont.getData().setScale(1.1f*scale);
+
+    Texture icon = getFieldShopPowerupIcon(index);
+
+    drawContain(icon,x+1344f*scale,y+672f*scale,464f*scale,148f*scale);
+
+    drawFieldShopCenteredText(fieldShopTitleFont,getFieldShopPowerupName(index),x+1328f*scale,y+572f*scale,496f*scale,68f*scale);
+
+    drawInventoryCenteredText(fieldShopBodyFont,getFieldShopPowerupDescription(index),x+1328f*scale,y+448f*scale,496f*scale,84f*scale,true);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,"DURATION  "+getFieldShopPowerupDuration(index),x+1328f*scale,y+292f*scale,496f*scale,116f*scale);
+
+    int price = getFieldShopPowerupPrice(index);
+    int amount = getFieldShopPowerupAmount(index);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(price),x+1328f*scale,y+194f*scale,206f*scale,40f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,"x"+amount,x+1568f*scale,y+194f*scale,256f*scale,40f*scale);
+
+    drawArmoryPowerupButton(price,mouseX,mouseY);
+}
+
+private void drawArmoryPowerupButton(int price,float mouseX,float mouseY){
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.armoryActionInsufficientGold,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
+        return;
+    }
+
+    Texture button = FxAssets.armoryActionBuy;
+
+    if(armoryActionBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.armoryActionBuyPressed;
+    else if(armoryActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.armoryActionBuyHover;
+
+    batch.draw(button,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
+}
+
+private void buySelectedArmoryPowerup(){
+    if(selectedArmoryCategory != ArmoryCategory.POWERUPS)
+        return;
+    if(selectedArmoryProduct < 0 || selectedArmoryProduct >= 16)
+        return;
+
+    int price = getFieldShopPowerupPrice(selectedArmoryProduct);
+    if(!inventory.spendGold(price))
+        return;
+
+    addFieldShopPowerup(selectedArmoryProduct);
+
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playUiConfirm();
+}
+private void drawArmorySpecial(float x,float y,float scale,float mouseX,float mouseY){
+    setArmoryIconBounds(x,y,scale);
+
+    for(int i=0;i<6;i++){
+        Rectangle bounds = armoryIconBounds[i];
+        Texture icon = FxAssets.shopSpecialIcons[i];
+
+        drawContain(icon,bounds.x+64f*scale,bounds.y+64f*scale,92f*scale,92f*scale);
+
+        runSummaryFont.getData().setScale((24f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,getFieldShopSpecialName(i),bounds.x+14f*scale,bounds.y+30f*scale,192f*scale,28f*scale);
+
+        runSummaryFont.getData().setScale((20f/96f)*scale);
+        drawFieldShopCenteredText(runSummaryFont,"FIELD ONLY",bounds.x+14f*scale,bounds.y+4f*scale,192f*scale,24f*scale);
+
+        if(i == selectedArmoryProduct)
+            batch.draw(FxAssets.armoryIconCardSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+
+        else if(bounds.contains(mouseX,mouseY))
+            batch.draw(FxAssets.armoryIconCardHover,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+
+    drawArmorySpecialDetails(x,y,scale);
+}
+
+private void drawArmorySpecialDetails(float x,float y,float scale){
+    if(selectedArmoryCategory != ArmoryCategory.SPECIAL)
+        return;
+
+    if(selectedArmoryProduct < 0 || selectedArmoryProduct >= 6)
+        return;
+
+    int index = selectedArmoryProduct;
+
+    fieldShopTitleFont.getData().setScale(0.75f*scale);
+    fieldShopBodyFont.getData().setScale(scale);
+    fieldShopInfoFont.getData().setScale(1.1f*scale);
+
+    Texture icon = FxAssets.shopSpecialIcons[index];
+
+    drawContain(icon,x+1344f*scale,y+672f*scale,464f*scale,148f*scale);
+
+    drawFieldShopCenteredText(fieldShopTitleFont,getFieldShopSpecialName(index),x+1328f*scale,y+572f*scale,496f*scale,68f*scale);
+
+    drawInventoryCenteredText(fieldShopBodyFont,getFieldShopSpecialDescription(index),x+1328f*scale,y+448f*scale,496f*scale,84f*scale,true);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,getFieldShopSpecialEffect(index),x+1328f*scale,y+292f*scale,496f*scale,116f*scale);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,"--",x+1328f*scale,y+194f*scale,206f*scale,40f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,"FIELD ONLY",x+1568f*scale,y+194f*scale,256f*scale,40f*scale);
+
+    batch.draw(FxAssets.armoryActionUnavailable,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
 }
 
 private void drawArmoryGold(float x,float y,float scale){
@@ -5341,20 +5689,78 @@ private void drawArmoryGold(float x,float y,float scale){
 
     runSummaryFont.draw(batch,goldText,rightX-mainMenuLayout.width,baseline);
 }
-
 private void handleArmoryClick(float mouseX,float mouseY){
     if(armoryCloseBounds.contains(mouseX,mouseY)){
         AudioAssets.playUiConfirm();
         currentScreen = GameScreen.MAIN_MENU;
         return;
     }
-    for(int i = 0 ; i < armoryWeaponBounds.length ; i++){
-        if(armoryWeaponBounds[i].contains(mouseX,mouseY)){
-            AudioAssets.playUiConfirm();
-            selectedArmoryWeapon = i;
-            return;
+
+    if(armoryWeaponsCategoryBounds.contains(mouseX,mouseY)){
+        selectedArmoryCategory = ArmoryCategory.WEAPONS;
+        selectedArmoryProduct = -1;
+        AudioAssets.playUiConfirm();
+        return;
+    }
+
+    if(armoryPowerupsCategoryBounds.contains(mouseX,mouseY)){
+        selectedArmoryCategory = ArmoryCategory.POWERUPS;
+        selectedArmoryProduct = -1;
+        AudioAssets.playUiConfirm();
+        return;
+    }
+
+    if(armorySpecialCategoryBounds.contains(mouseX,mouseY)){
+        selectedArmoryCategory = ArmoryCategory.SPECIAL;
+        selectedArmoryProduct = -1;
+        AudioAssets.playUiConfirm();
+        return;
+    }
+
+    if(armoryActionBounds.contains(mouseX,mouseY)){
+        handleArmoryAction();
+        return;
+    }
+
+    if(selectedArmoryCategory == ArmoryCategory.WEAPONS){
+        for(int i=0;i<armoryWeaponBounds.length;i++){
+            if(armoryWeaponBounds[i].contains(mouseX,mouseY)){
+                selectedArmoryProduct = i;
+                AudioAssets.playUiConfirm();
+                return;
+            }
         }
     }
+
+    if(selectedArmoryCategory == ArmoryCategory.POWERUPS){
+        for(int i=0;i<armoryIconBounds.length;i++){
+            if(armoryIconBounds[i].contains(mouseX,mouseY)){
+                selectedArmoryProduct = i;
+                AudioAssets.playUiConfirm();
+                return;
+            }
+        }
+    }
+
+    if(selectedArmoryCategory == ArmoryCategory.SPECIAL){
+        for(int i=0;i<6;i++){
+            if(armoryIconBounds[i].contains(mouseX,mouseY)){
+                selectedArmoryProduct = i;
+                AudioAssets.playUiConfirm();
+                return;
+            }
+        }
+    }
+}
+
+private void handleArmoryAction(){
+    if(selectedArmoryCategory == ArmoryCategory.WEAPONS){
+        buySelectedArmoryWeapon();
+        return;
+    }
+
+    if(selectedArmoryCategory == ArmoryCategory.POWERUPS)
+        buySelectedArmoryPowerup();
 }
 
 private void renderSettings(){
@@ -5397,7 +5803,7 @@ private void renderSettings(){
     }
 }
 
-private void setProductRectangleBounds(){
+private void setFieldShopPowerupBounds(){
     float scaleX = Gdx.graphics.getWidth()/1920f;
     float scaleY = Gdx.graphics.getHeight()/1080f;
 
@@ -5410,23 +5816,16 @@ private void setProductRectangleBounds(){
     float horizontalStep = 252f;
     float verticalStep = 188f;
 
-    for(int i = 0 ; i < productRectangleBounds.length ; i++){
+    for(int i = 0 ; i < fieldShopPowerupBounds.length ; i++){
         int column = i%4;
         int row = i/4;
 
         float x = startX+column*horizontalStep;
         float y = startY-row*verticalStep;
 
-        productRectangleBounds[i].set(x*scaleX,y*scaleY,cardWidth*scaleX,cardHeight*scaleY);
+        fieldShopPowerupBounds[i].set(x*scaleX,y*scaleY,cardWidth*scaleX,cardHeight*scaleY);
     }
 }
-
-
-
-
-
-
-
 
 private void HudDrawTheShop(float mouseX, float mouseY){
     if(!fieldShopOpen)
@@ -5437,6 +5836,13 @@ private void HudDrawTheShop(float mouseX, float mouseY){
     fieldShopCloseBounds.set(1782f*scaleX,944f*scaleY,68f*scaleX,66f*scaleY);
     batch.draw(FxAssets.shopPanel, 0 ,0, Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
 
+    if(selectedFieldShopCategory == FieldShopCategory.WEAPONS)
+        batch.draw(FxAssets.shopWeaponsCatalog,316f*scaleX,102f*scaleY,992f*scaleX,736f*scaleY);
+    else if(selectedFieldShopCategory == FieldShopCategory.AMMO)
+        batch.draw(FxAssets.shopAmmoCatalog,316f*scaleX,102f*scaleY,992f*scaleX,736f*scaleY);
+    else if(selectedFieldShopCategory == FieldShopCategory.SPECIAL)
+        batch.draw(FxAssets.shopSpecialCatalog,316f*scaleX,102f*scaleY,992f*scaleX,736f*scaleY);
+
     if(fieldShopCloseBounds.contains(mouseX,mouseY)){
         if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
             batch.draw(FxAssets.shopClosePressed,fieldShopCloseBounds.x,fieldShopCloseBounds.y,fieldShopCloseBounds.width,fieldShopCloseBounds.height);
@@ -5444,7 +5850,6 @@ private void HudDrawTheShop(float mouseX, float mouseY){
         }
         batch.draw(FxAssets.shopCloseHover,fieldShopCloseBounds.x,fieldShopCloseBounds.y,fieldShopCloseBounds.width,fieldShopCloseBounds.height);
     }
-
 
     String goldText = Integer.toString(inventory.getGold());
     float fontScale = Math.min(scaleX,scaleY);
@@ -5458,14 +5863,57 @@ private void HudDrawTheShop(float mouseX, float mouseY){
     float goldTextY = goldY+(goldHeight+mainMenuLayout.height)/2f;
     runSummaryFont.draw(batch,goldText,goldTextX,goldTextY);
 
-    setProductRectangleBounds();
-    for(int i = 0 ; i < productRectangleBounds.length ; i++){
-        Rectangle productBounds = productRectangleBounds[i];
-        if(i == selectedFieldShopProduct)
-            batch.draw(FxAssets.shopCardSelected,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
-        else if(productBounds.contains(mouseX,mouseY))
-            batch.draw(FxAssets.shopCardHover,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
+    if(selectedFieldShopCategory == FieldShopCategory.POWERUPS){
+        drawFieldShopPowerups();
+        setFieldShopPowerupBounds();
+        drawFieldShopPowerupDetails(mouseX, mouseY);
+        for(int i = 0 ; i < fieldShopPowerupBounds.length ; i++){
+            Rectangle productBounds = fieldShopPowerupBounds[i];
+            if(i == selectedFieldShopProduct)
+                batch.draw(FxAssets.shopCardSelected,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
+            else if(productBounds.contains(mouseX,mouseY))
+                batch.draw(FxAssets.shopCardHover,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
 
+        }
+    }
+
+    if(selectedFieldShopCategory == FieldShopCategory.WEAPONS){
+        setFieldShopWideBounds(fieldShopWeaponProductBounds);
+        drawFieldShopWeapons();
+        drawFieldShopWeaponDetails(mouseX,mouseY);
+        for(int i=0;i<fieldShopWeaponProductBounds.length;i++){
+            Rectangle bounds = fieldShopWeaponProductBounds[i];
+            if(i == selectedFieldShopProduct)
+                batch.draw(FxAssets.shopWeaponSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+            else if(bounds.contains(mouseX,mouseY))
+                batch.draw(FxAssets.shopWeaponHover,bounds.x,bounds.y,bounds.width,bounds.height);
+        }
+    }
+
+    if(selectedFieldShopCategory == FieldShopCategory.AMMO){
+        setFieldShopAmmoBounds();
+        drawFieldShopAmmo();
+        drawFieldShopAmmoDetails(mouseX,mouseY);
+        for(int i=0;i<fieldShopAmmoProductBounds.length;i++){
+            Rectangle bounds = fieldShopAmmoProductBounds[i];
+            if(i == selectedFieldShopProduct)
+                batch.draw(FxAssets.shopAmmoSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+            else if(bounds.contains(mouseX,mouseY))
+                batch.draw(FxAssets.shopAmmoHover,bounds.x,bounds.y,bounds.width,bounds.height);
+        }
+    }
+
+    if(selectedFieldShopCategory == FieldShopCategory.SPECIAL){
+        setFieldShopWideBounds(fieldShopSpecialProductBounds);
+        drawFieldShopSpecialDetails(mouseX,mouseY);
+        drawFieldShopSpecial();
+        for(int i=0;i<fieldShopSpecialProductBounds.length;i++){
+            Rectangle bounds = fieldShopSpecialProductBounds[i];
+            if(i == selectedFieldShopProduct)
+                batch.draw(FxAssets.shopSpecialSelected,bounds.x,bounds.y,bounds.width,bounds.height);
+            else if(bounds.contains(mouseX,mouseY))
+                batch.draw(FxAssets.shopSpecialHover,bounds.x,bounds.y,bounds.width,bounds.height);
+        }
     }
 
     fieldShopWeaponsBounds.set(68f*scaleX,762f*scaleY,216f*scaleX,82f*scaleY);
@@ -5490,11 +5938,801 @@ private void HudDrawTheShop(float mouseX, float mouseY){
     
     if(selectedFieldShopCategory == FieldShopCategory.SPECIAL)
         batch.draw(FxAssets.shopCategorySelected,fieldShopSpecialBounds.x,fieldShopSpecialBounds.y,fieldShopSpecialBounds.width,fieldShopSpecialBounds.height); 
-    else if(fieldShopPowerupsBounds.contains(mouseX,mouseY))
+    else if(fieldShopSpecialBounds.contains(mouseX,mouseY))
         batch.draw(FxAssets.shopCategoryHover,fieldShopSpecialBounds.x,fieldShopSpecialBounds.y,fieldShopSpecialBounds.width,fieldShopSpecialBounds.height); 
         
         
 }
+
+private Texture getFieldShopPowerupIcon(int index){
+    if(index < 4)
+        return FxAssets.powerupIcons.get(INVENTORY_NORMAL_POWERUPS[index]);
+    if(index < 10)
+        return FxAssets.spicyIcons.get(INVENTORY_SPICY_POWERUPS[index-4]);
+    if(index < 15)
+        return FxAssets.moreSpicyIcons.get(INVENTORY_MORE_SPICY_POWERUPS[index-10]);
+    if(index == 15)
+        return FxAssets.godModeIcon;
+
+    return null;
+}
+
+private void drawFieldShopPowerups(){
+    if(selectedFieldShopCategory != FieldShopCategory.POWERUPS)
+        return;
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    for(int i=0;i<fieldShopPowerupBounds.length;i++){
+        Texture icon = getFieldShopPowerupIcon(i);
+        if(icon == null)
+            continue;
+        Rectangle bounds = fieldShopPowerupBounds[i];
+        float iconX = bounds.x+16f*scaleX;
+        float iconY = bounds.y+64f*scaleY;
+        float iconWidth = 204f*scaleX;
+        float iconHeight = 94f*scaleY;
+        drawContain(icon,iconX,iconY,iconWidth,iconHeight);
+
+        String name = getFieldShopPowerupName(i);
+        fieldShopInfoFont.getData().setScale(Math.min(scaleX,scaleY)*0.75f);
+        float nameX = bounds.x+8f*scaleX;
+        float nameY = bounds.y+18f*scaleY;
+        float nameWidth = 220f*scaleX;
+        float nameHeight = 32f*scaleY;
+
+        drawFieldShopCenteredText(fieldShopInfoFont,name,nameX,nameY,nameWidth,nameHeight);
+    }
+}
+
+private void drawFieldShopPowerupDetails(float mouseX,float mouseY){
+    if(selectedFieldShopCategory != FieldShopCategory.POWERUPS)
+        return;
+
+    if(selectedFieldShopProduct < 0 || selectedFieldShopProduct >= 16)
+        return;
+
+    int index = selectedFieldShopProduct;
+
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    float fontScale = Math.min(scaleX,scaleY);
+
+    fieldShopTitleFont.getData().setScale(fontScale);
+    fieldShopBodyFont.getData().setScale(fontScale);
+    fieldShopInfoFont.getData().setScale(fontScale);
+
+    Texture icon = getFieldShopPowerupIcon(index);
+    drawContain(icon,1368f*scaleX,608f*scaleY,436f*scaleX,226f*scaleY);
+    drawFieldShopCenteredText(fieldShopTitleFont,getFieldShopPowerupName(index), 1368f*scaleX,520f*scaleY+10,436f*scaleX,44f*scaleY);
+    drawInventoryCenteredText(fieldShopBodyFont,getFieldShopPowerupDescription(index),1368f*scaleX,400f*scaleY+5,436f*scaleX,88f*scaleY,true);
+    drawFieldShopCenteredText(fieldShopInfoFont,"DURATION  "+getFieldShopPowerupDuration(index),1368f*scaleX,288f*scaleY+5,436f*scaleX,78f*scaleY);
+
+    int price = getFieldShopPowerupPrice(index);
+    int amount = getFieldShopPowerupAmount(index);
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(price),1368f*scaleX, 198f*scaleY, 288f*scaleX,40f*scaleY);
+    drawFieldShopCenteredText(fieldShopInfoFont,"x"+amount,1680f*scaleX,198f*scaleY,124f*scaleX,40f*scaleY);
+
+    fieldShopActionBounds.set(1368f*scaleX,106f*scaleY,436f*scaleX,72f*scaleY);
+
+    drawFieldShopPowerupButton(price,mouseX,mouseY);
+}
+
+private void drawFieldShopPowerupButton(int price,float mouseX,float mouseY){
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.shopActionNotEnoughGold,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+
+    Texture button = FxAssets.shopActionBuy;
+
+    if(fieldShopActionBounds.contains(mouseX,mouseY) &&Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.shopActionBuyPressed;
+    else if(fieldShopActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.shopActionBuyHover;
+
+    batch.draw(button,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+}
+
+private void addFieldShopPowerup(int index){
+    if(index < 4){
+        Array<Powerup.PowerupType> powerups = new Array<>();
+        powerups.add(INVENTORY_NORMAL_POWERUPS[index]);
+        inventory.addPowerupFromArray(powerups);
+        return;
+    }
+    if(index < 10){
+        inventory.addSpicy(INVENTORY_SPICY_POWERUPS[index-4],1);
+        return;
+    }
+    if(index < 15){
+        inventory.addMoreSpicy(INVENTORY_MORE_SPICY_POWERUPS[index-10],1);
+        return;
+    }
+    if(index == 15)
+        inventory.addGodMode(1);
+}
+
+private void buySelectedFieldShopPowerup(){
+    if(selectedFieldShopCategory != FieldShopCategory.POWERUPS)
+        return;
+    if(selectedFieldShopProduct < 0)
+        return;
+    int price = getFieldShopPowerupPrice(selectedFieldShopProduct);
+    if(!inventory.spendGold(price))
+        return;
+
+    addFieldShopPowerup(selectedFieldShopProduct);
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playUiConfirm();
+}
+
+private String getFieldShopPowerupName(int index){
+    if(index == 0)
+        return "HEALTH";
+    if(index == 1)
+        return "SHIELD";
+    if(index == 2)
+        return "JETPACK BOOST";
+    if(index == 3)
+        return "FIRE RATE";
+    if(index == 4)
+        return "OVERDRIVE";
+    if(index == 5)
+        return "RAPID MOBILITY";
+    if(index == 6)
+        return "BOTTOMLESS MAG";
+    if(index == 7)
+        return "DAMAGE SURGE";
+    if(index == 8)
+        return "GOLD RUSH";
+    if(index == 9)
+        return "SCORE FRENZY";
+    if(index == 10)
+        return "BERSERK";
+    if(index == 11)
+        return "INFINITE ASSAULT";
+    if(index == 12)
+        return "HYPERDRIVE";
+    if(index == 13)
+        return "FORTRESS";
+    if(index == 14)
+        return "DOUBLE FORTUNE";
+    if(index == 15)
+        return "GOD MODE";
+    return "";
+}
+
+private String getFieldShopPowerupDescription(int index){
+    if(index == 0)
+        return "Restores 80% of maximum health.";
+    if(index == 1)
+        return "Grants 60 shield HP. Damage hits the shield before health.";
+    if(index == 2)
+        return "Instantly restores jetpack fuel to maximum.";
+    if(index == 3)
+        return "Doubles weapon fire rate.";
+    if(index == 4)
+        return "Increases weapon damage and fire rate by 40%.";
+    if(index == 5)
+        return "Increases movement speed and jetpack thrust by 50%.";
+    if(index == 6)
+        return "Weapons fire without consuming magazine ammo.";
+    if(index == 7)
+        return "Doubles weapon damage.";
+    if(index == 8)
+        return "Doubles all gold earned while active.";
+    if(index == 9)
+        return "Doubles all score earned while active.";
+    if(index == 10)
+        return "2x damage and 1.6x fire rate, but incoming damage increases by 25%.";
+    if(index == 11)
+        return "Bottomless magazine with 1.4x fire rate.";
+    if(index == 12)
+        return "1.75x movement speed with unlimited jetpack fuel.";
+    if(index == 13)
+        return "Grants 100 shield HP and reduces incoming damage by 50%.";
+    if(index == 14)
+        return "Doubles both gold and score earned.";
+
+    if(index == 15)
+        return "Invulnerability, unlimited ammo and jetpack fuel, 2x damage and 2x fire rate.";
+    return "";
+}
+
+private String getFieldShopPowerupDuration(int index){
+    if(index == 0)
+        return "INSTANT";
+    if(index == 1)
+        return "UNTIL DEPLETED";
+    if(index == 2)
+        return "INSTANT";
+    if(index == 3)
+        return "5 SEC";
+    if(index == 4 || index == 5)
+        return "12 SEC";
+    if(index == 6 || index == 7)
+        return "10 SEC";
+    if(index == 8 || index == 9)
+        return "15 SEC";
+    if(index == 10)
+        return "12 SEC";
+    if(index == 11)
+        return "15 SEC";
+    if(index == 12)
+        return "12 SEC";
+    if(index == 13)
+        return "15 SEC";
+    if(index == 14)
+        return "20 SEC";
+    if(index == 15)
+        return "8 SEC";
+    return "";
+}
+
+private int getFieldShopPowerupAmount(int index){
+    if(index < 4)
+        return inventory.getPowerupAmount(INVENTORY_NORMAL_POWERUPS[index]);
+    if(index < 10)
+        return inventory.getSpicyAmount(INVENTORY_SPICY_POWERUPS[index-4]);
+    if(index < 15)
+        return inventory.getMoreSpicyAmount(INVENTORY_MORE_SPICY_POWERUPS[index-10]);
+    if(index == 15)
+        return inventory.getGodModeAmount();
+    return 0;
+}
+
+private int getFieldShopPowerupPrice(int index){
+    if(index == 0)
+        return 100;
+    if(index == 1)
+        return 140;
+    if(index == 2)
+        return 100;
+    if(index == 3)
+        return 160;
+    if(index < 10)
+        return 300;
+    if(index < 15)
+        return 600;
+    return 1200;
+}
+
+private void setFieldShopWideBounds(Rectangle[] bounds){
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+
+    float startX = 316f;
+    float startY = 604f;
+
+    float cardWidth = 488f;
+    float cardHeight = 234f;
+
+    float horizontalStep = 504f;
+    float verticalStep = 250f;
+
+    for(int i=0;i<bounds.length;i++){
+        int column = i%2;
+        int row = i/2;
+
+        float x = startX+column*horizontalStep;
+        float y = startY-row*verticalStep;
+
+        bounds[i].set(x*scaleX,y*scaleY,cardWidth*scaleX,cardHeight*scaleY);
+    }
+}
+
+private void setFieldShopAmmoBounds(){
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+
+    float startX = 316f;
+    float startY = 478f;
+
+    float cardWidth = 320f;
+    float cardHeight = 360f;
+
+    float horizontalStep = 336f;
+    float verticalStep = 376f;
+
+    for(int i=0;i<fieldShopAmmoProductBounds.length;i++){
+        int column = i%3;
+        int row = i/3;
+        float x = startX+column*horizontalStep;
+        float y = startY-row*verticalStep;
+        fieldShopAmmoProductBounds[i].set(x*scaleX,y*scaleY,cardWidth*scaleX,cardHeight*scaleY);
+    }
+}
+
+private void drawFieldShopWeapons(){
+    if(selectedFieldShopCategory != FieldShopCategory.WEAPONS)
+        return;
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    for(int i=0;i<fieldShopWeaponProductBounds.length;i++){
+        Rectangle bounds = fieldShopWeaponProductBounds[i];
+        WeaponType type = FIELD_SHOP_WEAPONS[i];
+        Texture gun = FxAssets.weaponRewardIcons.get(type);
+
+        float iconX = bounds.x+20f*scaleX;
+        float iconY = bounds.y+108f*scaleY;
+        float iconWidth = 448f*scaleX;
+        float iconHeight = 112f*scaleY;
+        drawContain(gun,iconX,iconY,iconWidth,iconHeight);
+
+        String name = getWeaponName(type);
+        float fontScale = Math.min(scaleX,scaleY);
+        runSummaryFont.getData().setScale((24f/96f)*fontScale);
+
+        float nameX = bounds.x+20f*scaleX;
+        float nameY = bounds.y+70f*scaleY;
+        float nameWidth = 448f*scaleX;
+        float nameHeight = 28f*scaleY;
+
+        mainMenuLayout.setText(runSummaryFont,name,Color.WHITE,nameWidth,Align.center,false);
+        float nameTextY = nameY+(nameHeight+mainMenuLayout.height)/2f;
+        runSummaryFont.draw(batch,name,nameX,nameTextY,nameWidth,Align.center,false);
+
+        if(!inventory.ownsWeapon(type))
+            batch.draw(FxAssets.shopWeaponLocked,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+}
+
+private void drawFieldShopWeaponDetails(float mouseX,float mouseY){
+    WeaponType type = getSelectedFieldShopWeapon();
+
+    if(type == null)
+        return;
+
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    float fontScale = Math.min(scaleX,scaleY);
+
+    fieldShopTitleFont.getData().setScale(fontScale);
+    fieldShopBodyFont.getData().setScale(fontScale);
+    fieldShopInfoFont.getData().setScale(fontScale);
+
+    Texture gun = FxAssets.weaponRewardIcons.get(type);
+    drawContain(gun,1368f*scaleX,608f*scaleY,436f*scaleX,226f*scaleY);
+
+
+    float nameX = 1368f*scaleX;
+    float nameY = 520f*scaleY;
+    float nameWidth = 436f*scaleX;
+    float nameHeight = 44f*scaleY;
+    drawFieldShopCenteredText(fieldShopTitleFont,getWeaponName(type),nameX,nameY+10,nameWidth,nameHeight);
+
+    String description = getWeaponDescription(type);
+    drawInventoryCenteredText(inventoryBodyFont,description,1368f*scaleX,400f*scaleY+5,436f*scaleX,88f*scaleY, true);
+
+    float headDamage = weapon.getBaseHeadDamage(type);
+    float bodyDamage = weapon.getBaseBodyDamage(type);
+    float fireRate = weapon.getBaseFireRate(type);
+    int magazine = weapon.getBaseMagazineSize(type);
+    float reload = weapon.getBaseReloadSpeed(type);
+
+    String fireRateText = fireRate < 0f ? "--" : Float.toString(fireRate);
+    String stats = "HEAD "+(int)headDamage+"   BODY "+(int)bodyDamage+"   FIRE "+fireRateText+
+        "\nMAG "+magazine+"   RELOAD "+reload+"s";
+
+    drawInventoryCenteredText(fieldShopInfoFont,stats,1368f*scaleX,288f*scaleY+5,436f*scaleX,78f*scaleY, true);
+
+    int price = getWeaponPrice(type);
+    drawInventoryCenteredText(fieldShopInfoFont,Integer.toString(price),1368f*scaleX,198f*scaleY,288f*scaleX,40f*scaleY,false);
+
+    String owned = inventory.ownsWeapon(type) ? "YES" : "NO";
+    drawInventoryCenteredText(fieldShopInfoFont,owned,1680f*scaleX,198f*scaleY,124f*scaleX,40f*scaleY,false);
+    fieldShopActionBounds.set(1368f*scaleX,106f*scaleY,436f*scaleX,72f*scaleY);
+
+    drawFieldShopWeaponButton(type,price,mouseX,mouseY);
+}
+
+private void drawFieldShopWeaponButton(WeaponType type,int price,float mouseX,float mouseY){
+    if(inventory.ownsWeapon(type)){
+        batch.draw(FxAssets.shopActionOwned,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height );
+        return;
+    }
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.shopActionNotEnoughGold,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+    Texture button = FxAssets.shopActionBuy;
+    if(fieldShopActionBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.shopActionBuyPressed;
+    else if(fieldShopActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.shopActionBuyHover;
+
+    batch.draw(button, fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+}
+
+private String getWeaponName(WeaponType type){
+    if(type == WeaponType.PISTOL)
+        return "PISTOL";
+    if(type == WeaponType.AR)
+        return "ASSAULT RIFLE";
+    if(type == WeaponType.SMG)
+        return "SMG";
+    if(type == WeaponType.SHOTGUN)
+        return "SHOTGUN";
+    if(type == WeaponType.SNIPER)
+        return "SNIPER RIFLE";
+    if(type == WeaponType.ROCKET_LAUNCHER)
+        return "ROCKET LAUNCHER";
+    return "";
+}
+
+private WeaponType getSelectedFieldShopWeapon(){
+    if(selectedFieldShopCategory != FieldShopCategory.WEAPONS)
+        return null;
+    if(selectedFieldShopProduct < 0 || selectedFieldShopProduct >= FIELD_SHOP_WEAPONS.length)
+        return null;
+    return FIELD_SHOP_WEAPONS[selectedFieldShopProduct];
+}
+
+private String getWeaponDescription(WeaponType type){
+    if(type == WeaponType.PISTOL)
+        return "Reliable sidearm with balanced damage and quick handling.";
+    if(type == WeaponType.AR)
+        return "Versatile automatic rifle built for sustained mid-range combat.";
+    if(type == WeaponType.SMG)
+        return "High-rate close-range weapon built for aggressive movement.";
+    if(type == WeaponType.SHOTGUN)
+        return "Heavy close-range burst damage delivered through a wide pellet spread.";
+    if(type == WeaponType.SNIPER)
+        return "High-impact precision rifle built for long-range headshots.";
+    if(type == WeaponType.ROCKET_LAUNCHER)
+        return "Explosive launcher dealing massive area damage on impact.";
+    return "";
+}
+
+private int getWeaponPrice(WeaponType type){
+    if(type == WeaponType.PISTOL)
+        return 250;
+    if(type == WeaponType.AR)
+        return 500;
+    if(type == WeaponType.SMG)
+        return 650;
+    if(type == WeaponType.SHOTGUN)
+        return 800;
+    if(type == WeaponType.SNIPER)
+        return 1000;
+    if(type == WeaponType.ROCKET_LAUNCHER)
+        return 1400;
+    return 0;
+}
+
+private void buySelectedFieldShopWeapon(){
+    WeaponType type = getSelectedFieldShopWeapon();
+    if(type == null)
+        return;
+    if(inventory.ownsWeapon(type))
+        return;
+    int price = getWeaponPrice(type);
+    if(!inventory.spendGold(price))
+        return;
+
+    inventory.addWeapon(type);
+    int startingAmmo = WEAPON_INITIAL_CAPACITY*weapon.getBaseMagazineSize(type);
+    runState.addAmmo(type,startingAmmo);
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playUiConfirm();
+}
+
+private void drawFieldShopAmmo(){
+    if(selectedFieldShopCategory != FieldShopCategory.AMMO)
+        return;
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    for(int i=0;i<fieldShopAmmoProductBounds.length;i++){
+        Rectangle bounds = fieldShopAmmoProductBounds[i];
+        WeaponType type = FIELD_SHOP_AMMO[i];
+        Texture icon = FxAssets.shopAmmoIcons.get(type);
+        float iconX = bounds.x+62f*scaleX;
+        float iconY = bounds.y+140f*scaleY;
+        float iconWidth = 196f*scaleX;
+        float iconHeight = 196f*scaleY;
+
+        drawContain(icon,iconX,iconY,iconWidth,iconHeight);
+        String name = getWeaponName(type);
+        fieldShopInfoFont.getData().setScale(Math.min(scaleX,scaleY));
+
+        float nameX = bounds.x+20f*scaleX;
+        float nameY = bounds.y+82f*scaleY + 10;
+        float nameWidth = 280f*scaleX;
+        float nameHeight = 34f*scaleY;
+        drawFieldShopCenteredText(fieldShopInfoFont,name,nameX,nameY,nameWidth,nameHeight);
+
+        if(!inventory.ownsWeapon(type))
+            batch.draw(FxAssets.shopAmmoUnavailable,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+}
+
+private WeaponType getSelectedFieldShopAmmo(){
+    if(selectedFieldShopCategory != FieldShopCategory.AMMO)
+        return null;
+    if(selectedFieldShopProduct < 0 || selectedFieldShopProduct >= FIELD_SHOP_AMMO.length)
+        return null;
+    return FIELD_SHOP_AMMO[selectedFieldShopProduct];
+}
+
+private String getFieldShopAmmoName(WeaponType type){
+    return getWeaponName(type)+" AMMO";
+}
+
+private int getFieldShopAmmoPrice(WeaponType type){
+    if(type == WeaponType.PISTOL)
+        return 50;
+    if(type == WeaponType.AR)
+        return 100;
+    if(type == WeaponType.SMG)
+        return 100;
+    if(type == WeaponType.SHOTGUN)
+        return 120;
+    if(type == WeaponType.SNIPER)
+        return 150;
+    if(type == WeaponType.ROCKET_LAUNCHER)
+        return 200;
+    return 0;
+}
+
+private String getFieldShopAmmoDescription(WeaponType type){
+    return "Restocks reserve ammunition for the "+getWeaponName(type)+".";
+}
+
+private void drawFieldShopAmmoDetails(float mouseX,float mouseY){
+    WeaponType type = getSelectedFieldShopAmmo();
+
+    if(type == null)
+        return;
+
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    float fontScale = Math.min(scaleX,scaleY);
+
+    fieldShopTitleFont.getData().setScale(fontScale);
+    fieldShopBodyFont.getData().setScale(fontScale);
+    fieldShopInfoFont.getData().setScale(fontScale);
+
+    Texture icon = FxAssets.shopAmmoIcons.get(type);
+    drawContain(icon,1368f*scaleX,608f*scaleY,436f*scaleX,226f*scaleY);
+
+    drawFieldShopCenteredText(fieldShopTitleFont,getFieldShopAmmoName(type),1368f*scaleX,520f*scaleY,436f*scaleX,44f*scaleY);
+
+    drawInventoryCenteredText(fieldShopBodyFont,getFieldShopAmmoDescription(type),1368f*scaleX,400f*scaleY,436f*scaleX,88f*scaleY,true);
+
+    int restockAmount = getFieldShopAmmoAmount(type);
+    drawFieldShopCenteredText(fieldShopInfoFont,"RESTOCK +"+restockAmount+"   /   3 MAGAZINES",1368f*scaleX,288f*scaleY,436f*scaleX,78f*scaleY);
+
+    int price = getFieldShopAmmoPrice(type);
+    int reserve = runState.getAmmo(type);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(price),1368f*scaleX,198f*scaleY,288f*scaleX,40f*scaleY);
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(reserve),1680f*scaleX,198f*scaleY,124f*scaleX,40f*scaleY);
+
+    fieldShopActionBounds.set(1368f*scaleX,106f*scaleY,436f*scaleX,72f*scaleY);
+
+    drawFieldShopAmmoButton(type,price,mouseX,mouseY);
+}
+
+private void drawFieldShopAmmoButton(WeaponType type,int price,float mouseX,float mouseY){
+    if(!inventory.ownsWeapon(type)){
+        batch.draw(FxAssets.shopActionOwned,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.shopActionNotEnoughGold,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+
+    Texture button = FxAssets.shopActionBuy;
+
+    if(fieldShopActionBounds.contains(mouseX,mouseY) &&Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.shopActionBuyPressed;
+    else if(fieldShopActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.shopActionBuyHover;
+
+    batch.draw(button,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+}
+
+private void buySelectedFieldShopAmmo(){
+    WeaponType type = getSelectedFieldShopAmmo();
+    if(type == null)
+        return;
+    if(!inventory.ownsWeapon(type))
+        return;
+    int price = getFieldShopAmmoPrice(type);
+    if(!inventory.spendGold(price))
+        return;
+    int ammoAmount = getFieldShopAmmoAmount(type);
+    runState.addAmmo(type,ammoAmount);
+    saveManager.saveProfile(playerProfile);
+    AudioAssets.playUiConfirm();
+}
+
+
+private int getFieldShopAmmoAmount(WeaponType type){
+    return weapon.getBaseMagazineSize(type)*3;
+}
+
+private String getFieldShopSpecialName(int index){
+    if(index == 0)
+        return "FIELD KEY";
+    if(index == 1)
+        return "FULL RESTOCK";
+    if(index == 2)
+        return "COMBAT CACHE";
+    if(index == 3)
+        return "ELITE CACHE";
+    if(index == 4)
+        return "CLASSIFIED";
+    if(index == 5)
+        return "LOCKED FUTURE";
+    return "";
+}
+
+private String getFieldShopSpecialDescription(int index){
+    if(index == 0)
+        return "Issues one field access key for secured mission systems.";
+    if(index == 1)
+        return "Restocks reserve ammunition for every weapon currently owned.";
+    if(index == 2)
+        return "Tactical supply package containing useful combat resources.";
+    if(index == 3)
+        return "Premium requisition package containing high-value combat resources.";
+    if(index == 4)
+        return "Classified requisition. Access authorization unavailable.";
+    if(index == 5)
+        return "Restricted requisition slot reserved for future deployment.";
+    return "";
+}
+
+private int getFieldShopSpecialPrice(int index){
+    if(index == 0)
+        return 500;
+    if(index == 1)
+        return 450;
+    if(index == 2)
+        return 700;
+    if(index == 3)
+        return 1200;
+    return 0;
+}
+
+private void drawFieldShopSpecial(){
+    if(selectedFieldShopCategory != FieldShopCategory.SPECIAL)
+        return;
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+
+    for(int i=0;i<fieldShopSpecialProductBounds.length;i++){
+        Rectangle bounds = fieldShopSpecialProductBounds[i];
+        Texture icon = FxAssets.shopSpecialIcons[i];
+
+        float iconX = bounds.x+20f*scaleX;
+        float iconY = bounds.y+68f*scaleY;
+        float iconWidth = 144f*scaleX;
+        float iconHeight = 144f*scaleY;
+
+        drawContain(icon,iconX,iconY,iconWidth,iconHeight);
+
+        fieldShopInfoFont.getData().setScale(Math.min(scaleX,scaleY)*0.9f);
+
+        float nameX = bounds.x+180f*scaleX;
+        float nameY = bounds.y+82f*scaleY + 5;
+        float nameWidth = 288f*scaleX;
+        float nameHeight = 48f*scaleY;
+
+        drawFieldShopCenteredText(fieldShopInfoFont,getFieldShopSpecialName(i),nameX,nameY,nameWidth,nameHeight);
+
+        if(i >= 4)
+            batch.draw(FxAssets.shopSpecialLocked,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+}
+
+private void drawFieldShopSpecialDetails(float mouseX,float mouseY){
+    if(selectedFieldShopCategory != FieldShopCategory.SPECIAL)
+        return;
+
+    if(selectedFieldShopProduct < 0 || selectedFieldShopProduct >= 6)
+        return;
+
+    int index = selectedFieldShopProduct;
+
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
+    float fontScale = Math.min(scaleX,scaleY);
+
+    fieldShopTitleFont.getData().setScale(fontScale);
+    fieldShopBodyFont.getData().setScale(fontScale);
+    fieldShopInfoFont.getData().setScale(fontScale);
+
+    Texture icon = FxAssets.shopSpecialIcons[index];
+
+    drawContain(icon,1368f*scaleX,608f*scaleY,436f*scaleX,226f*scaleY);
+    drawFieldShopCenteredText(fieldShopTitleFont,getFieldShopSpecialName(index),1368f*scaleX,520f*scaleY+7,436f*scaleX,44f*scaleY);
+    drawInventoryCenteredText(fieldShopBodyFont,getFieldShopSpecialDescription(index),1368f*scaleX,400f*scaleY,436f*scaleX,88f*scaleY,true);
+
+    String effect = getFieldShopSpecialEffect(index);
+    drawFieldShopCenteredText(fieldShopInfoFont,effect,1368f*scaleX,288f*scaleY,436f*scaleX,78f*scaleY);
+
+    fieldShopActionBounds.set(1368f*scaleX,106f*scaleY,436f*scaleX,72f*scaleY);
+
+    if(index >= 4)
+        return;
+
+    int price = getFieldShopSpecialPrice(index);
+    drawFieldShopCenteredText(fieldShopInfoFont,Integer.toString(price),1368f*scaleX,198f*scaleY,288f*scaleX,40f*scaleY);
+
+    String owned = index == 0 && runState.hasKey() ? "x1" : "--";
+    drawFieldShopCenteredText(fieldShopInfoFont,owned,1680f*scaleX,198f*scaleY,124f*scaleX,40f*scaleY);
+
+    drawFieldShopSpecialButton(index,price,mouseX,mouseY);
+}
+
+private String getFieldShopSpecialEffect(int index){
+    if(index == 0)
+        return "GRANTS 1 FIELD KEY";
+    if(index == 1)
+        return "FULL AMMO RESTOCK";
+    if(index == 2)
+        return "TACTICAL RESOURCE PACKAGE";
+    if(index == 3)
+        return "PREMIUM RESOURCE PACKAGE";
+    if(index == 4)
+        return "ACCESS DENIED";
+    if(index == 5)
+        return "NOT YET AVAILABLE";
+    return "";
+}
+
+private void drawFieldShopSpecialButton(int index,int price,float mouseX,float mouseY){
+    if(index >= 4){
+        batch.draw(FxAssets.shopSpecialUnavailable,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+    if(index == 0 && runState.hasKey()){
+        batch.draw(FxAssets.shopActionOwned,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+    if(inventory.getGold() < price){
+        batch.draw(FxAssets.shopActionNotEnoughGold,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+        return;
+    }
+
+    Texture button = FxAssets.shopActionBuy;
+
+    if(fieldShopActionBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        button = FxAssets.shopActionBuyPressed;
+    else if(fieldShopActionBounds.contains(mouseX,mouseY))
+        button = FxAssets.shopActionBuyHover;
+
+    batch.draw(button,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
+}
+
+private void drawFieldShopCenteredText(BitmapFont font,String text,float x,float y,float width,float height){
+    mainMenuLayout.setText(font,text);
+    float textX = x+(width-mainMenuLayout.width)/2f;
+    float textY = y+(height+mainMenuLayout.height)/2f;
+    font.draw(batch,text,textX,textY);
+}
+
+private void setArmoryIconBounds(float x,float y,float scale){
+    float startX = 328f;
+    float startY = 658f;
+    float cardWidth = 220f;
+    float cardHeight = 166f;
+    float horizontalStep = 236f;
+    float verticalStep = 184f;
+
+    for(int i=0;i<armoryIconBounds.length;i++){
+        int column = i%4;
+        int row = i/4;
+
+        float cardX = startX+column*horizontalStep;
+        float cardY = startY-row*verticalStep;
+        armoryIconBounds[i].set(x+cardX*scale,y+cardY*scale,cardWidth*scale,cardHeight*scale);
+    }
+}
+
 
 
 
