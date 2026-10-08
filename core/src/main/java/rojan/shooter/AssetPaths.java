@@ -56,7 +56,23 @@ public final class AssetPaths {
 
     public static final class Shop{
         private Shop(){}
-        public static final String ICON = "ui/shop/shopICon.png";
+        
+        public static final String BASE = "ui/shop/";
+        public static final String ICON = BASE+"shopICon.png";
+        public static final String PANEL = BASE+"shop_panel.png";
+        public static final String ACTION_BUY = BASE+"action_buy.png";
+        public static final String ACTION_BUY_HOVER = BASE+"action_buy_hover.png";
+        public static final String ACTION_BUY_PRESSED = BASE+"action_buy_pressed.png";
+        public static final String ACTION_OWNED = BASE+"action_owned.png";
+        public static final String ACTION_EQUIPPED = BASE+"action_equipped.png";
+        public static final String ACTION_NOT_ENOUGH_GOLD = BASE+"action_not_enough_gold.png";
+        public static final String CARD_HOVER = BASE+"card_hover.png";
+        public static final String CARD_SELECTED = BASE+"card_selected.png";
+        public static final String CATEGORY_HOVER = BASE+"category_hover.png";
+        public static final String CATEGORY_SELECTED = BASE+"category_selected.png";
+        public static final String CLOSE_NORMAL = BASE+"close_normal.png";
+        public static final String CLOSE_HOVER = BASE+"close_hover.png";
+        public static final String CLOSE_PRESSED = BASE+"close_pressed.png";
     }
 
     public static final class FX{
@@ -585,7 +601,6 @@ public final class AssetPaths {
         public static final String WEAPON_CARD_SELECTED = BASE+"weapon_card_selected.png";
         public static final String ACTION_UNAVAILABLE = BASE+"action_unavailable.png";
 }
-
 
 
 

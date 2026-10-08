@@ -208,6 +208,22 @@ public final class FxAssets{
     public static Texture armoryWeaponCardSelected;
     public static Texture armoryActionUnavailable;
 
+
+    public static Texture shopPanel;
+    public static Texture shopActionBuy;
+    public static Texture shopActionBuyHover;
+    public static Texture shopActionBuyPressed;
+    public static Texture shopActionOwned;
+    public static Texture shopActionEquipped;
+    public static Texture shopActionNotEnoughGold;
+    public static Texture shopCardHover;
+    public static Texture shopCardSelected;
+    public static Texture shopCategoryHover;
+    public static Texture shopCategorySelected;
+    public static Texture shopCloseNormal;
+    public static Texture shopCloseHover;
+    public static Texture shopClosePressed;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -410,6 +426,21 @@ public final class FxAssets{
         armoryWeaponCardHover = loadUiTexture(AssetPaths.Armory.WEAPON_CARD_HOVER);
         armoryWeaponCardSelected = loadUiTexture(AssetPaths.Armory.WEAPON_CARD_SELECTED);
         armoryActionUnavailable = loadUiTexture(AssetPaths.Armory.ACTION_UNAVAILABLE);
+
+        shopPanel = loadUiTexture(AssetPaths.Shop.PANEL);
+        shopActionBuy = loadUiTexture(AssetPaths.Shop.ACTION_BUY);
+        shopActionBuyHover = loadUiTexture(AssetPaths.Shop.ACTION_BUY_HOVER);
+        shopActionBuyPressed = loadUiTexture(AssetPaths.Shop.ACTION_BUY_PRESSED);
+        shopActionOwned = loadUiTexture(AssetPaths.Shop.ACTION_OWNED);
+        shopActionEquipped = loadUiTexture(AssetPaths.Shop.ACTION_EQUIPPED);
+        shopActionNotEnoughGold = loadUiTexture(AssetPaths.Shop.ACTION_NOT_ENOUGH_GOLD);
+        shopCardHover = loadUiTexture(AssetPaths.Shop.CARD_HOVER);
+        shopCardSelected = loadUiTexture(AssetPaths.Shop.CARD_SELECTED);
+        shopCategoryHover = loadUiTexture(AssetPaths.Shop.CATEGORY_HOVER);
+        shopCategorySelected = loadUiTexture(AssetPaths.Shop.CATEGORY_SELECTED);
+        shopCloseNormal = loadUiTexture(AssetPaths.Shop.CLOSE_NORMAL);
+        shopCloseHover = loadUiTexture(AssetPaths.Shop.CLOSE_HOVER);
+        shopClosePressed = loadUiTexture(AssetPaths.Shop.CLOSE_PRESSED);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -484,6 +515,21 @@ public final class FxAssets{
         pauseMainMenuHover.dispose();
         pauseMainMenuPressed.dispose();
         pauseMainMenuDisabled.dispose();
+
+        shopPanel.dispose();
+        shopActionBuy.dispose();
+        shopActionBuyHover.dispose();
+        shopActionBuyPressed.dispose();
+        shopActionOwned.dispose();
+        shopActionEquipped.dispose();
+        shopActionNotEnoughGold.dispose();
+        shopCardHover.dispose();
+        shopCardSelected.dispose();
+        shopCategoryHover.dispose();
+        shopCategorySelected.dispose();
+        shopCloseNormal.dispose();
+        shopCloseHover.dispose();
+        shopClosePressed.dispose();
     }
 
 

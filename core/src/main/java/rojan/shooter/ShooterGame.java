@@ -380,6 +380,29 @@ public class ShooterGame extends ApplicationAdapter {
                 }
     private GameScreen currentScreen = GameScreen.MAIN_MENU;
 
+
+
+    private Rectangle shopInteractionZone;
+    private boolean fieldShopOpen = false;
+    private Rectangle fieldShopCloseBounds = new Rectangle();
+    private Rectangle[] productRectangleBounds = new Rectangle[16];
+    private int selectedFieldShopProduct = -1;
+
+    private Rectangle fieldShopWeaponsBounds = new Rectangle();
+    private Rectangle fieldShopAmmoBounds = new Rectangle();
+    private Rectangle fieldShopPowerupsBounds = new Rectangle();
+    private Rectangle fieldShopSpecialBounds = new Rectangle();
+    private enum FieldShopCategory{
+                        WEAPONS,
+                        AMMO,
+                        POWERUPS,
+                        SPECIAL
+                    }
+    private FieldShopCategory selectedFieldShopCategory = FieldShopCategory.WEAPONS;
+    
+        
+    
+
     @Override
     public void create(){
         loadFonts();
@@ -437,6 +460,8 @@ public class ShooterGame extends ApplicationAdapter {
                 handleRunSummaryClick(mouseX,mouseY);
             else if(pauseMenuOpen)
                 handlePauseClick(mouseX,mouseY);
+            else if(fieldShopOpen)
+                fieldShopMouseClick(mouseX, mouseY);
             else{
                 if(inventoryOpen && inventoryAnimation >= 0.99f && inventoryCloseBounds.contains(mouseX,mouseY))
                     inventoryOpen = false;
@@ -458,6 +483,10 @@ public class ShooterGame extends ApplicationAdapter {
                 }
             }
         }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.E) && (player.getWorldHitbox()).overlaps(shopInteractionZone) && !pauseMenuOpen &&!gameOver &&!inventoryOpen)
+            fieldShopOpen = true;
+        
         updateInventoryAnimation(dt);
         boolean gamePaused = gameplayBlocked();
         float worldDt = gamePaused ? 0f : dt;
@@ -684,6 +713,7 @@ public class ShooterGame extends ApplicationAdapter {
         drawInventory();
         drawPauseMenu();
         drawRunSummary();
+        HudDrawTheShop(mouseX,mouseY);
 
         batch.end();
         batch.setProjectionMatrix(camera.combined);
@@ -4422,10 +4452,6 @@ private void createShopFromMap(TiledMap map){
     shop = new Rectangle(shopRect.x, shopRect.y , shopIconWidth, shopIconHeight);
 }
 
-private Rectangle getShopInteractionZone(){
-    return new Rectangle(shop.x-30f,shop.y-20f,shop.width+60f,shop.height+40f);
-}
-
 private void drawShop(){
     batch.draw(FxAssets.shopIcon,shop.x,shop.y,shop.width,shop.height);
 }
@@ -4437,7 +4463,7 @@ private float getReloadProgress(){
 }
 
 private boolean gameplayBlocked(){
-    return currentScreen != GameScreen.GAMEPLAY || inventoryBlockingGameplay() || pauseMenuOpen || gameOver;
+    return currentScreen != GameScreen.GAMEPLAY || inventoryBlockingGameplay() || pauseMenuOpen || gameOver ||fieldShopOpen;
 }
 
 private void resumeGame(){
@@ -4599,6 +4625,7 @@ private void initializeGame(){
 
     terrain = getTerrainObjectArray(map);
     terrain.sort((a,b)->Float.compare(b.getY(),a.getY()));
+    shopInteractionZone = new Rectangle(shop.x-30f,shop.y-20f,shop.width+60f,shop.height+40f);
 
     Enemy.loadEnemyAssetOnce();
     extractAllEnemyHitboxes();
@@ -4631,6 +4658,9 @@ private void initializeGame(){
 
     for(int i = 0 ; i < armoryWeaponBounds.length ; i++)
         armoryWeaponBounds[i] = new Rectangle();
+
+    for(int i = 0 ; i < productRectangleBounds.length ; i++)
+        productRectangleBounds[i] = new Rectangle();
 }
 
 private void loadPlayerProfile(){
@@ -4762,6 +4792,7 @@ private void resetRunSystems(){
     pauseMenuOpen = false;
     reloadReadyFxActive = false;
     reloadReadyFxTimer = 0f;
+    fieldShopOpen = false;
 }
 
 private void restartGame(){
@@ -4971,6 +5002,50 @@ private void handlePauseClick(float mouseX,float mouseY){
     }
 }
 
+private void fieldShopMouseClick(float mouseX, float mouseY){
+    if(fieldShopCloseBounds.contains(mouseX,mouseY)){
+        fieldShopOpen = false;
+        return;
+    }
+    
+    for(int i = 0 ; i < productRectangleBounds.length ; i++){
+        if(productRectangleBounds[i].contains(mouseX,mouseY)){
+            selectedFieldShopProduct = i;
+            return;
+        }
+    }
+
+    if(fieldShopWeaponsBounds.contains(mouseX,mouseY)){
+        selectedFieldShopCategory = FieldShopCategory.WEAPONS;
+        selectedFieldShopProduct = -1;
+        return;
+    }
+
+    if(fieldShopAmmoBounds.contains(mouseX,mouseY)){
+        selectedFieldShopCategory = FieldShopCategory.AMMO;
+        selectedFieldShopProduct = -1;
+        return;
+    }
+
+    if(fieldShopPowerupsBounds.contains(mouseX,mouseY)){
+        selectedFieldShopCategory = FieldShopCategory.POWERUPS;
+        selectedFieldShopProduct = -1;
+        return;
+    }
+
+    if(fieldShopSpecialBounds.contains(mouseX,mouseY)){
+        selectedFieldShopCategory = FieldShopCategory.SPECIAL;
+        selectedFieldShopProduct = -1;
+        return;
+    }
+
+    
+       
+
+
+}
+
+
 private void drawRunSummaryValue(String text,float x,float baseline,float logicalSize,float scale){
     runSummaryFont.getData().setScale((logicalSize/96f)*scale);
     runSummaryFont.draw(batch,text,x,baseline);
@@ -5132,21 +5207,21 @@ private void renderMainMenu(float mouseX,float mouseY){
 }
 
 private void drawMainMenuValues(float x,float y,float scale){
-    runSummaryFont.getData().setScale((30f/96f)*scale);
+    runSummaryFont.getData().setScale((38f/96f)*scale);
 
     String goldText = Integer.toString(inventory.getGold());
     mainMenuLayout.setText(runSummaryFont,goldText);
 
-    float goldRight = x+1422f*scale;
-    float baseline = y+974f*scale;
+    float goldRight = x+1395f*scale;
+    float baseline = y+980f*scale;
 
     runSummaryFont.draw(batch,goldText,goldRight-mainMenuLayout.width,baseline);
 
     String bestText = Integer.toString(playerProfile.getBestScore());
     mainMenuLayout.setText(runSummaryFont,bestText);
 
-    float bestRight = x+1818f*scale;
-    
+    float bestRight = x+1790f*scale;
+
     runSummaryFont.draw(batch,bestText,bestRight-mainMenuLayout.width,baseline);
 }
 
@@ -5321,13 +5396,118 @@ private void renderSettings(){
         currentScreen = GameScreen.MAIN_MENU;
     }
 }
- 
 
+private void setProductRectangleBounds(){
+    float scaleX = Gdx.graphics.getWidth()/1920f;
+    float scaleY = Gdx.graphics.getHeight()/1080f;
 
+    float startX = 316f;
+    float startY = 666f;
 
+    float cardWidth = 236f;
+    float cardHeight = 172f;
 
+    float horizontalStep = 252f;
+    float verticalStep = 188f;
 
+    for(int i = 0 ; i < productRectangleBounds.length ; i++){
+        int column = i%4;
+        int row = i/4;
+
+        float x = startX+column*horizontalStep;
+        float y = startY-row*verticalStep;
+
+        productRectangleBounds[i].set(x*scaleX,y*scaleY,cardWidth*scaleX,cardHeight*scaleY);
+    }
 }
+
+
+
+
+
+
+
+
+private void HudDrawTheShop(float mouseX, float mouseY){
+    if(!fieldShopOpen)
+        return;
+    float scaleX = Gdx.graphics.getWidth() / 1920f;
+    float scaleY = Gdx.graphics.getHeight() / 1080f;
+
+    fieldShopCloseBounds.set(1782f*scaleX,944f*scaleY,68f*scaleX,66f*scaleY);
+    batch.draw(FxAssets.shopPanel, 0 ,0, Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+
+    if(fieldShopCloseBounds.contains(mouseX,mouseY)){
+        if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+            batch.draw(FxAssets.shopClosePressed,fieldShopCloseBounds.x,fieldShopCloseBounds.y,fieldShopCloseBounds.width,fieldShopCloseBounds.height);
+            return;
+        }
+        batch.draw(FxAssets.shopCloseHover,fieldShopCloseBounds.x,fieldShopCloseBounds.y,fieldShopCloseBounds.width,fieldShopCloseBounds.height);
+    }
+
+
+    String goldText = Integer.toString(inventory.getGold());
+    float fontScale = Math.min(scaleX,scaleY);
+    runSummaryFont.getData().setScale(30f/96f * fontScale);
+    mainMenuLayout.setText(runSummaryFont,goldText);
+    float goldX = 1560 * scaleX;
+    float goldY = 956 * scaleY;
+    float goldWidth = 170 * scaleX;
+    float goldHeight = 40 * scaleY;
+    float goldTextX = goldX+(goldWidth-mainMenuLayout.width)/2f;
+    float goldTextY = goldY+(goldHeight+mainMenuLayout.height)/2f;
+    runSummaryFont.draw(batch,goldText,goldTextX,goldTextY);
+
+    setProductRectangleBounds();
+    for(int i = 0 ; i < productRectangleBounds.length ; i++){
+        Rectangle productBounds = productRectangleBounds[i];
+        if(i == selectedFieldShopProduct)
+            batch.draw(FxAssets.shopCardSelected,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
+        else if(productBounds.contains(mouseX,mouseY))
+            batch.draw(FxAssets.shopCardHover,productBounds.x,productBounds.y,productBounds.width,productBounds.height);
+
+    }
+
+    fieldShopWeaponsBounds.set(68f*scaleX,762f*scaleY,216f*scaleX,82f*scaleY);
+    fieldShopAmmoBounds.set(68*scaleX,662*scaleY,216*scaleX,82*scaleY);
+    fieldShopPowerupsBounds.set(68*scaleX,562*scaleY,216*scaleX,82*scaleY);
+    fieldShopSpecialBounds.set(68*scaleX,462*scaleY,216*scaleX,82*scaleY);
+
+    if(selectedFieldShopCategory == FieldShopCategory.WEAPONS)
+        batch.draw(FxAssets.shopCategorySelected,fieldShopWeaponsBounds.x,fieldShopWeaponsBounds.y,fieldShopWeaponsBounds.width,fieldShopWeaponsBounds.height);
+    else if(fieldShopWeaponsBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.shopCategoryHover,fieldShopWeaponsBounds.x,fieldShopWeaponsBounds.y,fieldShopWeaponsBounds.width,fieldShopWeaponsBounds.height);
+
+    if(selectedFieldShopCategory == FieldShopCategory.AMMO)
+        batch.draw(FxAssets.shopCategorySelected,fieldShopAmmoBounds.x,fieldShopAmmoBounds.y,fieldShopAmmoBounds.width,fieldShopAmmoBounds.height);
+    else if(fieldShopAmmoBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.shopCategoryHover,fieldShopAmmoBounds.x,fieldShopAmmoBounds.y,fieldShopAmmoBounds.width,fieldShopAmmoBounds.height);
+    
+    if(selectedFieldShopCategory == FieldShopCategory.POWERUPS)
+        batch.draw(FxAssets.shopCategorySelected,fieldShopPowerupsBounds.x,fieldShopPowerupsBounds.y,fieldShopPowerupsBounds.width,fieldShopPowerupsBounds.height);
+    else if(fieldShopPowerupsBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.shopCategoryHover,fieldShopPowerupsBounds.x,fieldShopPowerupsBounds.y,fieldShopPowerupsBounds.width,fieldShopPowerupsBounds.height);
+    
+    if(selectedFieldShopCategory == FieldShopCategory.SPECIAL)
+        batch.draw(FxAssets.shopCategorySelected,fieldShopSpecialBounds.x,fieldShopSpecialBounds.y,fieldShopSpecialBounds.width,fieldShopSpecialBounds.height); 
+    else if(fieldShopPowerupsBounds.contains(mouseX,mouseY))
+        batch.draw(FxAssets.shopCategoryHover,fieldShopSpecialBounds.x,fieldShopSpecialBounds.y,fieldShopSpecialBounds.width,fieldShopSpecialBounds.height); 
+        
+        
+}
+
+
+
+
+    
+}
+
+
+
+
+
+
+
 
         
 
