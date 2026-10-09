@@ -58,7 +58,7 @@ public final class AssetPaths {
         private Shop(){}
 
         public static final String BASE = "ui/shop/";
-        public static final String ICON = BASE+"shopICon.png";
+        public static final String ICON = BASE+"shopIcon.png";
         public static final String PANEL = BASE+"shop_panel.png";
         public static final String ACTION_BUY = BASE+"action_buy.png";
         public static final String ACTION_BUY_HOVER = BASE+"action_buy_hover.png";
@@ -613,6 +613,53 @@ public final class AssetPaths {
     public static final String ACTION_EQUIPPED = BASE+"action_equipped.png";
     public static final String ACTION_INSUFFICIENT_GOLD = BASE+"action_insufficient_gold.png";
     public static final String ACTION_UNAVAILABLE = BASE+"action_unavailable.png";
+}
+
+public static final class Settings{
+
+    private Settings(){}
+
+    public static final String BASE = "ui/settings/";
+    public static final String PANEL = BASE+"settings_panel.png";
+    public static final String SLIDER_FILL = BASE+"slider_fill.png";
+    public static final String SLIDER_THUMB_NORMAL = BASE+"slider_thumb_normal.png";
+    public static final String SLIDER_THUMB_HOVER = BASE+"slider_thumb_hover.png";
+    public static final String SLIDER_THUMB_PRESSED = BASE+"slider_thumb_pressed.png";
+    public static final String FULLSCREEN_OFF = BASE+"fullscreen_off.png";
+    public static final String FULLSCREEN_OFF_HOVER = BASE+"fullscreen_off_hover.png";
+    public static final String FULLSCREEN_ON = BASE+"fullscreen_on.png";
+    public static final String FULLSCREEN_ON_HOVER = BASE+"fullscreen_on_hover.png";
+    public static final String RESOLUTION_NORMAL = BASE+"resolution_normal.png";
+    public static final String RESOLUTION_HOVER = BASE+"resolution_hover.png";
+    public static final String RESOLUTION_PRESSED = BASE+"resolution_pressed.png";
+    public static final String CONTROLS_NORMAL = BASE+"controls_normal.png";
+    public static final String CONTROLS_HOVER = BASE+"controls_hover.png";
+    public static final String CONTROLS_PRESSED = BASE+"controls_pressed.png";
+    public static final String RESET_NORMAL = BASE+"reset_save_data_normal.png";
+    public static final String RESET_HOVER = BASE+"reset_save_data_hover.png";
+    public static final String RESET_PRESSED = BASE+"reset_save_data_pressed.png";
+    public static final String BACK_NORMAL = BASE+"back_normal.png";
+    public static final String BACK_HOVER = BASE+"back_hover.png";
+    public static final String BACK_PRESSED = BASE+"back_pressed.png";
+}
+
+public static final class Interaction{
+
+    private Interaction(){}
+
+    public static final String BASE = "ui/interaction/";
+    public static final String E_INTERACT = BASE+"e_interact.png";
+    public static final String E_OPEN = BASE+"e_open.png";
+    public static final String E_SHOP = BASE+"e_shop.png";
+    public static final String Q_CLAIM = BASE+"q_claim.png";
+    public static final String R_RELOAD = BASE+"r_reload.png";
+    public static final String RMB_RELOAD = BASE+"rmb_reload.png";
+    public static final String RMB_OR_R_RELOAD = BASE+"rmb_or_r_reload.png";
+    public static final String LOCKED = BASE+"locked.png";
+    public static final String NOT_ENOUGH_GOLD = BASE+"not_enough_gold.png";
+    public static final String WEAPON_UNLOCKED = BASE+"weapon_unlocked.png";
+    public static final String ITEM_ACQUIRED = BASE+"item_acquired.png";
+    public static final String GOLD_GAINED = BASE+"gold_gained.png";
 }
 
 

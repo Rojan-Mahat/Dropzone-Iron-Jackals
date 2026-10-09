@@ -75,4 +75,9 @@ public class SaveManager{
 
         return profile;
     }
+
+    public void clearSave(){
+        save.clear();
+        save.flush();
+    }
 }

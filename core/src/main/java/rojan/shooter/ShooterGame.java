@@ -365,8 +365,6 @@ public class ShooterGame extends ApplicationAdapter {
     private Rectangle armoryPowerupsCategoryBounds = new Rectangle();
     private Rectangle armorySpecialCategoryBounds = new Rectangle();
     private Rectangle[] armoryWeaponBounds = new Rectangle[6];
-
-    private Rectangle settingsBackBounds = new Rectangle();
     
     private BitmapFont runSummaryFont;
     private GlyphLayout runSummaryLayout = new GlyphLayout();
@@ -419,7 +417,6 @@ public class ShooterGame extends ApplicationAdapter {
                                 WeaponType.SNIPER,
                                 WeaponType.ROCKET_LAUNCHER};
     private Rectangle fieldShopActionBounds = new Rectangle();
-    private int selectedArmoryWeapon = -1;
     private enum ArmoryCategory{
                         WEAPONS,
                         POWERUPS,
@@ -430,6 +427,27 @@ private int selectedArmoryProduct = -1;
 private Rectangle[] armoryIconBounds = new Rectangle[16];
 private Rectangle armoryActionBounds = new Rectangle();
 
+private float musicVolume = 1f;
+private float sfxVolume = 1f;
+private boolean draggingMusicSlider = false;
+private boolean draggingSfxSlider = false;
+private Rectangle musicSliderBounds = new Rectangle();
+private Rectangle sfxSliderBounds = new Rectangle();
+private Rectangle settingsFullscreenBounds = new Rectangle();
+private Rectangle settingsResolutionBounds = new Rectangle();
+private Rectangle settingsControlsBounds = new Rectangle();
+private Rectangle settingsResetBounds = new Rectangle();
+private Rectangle settingsBackBounds = new Rectangle();
+private int settingsResolutionIndex = 0;
+private final int[][] SETTINGS_RESOLUTIONS = {{1920,1080},{1600,900},{1280,720}};
+
+private boolean controlsOverlayOpen = false;
+private boolean resetConfirmOpen = false;
+private Rectangle controlsOverlayBackBounds = new Rectangle();
+private Rectangle resetConfirmYesBounds = new Rectangle();
+private Rectangle resetConfirmNoBounds = new Rectangle();
+
+private boolean settingsOpenedFromPause = false;
     
         
     
@@ -514,6 +532,8 @@ private Rectangle armoryActionBounds = new Rectangle();
                 }
             }
         }
+        if(currentScreen != GameScreen.GAMEPLAY)
+                return;
 
         if(Gdx.input.isKeyJustPressed(Input.Keys.E) && (player.getWorldHitbox()).overlaps(shopInteractionZone) && !pauseMenuOpen &&!gameOver &&!inventoryOpen)
             fieldShopOpen = true;
@@ -566,8 +586,12 @@ private Rectangle armoryActionBounds = new Rectangle();
             player.move(direction,dt,getWorldSize(),solidPlatforms);
             player.ensureGrounding(solidPlatforms);
 
-            boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
-            boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+            float hudMouseX = Gdx.input.getX();
+            float hudMouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+            boolean mouseOverHud = mouseOverGameplayHud(hudMouseX,hudMouseY);
+            boolean shooting = Gdx.input.isButtonPressed(Input.Buttons.LEFT) && !mouseOverHud;
+            boolean shootOnce = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && !mouseOverHud;
+
             float fireInterval = 1f/weapon.getFireRate();
             if(shooting && !reloading) 
                 player.setShootingTrue();
@@ -760,8 +784,10 @@ private Rectangle armoryActionBounds = new Rectangle();
         mapRenderer.dispose();
         map.dispose();
         batch.dispose();
-        player.disposePlayer();
-        weapon.disposeWeapon();
+        if(player!=null)
+            player.disposePlayer();
+        if(weapon!=null)
+            weapon.disposeWeapon();
         if(bulletTextures != null){
             for(Texture texture :
                 bulletTextures.values()){
@@ -830,7 +856,7 @@ private Rectangle armoryActionBounds = new Rectangle();
         MapLayer playerLayer = map.getLayers().get("Player");
         RectangleMapObject Ar_GunObject = (RectangleMapObject)playerLayer.getObjects().get("AR_origin");
         Rectangle AR_GunRect = Ar_GunObject.getRectangle();
-        Weapon newWeapon = new Weapon(Weapon.WeaponType.AR, AR_GunRect.x, AR_GunRect.y , AR_GunRect.width, AR_GunRect.height,extractARGripOffsetFromMap(map) );
+        Weapon newWeapon = new Weapon(Weapon.WeaponType.PISTOL, AR_GunRect.x, AR_GunRect.y , AR_GunRect.width, AR_GunRect.height,extractARGripOffsetFromMap(map) );
         return newWeapon;
     }
 
@@ -2144,7 +2170,7 @@ private void drawJetpackDisabledHud(){
             if(enemy.isHeavyShotReady()){
                 Vector2 spawn = new Vector2(enemy.getHeavyMuzzlePosition());
                 Vector2 target = new Vector2(player.getPlayerCentrePosition());
-                enemyProjectiles.add(new EnemyProjectile(spawn,target,1350f,heavyProjectileTexture,enemy.getHeavyCloseDamage(),40f,300,350));
+                enemyProjectiles.add(new EnemyProjectile(spawn,target,1100f,heavyProjectileTexture,enemy.getHeavyCloseDamage(),40f,300,350));
                 enemy.consumeHeavyShot();
             }
         }
@@ -4572,11 +4598,6 @@ private void startNewRun(){
 
 private void giveStartingAmmo(){
     runState.addAmmo(WeaponType.PISTOL,5*weapon.getBaseMagazineSize(WeaponType.PISTOL));
-    runState.addAmmo(WeaponType.AR,5*weapon.getBaseMagazineSize(WeaponType.AR));
-    runState.addAmmo(WeaponType.SMG,5*weapon.getBaseMagazineSize(WeaponType.SMG));
-    runState.addAmmo(WeaponType.SHOTGUN,5*weapon.getBaseMagazineSize(WeaponType.SHOTGUN));
-    runState.addAmmo(WeaponType.SNIPER,5*weapon.getBaseMagazineSize(WeaponType.SNIPER));
-    runState.addAmmo(WeaponType.ROCKET_LAUNCHER,5*weapon.getBaseMagazineSize(WeaponType.ROCKET_LAUNCHER));
 }
 
 private void loadFonts(){
@@ -5057,8 +5078,20 @@ private void drawPauseMenu(){
     batch.draw(resume,pauseResumeBounds.x,pauseResumeBounds.y,pauseResumeBounds.width,pauseResumeBounds.height);
     batch.draw(restart,pauseRestartBounds.x,pauseRestartBounds.y,pauseRestartBounds.width,pauseRestartBounds.height);
 
-    batch.draw(FxAssets.pauseSettingsDisabled,pauseSettingsBounds.x,pauseSettingsBounds.y,pauseSettingsBounds.width,pauseSettingsBounds.height);
-    batch.draw(FxAssets.pauseMainMenuDisabled,pauseMainMenuBounds.x,pauseMainMenuBounds.y,pauseMainMenuBounds.width,pauseMainMenuBounds.height);
+    Texture settings = FxAssets.pauseSettingsNormal;
+    if(pauseSettingsBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        settings = FxAssets.pauseSettingsPressed;
+    else if(pauseSettingsBounds.contains(mouseX,mouseY))
+        settings = FxAssets.pauseSettingsHover;
+
+    Texture mainMenu = FxAssets.pauseMainMenuNormal;
+    if(pauseMainMenuBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        mainMenu = FxAssets.pauseMainMenuPressed;
+    else if(pauseMainMenuBounds.contains(mouseX,mouseY))
+        mainMenu = FxAssets.pauseMainMenuHover;
+
+    batch.draw(settings,pauseSettingsBounds.x,pauseSettingsBounds.y,pauseSettingsBounds.width,pauseSettingsBounds.height);
+    batch.draw(mainMenu,pauseMainMenuBounds.x,pauseMainMenuBounds.y,pauseMainMenuBounds.width,pauseMainMenuBounds.height);
 }
 
 private void handlePauseClick(float mouseX,float mouseY){
@@ -5067,9 +5100,28 @@ private void handlePauseClick(float mouseX,float mouseY){
         resumeGame();
         return;
     }
+
     if(pauseRestartBounds.contains(mouseX,mouseY)){
         AudioAssets.playUiConfirm();
         restartGame();
+        return;
+    }
+
+    if(pauseSettingsBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        settingsOpenedFromPause = true;
+        currentScreen = GameScreen.SETTINGS;
+        return;
+    }
+
+    if(pauseMainMenuBounds.contains(mouseX,mouseY)){
+        AudioAssets.playUiConfirm();
+        endCurrentRun();
+        pauseMenuOpen = false;
+        gameOver = false;
+        currentScreen = GameScreen.MAIN_MENU;
+        AudioAssets.playMenuMusic();
+        return;
     }
 }
 
@@ -5342,6 +5394,7 @@ private void handleMainMenuClick(float mouseX,float mouseY){
 
     if(mainSettingsBounds.contains(mouseX,mouseY)){
         AudioAssets.playUiConfirm();
+        settingsOpenedFromPause = false;
         currentScreen = GameScreen.SETTINGS;
         return;
     }
@@ -5377,7 +5430,6 @@ private void renderArmory(float mouseX,float mouseY){
         batch.draw(FxAssets.armoryIconsGrid,x+328f*scale,y+106f*scale,928f*scale,718f*scale);
 
     drawArmoryCategories(x,y,scale,mouseX,mouseY);
-
     armoryActionBounds.set(x+1328f*scale,y+96f*scale,496f*scale,78f*scale);
     batch.draw(FxAssets.armoryActionUnavailable,armoryActionBounds.x,armoryActionBounds.y,armoryActionBounds.width,armoryActionBounds.height);
 
@@ -5391,7 +5443,6 @@ private void renderArmory(float mouseX,float mouseY){
         drawArmorySpecial(x,y,scale,mouseX,mouseY);
 
     armoryCloseBounds.set(x+1780f*scale,y+938f*scale,68f*scale,68f*scale);
-
     Texture close = FxAssets.armoryCloseNormal;
 
     if(armoryCloseBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
@@ -5400,11 +5451,8 @@ private void renderArmory(float mouseX,float mouseY){
         close = FxAssets.armoryCloseHover;
 
     batch.draw(close,armoryCloseBounds.x,armoryCloseBounds.y,armoryCloseBounds.width,armoryCloseBounds.height);
-
     drawArmoryGold(x,y,scale);
-
     batch.end();
-
     if(Gdx.input.justTouched())
         handleArmoryClick(mouseX,mouseY);
 }
@@ -5681,13 +5729,16 @@ private void drawArmorySpecialDetails(float x,float y,float scale){
 
 private void drawArmoryGold(float x,float y,float scale){
     String goldText = Integer.toString(inventory.getGold());
-    runSummaryFont.getData().setScale((30f/96f)*scale);
+    runSummaryFont.getData().setScale((40f/96f)*scale);
     mainMenuLayout.setText(runSummaryFont,goldText);
+    float boxX = x+1560f*scale;
+    float boxY = y+956f*scale;
+    float boxWidth = 170f*scale;
+    float boxHeight = 40f*scale;
 
-    float rightX = x+1744f*scale;
-    float baseline = y+958f*scale;
-
-    runSummaryFont.draw(batch,goldText,rightX-mainMenuLayout.width,baseline);
+    float textX = boxX+(boxWidth-mainMenuLayout.width)/2f;
+    float textY = boxY+(boxHeight+mainMenuLayout.height)/2f;
+    runSummaryFont.draw(batch,goldText,textX,textY);
 }
 private void handleArmoryClick(float mouseX,float mouseY){
     if(armoryCloseBounds.contains(mouseX,mouseY)){
@@ -5766,41 +5817,322 @@ private void handleArmoryAction(){
 private void renderSettings(){
     ScreenUtils.clear(0.03f,0.05f,0.08f,1f);
 
+    float mouseX = Gdx.input.getX();
+    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
+
     batch.setProjectionMatrix(hudCamera.combined);
     batch.begin();
 
     float screenWidth = Gdx.graphics.getWidth();
     float screenHeight = Gdx.graphics.getHeight();
-
     float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
-
     float width = 1920f*scale;
     float height = 1080f*scale;
-
     float x = (screenWidth-width)/2f;
     float y = (screenHeight-height)/2f;
 
-    runSummaryFont.getData().setScale((64f/96f)*scale);
-    runSummaryFont.draw(batch,"SETTINGS",x+120f*scale,y+930f*scale);
+    batch.draw(FxAssets.settingsPanel,x,y,width,height);
 
-    settingsBackBounds.set(x+120f*scale,y+100f*scale,300f*scale,90f*scale);
+    drawSettingsSliders(x,y,scale,mouseX,mouseY);
+    drawSettingsFullscreen(x,y,scale,mouseX,mouseY);
+    drawSettingsResolution(x,y,scale,mouseX,mouseY);
+    drawSettingsButtons(x,y,scale,mouseX,mouseY);
 
-    batch.setColor(0.12f,0.16f,0.20f,1f);
-    batch.draw(reloadProgressPixel,settingsBackBounds.x,settingsBackBounds.y,settingsBackBounds.width,settingsBackBounds.height);
-    batch.setColor(Color.WHITE);
-
-    runSummaryFont.getData().setScale((36f/96f)*scale);
-    runSummaryFont.draw(batch,"BACK",settingsBackBounds.x+85f*scale,settingsBackBounds.y+58f*scale);
+    if(controlsOverlayOpen)
+        drawControlsOverlay(x,y,scale,mouseX,mouseY);
+    if(resetConfirmOpen)
+        drawResetConfirmation(x,y,scale,mouseX,mouseY);
 
     batch.end();
+    updateSettingsInput(x,y,scale,mouseX,mouseY);
+}
 
-    float mouseX = Gdx.input.getX();
-    float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
 
-    if(Gdx.input.justTouched() && settingsBackBounds.contains(mouseX,mouseY)){
-        AudioAssets.playUiConfirm();
-        currentScreen = GameScreen.MAIN_MENU;
+
+
+private void drawSettingsSliders(float x,float y,float scale,float mouseX,float mouseY){
+    musicSliderBounds.set(x+144f*scale,y+644f*scale,744f*scale,64f*scale);
+    sfxSliderBounds.set(x+144f*scale,y+472f*scale,744f*scale,64f*scale);
+
+    drawSettingsSlider(musicVolume,x,y,scale,676f,musicSliderBounds,draggingMusicSlider,mouseX,mouseY);
+    drawSettingsSlider(sfxVolume,x,y,scale,504f,sfxSliderBounds,draggingSfxSlider,mouseX,mouseY);
+
+    fieldShopInfoFont.getData().setScale(scale);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,(int)(musicVolume*100f)+"%",x+766f*scale,y+717f*scale,96f*scale,36f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,(int)(sfxVolume*100f)+"%",x+766f*scale,y+545f*scale,96f*scale,36f*scale);
+}
+
+private void drawSettingsSlider(float value,float x,float y,float scale,float centerY,Rectangle hitbox,boolean dragging,float mouseX,float mouseY){
+    float fillWidth = 696f*value;
+    if(fillWidth > 0f)
+        batch.draw(FxAssets.settingsSliderFill,x+168f*scale,y+(centerY-4f)*scale,fillWidth*scale,8f*scale);
+
+    float centerX = 168f+696f*value;
+
+    float thumbX = x+(centerX-18f)*scale;
+    float thumbY = y+(centerY-24f)*scale;
+
+    Texture thumb = FxAssets.settingsSliderThumbNormal;
+
+    if(dragging)
+        thumb = FxAssets.settingsSliderThumbPressed;
+    else if(hitbox.contains(mouseX,mouseY))
+        thumb = FxAssets.settingsSliderThumbHover;
+
+    batch.draw(thumb,thumbX,thumbY,36f*scale,48f*scale);
+}
+
+private void drawSettingsFullscreen(float x,float y,float scale,float mouseX,float mouseY){
+    settingsFullscreenBounds.set(x+1608f*scale,y+704f*scale,148f*scale,56f*scale);
+    boolean fullscreen = Gdx.graphics.isFullscreen();
+    boolean hover = settingsFullscreenBounds.contains(mouseX,mouseY);
+
+    Texture toggle;
+
+    if(fullscreen)
+        toggle = hover ? FxAssets.settingsFullscreenOnHover : FxAssets.settingsFullscreenOn;
+    else
+        toggle = hover ? FxAssets.settingsFullscreenOffHover : FxAssets.settingsFullscreenOff;
+
+    batch.draw(toggle,settingsFullscreenBounds.x,settingsFullscreenBounds.y,settingsFullscreenBounds.width,settingsFullscreenBounds.height);
+
+    fieldShopInfoFont.getData().setScale(scale);
+
+    String text = fullscreen ? "ON" : "OFF";
+
+    drawFieldShopCenteredText(fieldShopInfoFont,text,x+1436f*scale,y+712f*scale,144f*scale,40f*scale);
+}
+
+private void drawSettingsResolution(float x,float y,float scale,float mouseX,float mouseY){
+    settingsResolutionBounds.set(x+1000f*scale,y+446f*scale,756f*scale,74f*scale);
+
+    Texture texture = FxAssets.settingsResolutionNormal;
+
+    if(settingsResolutionBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        texture = FxAssets.settingsResolutionPressed;
+    else if(settingsResolutionBounds.contains(mouseX,mouseY))
+        texture = FxAssets.settingsResolutionHover;
+
+    batch.draw(texture,settingsResolutionBounds.x,settingsResolutionBounds.y,settingsResolutionBounds.width,settingsResolutionBounds.height);
+
+    int[] resolution = SETTINGS_RESOLUTIONS[settingsResolutionIndex];
+
+    String text = resolution[0]+" × "+resolution[1];
+
+    fieldShopInfoFont.getData().setScale(1.2f*scale);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,text,x+1024f*scale,y+464f*scale,632f*scale,38f*scale);
+}
+
+private void drawSettingsButtons(float x,float y,float scale,float mouseX,float mouseY){
+    settingsControlsBounds.set(x+548f*scale,y+260f*scale,328f*scale,74f*scale);
+    settingsResetBounds.set(x+1324f*scale,y+260f*scale,432f*scale,74f*scale);
+    settingsBackBounds.set(x+116f*scale,y+88f*scale,328f*scale,78f*scale);
+
+    Texture controls = FxAssets.settingsControlsNormal;
+    Texture reset = FxAssets.settingsResetNormal;
+    Texture back = FxAssets.settingsBackNormal;
+
+    if(settingsControlsBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        controls = FxAssets.settingsControlsPressed;
+    else if(settingsControlsBounds.contains(mouseX,mouseY))
+        controls = FxAssets.settingsControlsHover;
+
+    if(settingsResetBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        reset = FxAssets.settingsResetPressed;
+    else if(settingsResetBounds.contains(mouseX,mouseY))
+        reset = FxAssets.settingsResetHover;
+
+    if(settingsBackBounds.contains(mouseX,mouseY) && Gdx.input.isButtonPressed(Input.Buttons.LEFT))
+        back = FxAssets.settingsBackPressed;
+    else if(settingsBackBounds.contains(mouseX,mouseY))
+        back = FxAssets.settingsBackHover;
+
+    batch.draw(controls,settingsControlsBounds.x,settingsControlsBounds.y,settingsControlsBounds.width,settingsControlsBounds.height);
+    batch.draw(reset,settingsResetBounds.x,settingsResetBounds.y,settingsResetBounds.width,settingsResetBounds.height);
+    batch.draw(back,settingsBackBounds.x,settingsBackBounds.y,settingsBackBounds.width,settingsBackBounds.height);
+}
+
+private void updateSettingsInput(float x,float y,float scale,float mouseX,float mouseY){
+    if(controlsOverlayOpen){
+        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) &&
+           controlsOverlayBackBounds.contains(mouseX,mouseY)){
+            controlsOverlayOpen = false;
+            AudioAssets.playUiCancel();
+        }
+        return;
     }
+
+    if(resetConfirmOpen){
+        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
+            if(resetConfirmYesBounds.contains(mouseX,mouseY)){
+                resetSaveData();
+                resetConfirmOpen = false;
+                return;
+            }
+
+            if(resetConfirmNoBounds.contains(mouseX,mouseY)){
+                resetConfirmOpen = false;
+                AudioAssets.playUiCancel();
+                return;
+            }
+        }
+        return;
+    }
+
+    if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)){
+        if(musicSliderBounds.contains(mouseX,mouseY))
+            draggingMusicSlider = true;
+
+        else if(sfxSliderBounds.contains(mouseX,mouseY))
+            draggingSfxSlider = true;
+
+        else if(settingsFullscreenBounds.contains(mouseX,mouseY)){
+            toggleFullscreen();
+            return;
+        }
+
+        else if(settingsResolutionBounds.contains(mouseX,mouseY)){
+            cycleSettingsResolution();
+            return;
+        }
+
+        else if(settingsControlsBounds.contains(mouseX,mouseY)){
+            controlsOverlayOpen = true;
+            AudioAssets.playUiPanelOpen();
+            return;
+        }
+
+        else if(settingsResetBounds.contains(mouseX,mouseY)){
+            resetConfirmOpen = true;
+            AudioAssets.playUiPanelOpen();
+            return;
+        }
+
+        else if(settingsBackBounds.contains(mouseX,mouseY)){
+            AudioAssets.playUiConfirm();
+            if(settingsOpenedFromPause){
+                settingsOpenedFromPause = false;
+                currentScreen = GameScreen.GAMEPLAY;
+            }
+            else
+                currentScreen = GameScreen.MAIN_MENU;
+            return;
+        }
+    }
+
+    if(!Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+        draggingMusicSlider = false;
+        draggingSfxSlider = false;
+    }
+
+    if(draggingMusicSlider){
+        float logicalMouseX = (mouseX-x)/scale;
+        musicVolume = MathUtils.clamp((logicalMouseX-168f)/696f,0f,1f);
+        AudioAssets.setMusicVolume(musicVolume);
+    }
+
+    if(draggingSfxSlider){
+        float logicalMouseX = (mouseX-x)/scale;
+        sfxVolume = MathUtils.clamp((logicalMouseX-168f)/696f,0f,1f);
+        AudioAssets.setSfxVolume(sfxVolume);
+    }
+}
+
+private void drawResetConfirmation(float x,float y,float scale,float mouseX,float mouseY){
+    batch.setColor(0.02f,0.04f,0.07f,0.96f);
+    batch.draw(reloadProgressPixel,x+520f*scale,y+300f*scale,880f*scale,420f*scale);
+    batch.setColor(Color.WHITE);
+
+    fieldShopTitleFont.getData().setScale(scale);
+    fieldShopBodyFont.getData().setScale(scale);
+    fieldShopInfoFont.getData().setScale(scale);
+
+    drawFieldShopCenteredText(fieldShopTitleFont, "RESET SAVE DATA?", x+620f*scale, y+610f*scale,680f*scale,60f*scale);
+    drawInventoryCenteredText(fieldShopBodyFont,"This will permanently erase gold, best score, weapons and stored powerups.",x+650f*scale,y+470f*scale,620f*scale,100f*scale, true);
+
+    resetConfirmYesBounds.set(x+650f*scale,y+350f*scale,280f*scale,70f*scale);
+    resetConfirmNoBounds.set(x+990f*scale,y+350f*scale,280f*scale,70f*scale);
+
+    Texture yes = FxAssets.settingsResetNormal;
+    Texture no = FxAssets.settingsBackNormal;
+
+    if(resetConfirmYesBounds.contains(mouseX,mouseY))
+        yes = FxAssets.settingsResetHover;
+
+    if(resetConfirmNoBounds.contains(mouseX,mouseY))
+        no = FxAssets.settingsBackHover;
+
+    batch.draw(yes,resetConfirmYesBounds.x,resetConfirmYesBounds.y,resetConfirmYesBounds.width,resetConfirmYesBounds.height);
+    batch.draw(no,resetConfirmNoBounds.x,resetConfirmNoBounds.y,resetConfirmNoBounds.width,resetConfirmNoBounds.height);
+}
+
+private void resetSaveData(){
+    saveManager.clearSave();
+
+    playerProfile = new PlayerProfile();
+    inventory = playerProfile.getInventory();
+
+    saveManager.saveProfile(playerProfile);
+
+    AudioAssets.playUiConfirm();
+}
+
+
+private void toggleFullscreen(){
+    if(Gdx.graphics.isFullscreen()){
+        int[] resolution = SETTINGS_RESOLUTIONS[settingsResolutionIndex];
+        Gdx.graphics.setWindowedMode(resolution[0],resolution[1]);
+    }
+    else
+        Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+}
+
+private void cycleSettingsResolution(){
+    settingsResolutionIndex++;
+
+    if(settingsResolutionIndex >= SETTINGS_RESOLUTIONS.length)
+        settingsResolutionIndex = 0;
+
+    if(!Gdx.graphics.isFullscreen()){
+        int[] resolution = SETTINGS_RESOLUTIONS[settingsResolutionIndex];
+        Gdx.graphics.setWindowedMode(resolution[0],resolution[1]);
+    }
+}
+
+private void drawControlsOverlay(float x,float y,float scale,float mouseX,float mouseY){
+    batch.setColor(0.02f,0.04f,0.07f,0.94f);
+    batch.draw(reloadProgressPixel,x+420f*scale,y+180f*scale,1080f*scale,720f*scale);
+    batch.setColor(Color.WHITE);
+
+    fieldShopTitleFont.getData().setScale(scale);
+    drawFieldShopCenteredText(fieldShopTitleFont,"CONTROLS",x+620f*scale,y+810f*scale,680f*scale,60f*scale);
+
+    batch.draw(FxAssets.interactionEInteract,x+520f*scale,y+690f*scale,224f*scale,48f*scale);
+    batch.draw(FxAssets.interactionEOpen,x+520f*scale,y+620f*scale,176f*scale,48f*scale);
+    batch.draw(FxAssets.interactionEShop,x+520f*scale,y+550f*scale,176f*scale,48f*scale);
+
+    batch.draw(FxAssets.interactionQClaim,x+850f*scale,y+690f*scale,176f*scale,48f*scale);
+
+    batch.draw(FxAssets.interactionRReload,x+850f*scale,y+620f*scale,224f*scale,48f*scale);
+    batch.draw(FxAssets.interactionRmbOrRReload,x+850f*scale,y+550f*scale,280f*scale,48f*scale);
+
+    fieldShopInfoFont.getData().setScale(scale);
+
+    drawFieldShopCenteredText(fieldShopInfoFont,"MOVE   A / D",x+520f*scale,y+430f*scale,300f*scale,40f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,"JUMP   W",x+520f*scale,y+380f*scale,300f*scale,40f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,"CROUCH   C",x+520f*scale,y+330f*scale,300f*scale,40f*scale);
+    drawFieldShopCenteredText(fieldShopInfoFont,"PAUSE   ESC",x+850f*scale,y+430f*scale,300f*scale,40f*scale);
+
+    controlsOverlayBackBounds.set(x+760f*scale,y+220f*scale,400f*scale,70f*scale);
+
+    Texture back = FxAssets.settingsBackNormal;
+
+    if(controlsOverlayBackBounds.contains(mouseX,mouseY))
+        back = FxAssets.settingsBackHover;
+
+    batch.draw(back,controlsOverlayBackBounds.x,controlsOverlayBackBounds.y,controlsOverlayBackBounds.width,controlsOverlayBackBounds.height);
 }
 
 private void setFieldShopPowerupBounds(){
@@ -6731,6 +7063,10 @@ private void setArmoryIconBounds(float x,float y,float scale){
         float cardY = startY-row*verticalStep;
         armoryIconBounds[i].set(x+cardX*scale,y+cardY*scale,cardWidth*scale,cardHeight*scale);
     }
+}
+
+private boolean mouseOverGameplayHud(float mouseX,float mouseY){
+    return scopeButtonBounds.contains(mouseX,mouseY) || reloadButtonBounds.contains(mouseX,mouseY);
 }
 
 

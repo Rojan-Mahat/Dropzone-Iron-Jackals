@@ -6,6 +6,8 @@ public class PlayerProfile{
 
     PlayerProfile(){
         inventory = new Inventory();
+        inventory.addWeapon(Weapon.WeaponType.PISTOL);
+
     }
 
     public Inventory getInventory(){

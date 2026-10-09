@@ -29,7 +29,7 @@ public class Weapon{
     //PISTOL BASE STATS
     private final int BASE_MAGAZINE_PISTOL = 8;
     private final float BASE_RELOAD_PISTOL = 2.5f;
-    private final float BASE_HEAD_DAMAGE_PISTOL = 60f;
+    private final float BASE_HEAD_DAMAGE_PISTOL = 80f;
     private final float BASE_BODY_DAMAGE_PISTOL = 30f;
     private final float BASE_LIMB_DAMAGE_PISTOL = 20f;
     private final float BASE_FIRE_RATE_PISTOL = 2.5f;
@@ -43,7 +43,7 @@ public class Weapon{
     private final float BASE_HEAD_DAMAGE_AR = 50f;
     private final float BASE_BODY_DAMAGE_AR = 30f;
     private final float BASE_LIMB_DAMAGE_AR = 20f;
-    private final float BASE_FIRE_RATE_AR = 5f;
+    private final float BASE_FIRE_RATE_AR = 4.5f;
     private final float BASE_SCOPE_AR = 1.4f;
     private final boolean BASE_AUTOMATIC_AR = true;
 
@@ -62,9 +62,9 @@ public class Weapon{
     //SMG BASE STATS
     private final int BASE_MAGAZINE_SMG = 30;
     private final float BASE_RELOAD_SMG = 3f;
-    private final float BASE_HEAD_DAMAGE_SMG = 25f;
-    private final float BASE_BODY_DAMAGE_SMG = 18f;
-    private final float BASE_LIMB_DAMAGE_SMG = 10f;
+    private final float BASE_HEAD_DAMAGE_SMG = 18f;
+    private final float BASE_BODY_DAMAGE_SMG = 12f;
+    private final float BASE_LIMB_DAMAGE_SMG = 8f;
     private final float BASE_FIRE_RATE_SMG = 9f;
     private final float BASE_SCOPE_SMG = 1.35f;
     private final boolean BASE_AUTOMATIC_SMG = true;

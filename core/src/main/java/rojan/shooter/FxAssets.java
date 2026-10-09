@@ -264,6 +264,41 @@ public final class FxAssets{
     public static ObjectMap<WeaponType,Texture> shopAmmoIcons;
     public static Texture[] shopSpecialIcons;
 
+    public static Texture settingsPanel;
+    public static Texture settingsSliderFill;
+    public static Texture settingsSliderThumbNormal;
+    public static Texture settingsSliderThumbHover;
+    public static Texture settingsSliderThumbPressed;
+    public static Texture settingsFullscreenOff;
+    public static Texture settingsFullscreenOffHover;
+    public static Texture settingsFullscreenOn;
+    public static Texture settingsFullscreenOnHover;
+    public static Texture settingsResolutionNormal;
+    public static Texture settingsResolutionHover;
+    public static Texture settingsResolutionPressed;
+    public static Texture settingsControlsNormal;
+    public static Texture settingsControlsHover;
+    public static Texture settingsControlsPressed;
+    public static Texture settingsResetNormal;
+    public static Texture settingsResetHover;
+    public static Texture settingsResetPressed;
+    public static Texture settingsBackNormal;
+    public static Texture settingsBackHover;
+    public static Texture settingsBackPressed;
+
+    public static Texture interactionEInteract;
+    public static Texture interactionEOpen;
+    public static Texture interactionEShop;
+    public static Texture interactionQClaim;
+    public static Texture interactionRReload;
+    public static Texture interactionRmbReload;
+    public static Texture interactionRmbOrRReload;
+    public static Texture interactionLocked;
+    public static Texture interactionNotEnoughGold;
+    public static Texture interactionWeaponUnlocked;
+    public static Texture interactionItemAcquired;
+    public static Texture interactionGoldGained;
+
     public static void loadOnce(){
         if(loadedTextures != null)
             return;
@@ -533,6 +568,42 @@ public final class FxAssets{
         armoryActionOwned = loadUiTexture(AssetPaths.Armory.ACTION_OWNED);
         armoryActionEquipped = loadUiTexture(AssetPaths.Armory.ACTION_EQUIPPED);
         armoryActionInsufficientGold = loadUiTexture(AssetPaths.Armory.ACTION_INSUFFICIENT_GOLD);
+
+        settingsPanel = loadUiTexture(AssetPaths.Settings.PANEL);
+
+        settingsSliderFill = loadUiTexture(AssetPaths.Settings.SLIDER_FILL);
+        settingsSliderThumbNormal = loadUiTexture(AssetPaths.Settings.SLIDER_THUMB_NORMAL);
+        settingsSliderThumbHover = loadUiTexture(AssetPaths.Settings.SLIDER_THUMB_HOVER);
+        settingsSliderThumbPressed = loadUiTexture(AssetPaths.Settings.SLIDER_THUMB_PRESSED);
+        settingsFullscreenOff = loadUiTexture(AssetPaths.Settings.FULLSCREEN_OFF);
+        settingsFullscreenOffHover = loadUiTexture(AssetPaths.Settings.FULLSCREEN_OFF_HOVER);
+        settingsFullscreenOn = loadUiTexture(AssetPaths.Settings.FULLSCREEN_ON);
+        settingsFullscreenOnHover = loadUiTexture(AssetPaths.Settings.FULLSCREEN_ON_HOVER);
+        settingsResolutionNormal = loadUiTexture(AssetPaths.Settings.RESOLUTION_NORMAL);
+        settingsResolutionHover = loadUiTexture(AssetPaths.Settings.RESOLUTION_HOVER);
+        settingsResolutionPressed = loadUiTexture(AssetPaths.Settings.RESOLUTION_PRESSED);
+        settingsControlsNormal = loadUiTexture(AssetPaths.Settings.CONTROLS_NORMAL);
+        settingsControlsHover = loadUiTexture(AssetPaths.Settings.CONTROLS_HOVER);
+        settingsControlsPressed = loadUiTexture(AssetPaths.Settings.CONTROLS_PRESSED);
+        settingsResetNormal = loadUiTexture(AssetPaths.Settings.RESET_NORMAL);
+        settingsResetHover = loadUiTexture(AssetPaths.Settings.RESET_HOVER);
+        settingsResetPressed = loadUiTexture(AssetPaths.Settings.RESET_PRESSED);
+        settingsBackNormal = loadUiTexture(AssetPaths.Settings.BACK_NORMAL);
+        settingsBackHover = loadUiTexture(AssetPaths.Settings.BACK_HOVER);
+        settingsBackPressed = loadUiTexture(AssetPaths.Settings.BACK_PRESSED);
+
+        interactionEInteract = loadUiTexture(AssetPaths.Interaction.E_INTERACT);
+        interactionEOpen = loadUiTexture(AssetPaths.Interaction.E_OPEN);
+        interactionEShop = loadUiTexture(AssetPaths.Interaction.E_SHOP);
+        interactionQClaim = loadUiTexture(AssetPaths.Interaction.Q_CLAIM);
+        interactionRReload = loadUiTexture(AssetPaths.Interaction.R_RELOAD);
+        interactionRmbReload = loadUiTexture(AssetPaths.Interaction.RMB_RELOAD);
+        interactionRmbOrRReload = loadUiTexture(AssetPaths.Interaction.RMB_OR_R_RELOAD);
+        interactionLocked = loadUiTexture(AssetPaths.Interaction.LOCKED);
+        interactionNotEnoughGold = loadUiTexture(AssetPaths.Interaction.NOT_ENOUGH_GOLD);
+        interactionWeaponUnlocked = loadUiTexture(AssetPaths.Interaction.WEAPON_UNLOCKED);
+        interactionItemAcquired = loadUiTexture(AssetPaths.Interaction.ITEM_ACQUIRED);
+        interactionGoldGained = loadUiTexture(AssetPaths.Interaction.GOLD_GAINED);
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){

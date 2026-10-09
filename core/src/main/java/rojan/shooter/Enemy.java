@@ -258,7 +258,7 @@ public class Enemy{
     private Vector2 RIFLEMAN_MUZZLE_POSITION = new Vector2();
     private Vector2 HEAVY_MUZZLE_POSITION = new Vector2();
 
-    private final float RIFLEMAN_DAMAGE = 4;
+    private final float RIFLEMAN_DAMAGE = 7;
     private final float HEAVY_CLOSE_RANGE_DAMAGE = 18;
     private final float DRONE_DAMAGE = 3;
     private final float DRILL_DAMAGE = 10;
@@ -281,8 +281,8 @@ public class Enemy{
             this.hitRegions = riflemanHitRegions;
             maxHitPoints = 100;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 700;
-            this.attackRange = 350;
+            this.detectionRadius = 650;
+            this.attackRange = 430;
             this.moveSpeed = 165;
             this.maxRiseSpeed = 500;
         }
@@ -321,7 +321,7 @@ public class Enemy{
             this.drawHeight *= DRILLER_DRAW_SCALE;
             maxHitPoints = 180;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 500;
+            this.detectionRadius = 1000;
             this.attackRange = 20;
             this.moveSpeed = 125;
             maxRiseSpeed = 0 ;
