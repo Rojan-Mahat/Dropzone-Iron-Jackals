@@ -77,11 +77,18 @@ Ground enemy with alternate movement behavior and drilling-based navigation.
 | Claim crate reward | Q |
 | Pause | Esc |
 
-## Built With
+## Third-Party Assets
+
+- Character and enemy sprites: **“Spec Ops - Game Sprites” by pzUH**, purchased through itch.io.
+- Some UI artwork, icons, visual effects, and animation assets were generated with **OpenAI / ChatGPT image-generation tools**.
+
+## Tools Used
 
 - **Java**
 - **LibGDX**
 - **Tiled**
+- **Krita**
+- **Spriter**
 - **Gradle**
 
 ## Running From Source
