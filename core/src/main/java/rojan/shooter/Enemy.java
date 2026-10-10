@@ -1081,7 +1081,6 @@ public void consumeHeavyShot(){
 private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocity, Array<Rectangle> solidPlatforms,Rectangle heavyPortalBounds){
     HEAVY_LOCK_TIMER+=dt;
     if(HEAVY_LOCK_TIMER >= RANDOM_LIMIT){
-        //remove flash target animation
         HEAVY_PREDICTED_RAIN_FIRE_POSITION.x =MathUtils.clamp(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,heavyPortalBounds.x,heavyPortalBounds.x + heavyPortalBounds.width);
         HEAVY_PREDICTED_RAIN_FIRE_POSITION.y =MathUtils.clamp(HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,heavyPortalBounds.y,heavyPortalBounds.y + heavyPortalBounds.height);
         
@@ -1099,9 +1098,7 @@ private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocit
     }
 
     if(HEAVY_LOCK_TIMER + RANDOM_LOCK_LIMIT >=  RANDOM_LIMIT && !HEAVY_LEFT_TARGET){
-        //flash super fast
         HEAVY_LEFT_TARGET = true;
-        //display warning and animate portal at HEAVY_PREDICTED_RAIN_FIRE_POSITION
         float TargetX = playerHurtbox.x + playerHurtbox.width/2;
         float TargetY = playerHurtbox.y + playerHurtbox.height/2;
 
@@ -1113,7 +1110,6 @@ private void openPortal(Rectangle playerHurtbox, float dt, Vector2 playerVelocit
         HEAVY_PREDICTED_RAIN_FIRE_POSITION.set(predictedX,predictedY);
         return;
     }
-     //flash targetted animation at player 
 }
 
 private void heavyRangeAttack(Rectangle playerHurtbox, float dt, Array<Rectangle> solidPlatforms){
@@ -1140,7 +1136,6 @@ private void HEAVY_POISION_ATTACK(Rectangle playerHurtbox, float dt){
     Circle posionCircle = new Circle(HEAVY_PREDICTED_RAIN_FIRE_POSITION.x,HEAVY_PREDICTED_RAIN_FIRE_POSITION.y,POISON_RADIUS);
     if(HEAVY_LONG_RANGE_ATTACK_DURATION < POISON_AREA_LIFETIME){
         HEAVY_LONG_RANGE_ATTACK_DURATION += dt;
-        //animate poison at HEAVY_PREDICTED_RAIN_FIRE_POSITION
         if(Intersector.overlaps(posionCircle,playerHurtbox)){
             PLAYER_INSIDE_POISON = true;
             PLAYER_POISIONED = true;

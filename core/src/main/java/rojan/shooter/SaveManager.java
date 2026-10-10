@@ -34,7 +34,6 @@ public class SaveManager{
     }
 
     public PlayerProfile loadProfile(){
-        System.out.println("LOADING PROFILE: "+save.getInteger("gold",0));
         PlayerProfile profile = new PlayerProfile();
         Inventory inventory = profile.getInventory();
         

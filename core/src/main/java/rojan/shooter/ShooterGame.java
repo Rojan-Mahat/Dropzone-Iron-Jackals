@@ -135,8 +135,7 @@ public class ShooterGame extends ApplicationAdapter {
 
     private Array<Rectangle> specialCrateSpawnPoints;
     private float SPECIAL_CRATE_TIMER = 0f;
-    //private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,75f);
-    private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
+    private float SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,75f);
     private final float crateWidth = 75f;
     private final float crateHeight = 60f;
     private BitmapFont lootFont;
@@ -473,7 +472,19 @@ public class ShooterGame extends ApplicationAdapter {
     private boolean startupMenuRevealed = false;
     private boolean assaultMusicStarted = false;
     private DifficultyMilestone difficultyMilestone;
-        
+    
+    private Array<Rectangle> tempMagSpawnPoints;
+
+    private Rectangle activeTempMag;
+    private WeaponType activeTempMagWeapon;
+    private float TEMP_MAG_TIMER = 0f;
+    private float TEMP_MAG_SPAWN_TIME = MathUtils.random(100f,200f);
+    private WeaponType trialWeapon = null;
+    private WeaponType weaponBeforeTrial = null;
+    private Texture tempMagTexture;
+    private TextureRegion[] weaponTrialAlertFrames;
+    private boolean weaponTrialAlertActive = false;
+    private float weaponTrialAlertTimer = 0f;
         
     
 
@@ -654,8 +665,13 @@ public class ShooterGame extends ApplicationAdapter {
                 createBulletWhenFired(mouseWorldPosition);
                 if(!infiniteMagazineActive()){
                     weapon.consumeAmmo();
-                    if(weapon.getCurrentAmmo() <= 0)
-                        reloadGun();
+                    if(weapon.getCurrentAmmo() <= 0){
+                        if(trialWeapon != null)
+                            updateTrialWeapon();
+                        else
+                            reloadGun();
+                    }
+                        
                 }
                 mouseHeld = 0f;
             }
@@ -665,8 +681,13 @@ public class ShooterGame extends ApplicationAdapter {
                     createBulletWhenFired(mouseWorldPosition);
                     if(!infiniteMagazineActive()){
                         weapon.consumeAmmo();
-                        if(weapon.getCurrentAmmo() <= 0)
-                            reloadGun();
+                        if(weapon.getCurrentAmmo() <= 0){
+                            if(trialWeapon != null)
+                                updateTrialWeapon();
+                            else
+                                reloadGun();
+                        }
+                            
                     }
                     mouseHeld-=fireInterval;
                 }
@@ -701,6 +722,10 @@ public class ShooterGame extends ApplicationAdapter {
 
             for(Bullet bullet : bullets)
                bullet.update(dt);
+            spawnTempMag(dt);
+            collectTempMag();
+            if(weaponTrialAlertActive)
+                weaponTrialAlertTimer += dt;
             bulletPlatformCollision();
             updateReload(dt);
             updateReloadFx(dt);
@@ -731,6 +756,7 @@ public class ShooterGame extends ApplicationAdapter {
 
         drawDroneBeam();
         drawPowerAura(false);
+        drawTempMag();
         drawShop();
         float playerDt = gameOver && !showRunSummary ? dt : worldDt;
             player.drawPlayer(batch,playerDt);
@@ -819,6 +845,7 @@ public class ShooterGame extends ApplicationAdapter {
 
         drawInventoryBag();
         drawDifficultyMilestone();
+        drawWeaponTrialAlert();
         drawInventory();
         drawPauseMenu();
         drawRunSummary();
@@ -834,8 +861,6 @@ public class ShooterGame extends ApplicationAdapter {
     @Override
     public void dispose() {
         saveManager.saveProfile(playerProfile);
-        System.out.println("SAVING PROFILE: "+inventory.getGold());
-
         mapRenderer.dispose();
         map.dispose();
         batch.dispose();
@@ -1714,8 +1739,6 @@ private void drawJetpackDisabledHud(){
             if(bullet.isWasted())
                 break;
             Rectangle hurtbox = enemy.getWorldHurtbox();
-
-            //ROCKET
             if(bullet.getWeaponType() == WeaponType.ROCKET_LAUNCHER){
                 if(bulletHitsRectangle(bullet,hurtbox)){
                     explodeRocket(bullet,false);
@@ -1724,7 +1747,6 @@ private void drawJetpackDisabledHud(){
                 }
                 continue;
             }
-            //DRILL CRAWLER
             if(enemy.getType() == EnemyType.DRILL_CRAWLER){
                 boolean hit = false;
                 for(Circle circle : enemy.getWorldDrillCircles()){
@@ -1742,7 +1764,6 @@ private void drawJetpackDisabledHud(){
             }
             boolean headshot = false;
             boolean bodyshot = false;
-            //HEAD
             for(Rectangle rect :enemy.getHeadshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
@@ -1756,7 +1777,6 @@ private void drawJetpackDisabledHud(){
             }
             if(headshot)
                 break;
-            //BODY
             for(Rectangle rect : enemy.getBodyshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
@@ -1770,7 +1790,6 @@ private void drawJetpackDisabledHud(){
             }
             if(bodyshot)
                 break;
-            //LIMB
             for(Rectangle rect : enemy.getLimbshotBoxes()){
                 Rectangle worldRect = enemy.getWorldHitRegion(rect);
                 if(bulletHitsRectangle(bullet,worldRect)){
@@ -1886,6 +1905,7 @@ private void drawJetpackDisabledHud(){
             DRONE_RESPAWN_TIME = 17f;
             DRILLER_RESPAWN_TIME = 22f;
             HEAVY_RESPAWN_TIME = 28f;
+            MAX_RIFLEMEN = 3;
             MAX_ACTIVE_ENEMIES = 6;
 
             if(runState.getHeadshotCount()>= runState.getNextHeadshotReward()){
@@ -1923,6 +1943,7 @@ private void drawJetpackDisabledHud(){
             DRONE_RESPAWN_TIME = 12f;
             DRILLER_RESPAWN_TIME = 15f;
             HEAVY_RESPAWN_TIME = 20f;
+            MAX_RIFLEMEN = 4;
             MAX_ACTIVE_ENEMIES = 8;
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
@@ -1960,6 +1981,7 @@ private void drawJetpackDisabledHud(){
             DRONE_RESPAWN_TIME = 8f;
             DRILLER_RESPAWN_TIME = 10f;
             HEAVY_RESPAWN_TIME = 14f;
+            MAX_RIFLEMEN = 5;
             MAX_ACTIVE_ENEMIES = 10;
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
@@ -1997,6 +2019,7 @@ private void drawJetpackDisabledHud(){
             DRONE_RESPAWN_TIME = 5f;
             DRILLER_RESPAWN_TIME = 6f;
             HEAVY_RESPAWN_TIME = 9f;
+            MAX_RIFLEMEN = 6;
             MAX_ACTIVE_ENEMIES = 11;
 
             if(runState.getHeadshotCount() >= runState.getNextHeadshotReward()){
@@ -2667,6 +2690,8 @@ private void drawJetpackDisabledHud(){
 
 
     private void reloadGun(){
+        if(trialWeapon != null)
+            return;
         if(reloading)
             return;
         if(infiniteMagazineActive())
@@ -2706,7 +2731,7 @@ private void drawJetpackDisabledHud(){
     }
     
     private void spawnLootCrate(Vector2 enemyDeathLocation){
-        Rectangle enemyDeath = new Rectangle (enemyDeathLocation.x , enemyDeathLocation.y , crateWidth , crateHeight);
+        Rectangle enemyDeath = new Rectangle(enemyDeathLocation.x,enemyDeathLocation.y,crateWidth,crateHeight);
         Rectangle spawnPlatform = findPlatformBelow(enemyDeath);
         if(spawnPlatform == null)
             return;
@@ -2715,17 +2740,19 @@ private void drawJetpackDisabledHud(){
         Rectangle crateRect = new Rectangle(crateX,crateY,crateWidth,crateHeight);
         int roll = MathUtils.random(1,100);
         if(easyMode){
-            if(roll <= 3){
+            if(roll <= 2){
                 LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 12){
+
+            else if(roll <= 8){
                 LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 40){
+
+            else if(roll <= 25){
                 LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
@@ -2733,17 +2760,19 @@ private void drawJetpackDisabledHud(){
         }
 
         else if(mediumMode){
-            if(roll <= 5){
+            if(roll <= 4){
                 LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 18){
+
+            else if(roll <= 12){
                 LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 45){
+
+            else if(roll <= 30){
                 LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
@@ -2751,17 +2780,19 @@ private void drawJetpackDisabledHud(){
         }
 
         else if(hardMode){
-            if(roll <= 8){
+            if(roll <= 6){
                 LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 28){
+
+            else if(roll <= 16){
                 LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <=50){
+
+            else if(roll <= 35){
                 LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
@@ -2769,17 +2800,19 @@ private void drawJetpackDisabledHud(){
         }
 
         else if(impossibleMode){
-            if(roll <= 15){
+            if(roll <= 8){
                 LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 38){
+
+            else if(roll <= 20){
                 LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
             }
-            else if(roll <= 60){
+
+            else if(roll <= 40){
                 LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
                 lootCrates.add(crate);
                 AudioAssets.playCrateSpawn(crate.getType());
@@ -3121,7 +3154,6 @@ private TextureRegion getLootRegion(Texture texture){
                 }
             }
             if(right >= left){
-                // Keep two source pixels around the visible artwork.
                 left = Math.max(0,left-2);
                 top = Math.max(0,top-2);
                 right = Math.min(pixmap.getWidth()-1,right+2);
@@ -4764,9 +4796,9 @@ private void initializeGame(){
     groundEnemySpawnPoints = extractGroundEnemySpawnPoints();
     drillerSpawnPoints = extractDrillerSpawnPoints();
     specialCrateSpawnPoints = extractSpecialCrateSpawnPoints();
+    tempMagSpawnPoints = extractTempMagSpawnPoints();
 
     solidPlatforms = extractSolidPlatformsFromMap(map);
-
 
     batch = new SpriteBatch();
     batch.setProjectionMatrix(camera.combined);
@@ -4806,7 +4838,12 @@ private void initializeGame(){
 
     for(int i=0;i<armoryIconBounds.length;i++)
         armoryIconBounds[i] = new Rectangle();
-    }
+
+    tempMagTexture = new Texture("ui/temp_mag.png");
+    tempMagTexture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+    loadWeaponTrialAlert();
+}
+    
 
 private void loadPlayerProfile(){
     saveManager = new SaveManager();
@@ -4944,6 +4981,15 @@ private void resetRunSystems(){
     reloadReadyFxActive = false;
     reloadReadyFxTimer = 0f;
     fieldShopOpen = false;
+
+    TEMP_MAG_TIMER = 0f;
+    TEMP_MAG_SPAWN_TIME = MathUtils.random(100f,200f);
+    activeTempMag = null;
+    activeTempMagWeapon = null;
+    trialWeapon = null;
+    weaponBeforeTrial = null;
+    weaponTrialAlertActive = false;
+    weaponTrialAlertTimer = 0f;
 }
 
 private void restartGame(){
@@ -6786,13 +6832,13 @@ private int getWeaponPrice(WeaponType type){
     if(type == WeaponType.PISTOL)
         return 1000;
     if(type == WeaponType.AR)
-        return 2500;
-    if(type == WeaponType.SMG)
         return 3000;
+    if(type == WeaponType.SMG)
+        return 4000;
     if(type == WeaponType.SHOTGUN)
-        return 4500;
+        return 5500;
     if(type == WeaponType.SNIPER)
-        return 6000;
+        return 6500;
     if(type == WeaponType.ROCKET_LAUNCHER)
         return 8000;
     return 0;
@@ -6858,17 +6904,17 @@ private String getFieldShopAmmoName(WeaponType type){
 
 private int getFieldShopAmmoPrice(WeaponType type){
     if(type == WeaponType.PISTOL)
-        return 50;
+        return 30;
     if(type == WeaponType.AR)
-        return 100;
+        return 70;
     if(type == WeaponType.SMG)
-        return 100;
+        return 70;
     if(type == WeaponType.SHOTGUN)
-        return 120;
+        return 100;
     if(type == WeaponType.SNIPER)
-        return 150;
+        return 120;
     if(type == WeaponType.ROCKET_LAUNCHER)
-        return 200;
+        return 150;
     return 0;
 }
 
@@ -6984,7 +7030,7 @@ private String getFieldShopSpecialDescription(int index){
 
 private int getFieldShopSpecialPrice(int index){
     if(index == 0)
-        return 500;
+        return 10000;
     if(index == 1)
         return 450;
     if(index == 2)
@@ -7457,6 +7503,119 @@ private void buySelectedFieldShopSpecial(){
         return;
     runState.receiveKey();
     AudioAssets.playKeyPickup();
+}
+
+private Array<Rectangle> extractTempMagSpawnPoints(){
+    Array<Rectangle> spawnPoints = new Array<>();
+    MapLayer spawnLayer = map.getLayers().get("spawns");
+    for(RectangleMapObject object : spawnLayer.getObjects().getByType(RectangleMapObject.class)){
+        if("temp_mag".equals(object.getName()))
+            spawnPoints.add(new Rectangle(object.getRectangle()));
+    }
+    return spawnPoints;
+}
+
+private Array<WeaponType> getLockedWeapons(){
+    Array<WeaponType> lockedWeapons = new Array<>();
+    for(WeaponType type : INVENTORY_WEAPONS){
+        if(!inventory.ownsWeapon(type))
+            lockedWeapons.add(type);
+    }
+    return lockedWeapons;
+}
+
+private void spawnTempMag(float dt){
+    if(activeTempMag != null)
+        return;
+    if(trialWeapon != null)
+        return;
+    Array<WeaponType> lockedWeapons = getLockedWeapons();
+    if(lockedWeapons.size == 0)
+        return;
+
+    TEMP_MAG_TIMER += dt;
+    if(TEMP_MAG_TIMER < TEMP_MAG_SPAWN_TIME)
+        return;
+    if(tempMagSpawnPoints.size == 0)
+        return;
+
+    Rectangle spawn = tempMagSpawnPoints.random();
+    activeTempMag = new Rectangle(spawn);
+    activeTempMagWeapon = lockedWeapons.random();
+
+    TEMP_MAG_TIMER = 0f;
+    TEMP_MAG_SPAWN_TIME =  MathUtils.random(100f,200f);
+    weaponTrialAlertActive = true;
+    weaponTrialAlertTimer = 0f;
+}
+
+private void drawTempMag(){
+    if(activeTempMag == null)
+        return;
+    batch.draw(tempMagTexture,activeTempMag.x,activeTempMag.y,activeTempMag.width,activeTempMag.height);
+}
+
+private void collectTempMag(){
+    if(activeTempMag == null)
+        return;
+    if(!player.getWorldHitbox().overlaps(activeTempMag))
+        return;
+
+    weaponBeforeTrial = weapon.getCurrentWeapon();
+    trialWeapon = activeTempMagWeapon;
+
+    weapon.equipWeapon(trialWeapon);
+    refreshWeaponPowerupStats();
+    updateScopeTarget();
+
+    activeTempMag = null;
+    activeTempMagWeapon = null;
+}
+
+private void updateTrialWeapon(){
+    if(trialWeapon == null)
+        return;
+    if(weapon.getCurrentAmmo() > 0)
+        return;
+    weapon.equipWeapon(weaponBeforeTrial);
+
+    trialWeapon = null;
+    weaponBeforeTrial = null;
+
+    refreshWeaponPowerupStats();
+    updateScopeTarget();
+}
+
+private void loadWeaponTrialAlert(){
+    weaponTrialAlertFrames = new TextureRegion[120];
+    for(int i=0;i<120;i++){
+        String path = String.format("ui/weapon_trial/frame_%03d.png",i);
+
+        Texture texture = new Texture(path);
+        texture.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);
+        weaponTrialAlertFrames[i] = new TextureRegion(texture);
+    }
+}
+
+private void drawWeaponTrialAlert(){
+    if(!weaponTrialAlertActive)
+        return;
+
+    int frame = (int)(weaponTrialAlertTimer * 60f);
+
+    if(frame >= 120){
+        weaponTrialAlertActive = false;
+        weaponTrialAlertTimer = 0f;
+        return;
+    }
+
+    float scale = Math.min(Gdx.graphics.getWidth()/1920f,Gdx.graphics.getHeight()/1080f);
+    float logicalWidth = 1920f*scale;
+    float logicalHeight = 1080f*scale;
+    float originX =(Gdx.graphics.getWidth()-logicalWidth)/2f;
+    float originY =(Gdx.graphics.getHeight()-logicalHeight)/2f;
+
+    batch.draw(weaponTrialAlertFrames[frame],originX + 320f*scale,originY + 480f*scale,1280f*scale,360f*scale);
 }
 
 

@@ -85,7 +85,7 @@ public class LootCrate{
             if(type == CrateType.RARE){
                 addRandomPowerUp();
                 hpBoost = 25;
-                int roll = MathUtils.random(1, 15);
+                int roll = MathUtils.random(1, 20);
                 if(roll <= 5 || roll > 9){
                     count = 4;
                 }
@@ -99,7 +99,7 @@ public class LootCrate{
                     if(chance<4){
                         addRandomMoreSpicy();
                     }
-                    else if(chance ==4){
+                    else if(chance == 4){
                         addRandomGun();
                     }
                     else{
@@ -114,7 +114,7 @@ public class LootCrate{
                 hpBoost = 50;
                 addRandomPowerUp();
                 addRandomSpicy();
-                int roll = MathUtils.random(1, 15);
+                int roll = MathUtils.random(1, 20);
                 if(roll <= 5 || roll > 9){
                     count = 5;
                 }
