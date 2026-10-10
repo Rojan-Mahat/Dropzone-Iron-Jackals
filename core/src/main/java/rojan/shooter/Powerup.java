@@ -1,7 +1,5 @@
 package rojan.shooter;
 
-import com.badlogic.gdx.math.MathUtils;
-
 public class Powerup{
     public enum PowerupType{
         HEALTH,

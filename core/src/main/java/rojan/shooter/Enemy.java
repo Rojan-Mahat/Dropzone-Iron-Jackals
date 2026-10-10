@@ -1,7 +1,5 @@
 package rojan.shooter;
 
-import java.util.Vector;
-
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -48,10 +46,6 @@ public class Enemy{
         private TextureRegion[] hurtFrames;
         private TextureRegion[] drillFrames;
         private TextureRegion[] deathFrames;
-        private TextureRegion[] prepareFrames;
-        private TextureRegion[] jumpFrames;
-        private TextureRegion[] airborneFrames;
-        private TextureRegion[] landFrames;
         private TextureRegion[] flyFrames;
         private TextureRegion[] chargeFrames;
 
@@ -101,10 +95,6 @@ public class Enemy{
                 hurtFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.HURT, AssetPaths.Enemies.IronJackals.DrillCrawler.HURT_FRAMES);
                 deathFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.DEATH, AssetPaths.Enemies.IronJackals.DrillCrawler.DEATH_FRAMES);
                 drillFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.DRILL, AssetPaths.Enemies.IronJackals.DrillCrawler.DRILL_FRAMES);
-                prepareFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.PREPARE,AssetPaths.Enemies.IronJackals.DrillCrawler.PREPARE_FRAMES);
-                jumpFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.JUMP,AssetPaths.Enemies.IronJackals.DrillCrawler.JUMP_FRAMES);
-                airborneFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.AIRBORNE,AssetPaths.Enemies.IronJackals.DrillCrawler.AIRBORNE_FRAMES);
-                landFrames = loadFrames(AssetPaths.Enemies.IronJackals.DrillCrawler.LAND,AssetPaths.Enemies.IronJackals.DrillCrawler.LAND_FRAMES);
             }
 
             if(type == EnemyType.RIFLEMAN){   
@@ -264,7 +254,7 @@ public class Enemy{
     private final float DRILL_DAMAGE = 10;
 
     private float RIFLEMAN_SHOT_TIMER;
-    private final float RIFLEMAN_FIRE_INTERVAL = 0.2f;
+    private final float RIFLEMAN_FIRE_INTERVAL = 0.3f;
     private boolean RIFLEMAN_SHOT_READY;
     private Vector2 enemyDeathLocation;
 
@@ -279,10 +269,10 @@ public class Enemy{
         if(type == EnemyType.RIFLEMAN){
             animations = riflemanAnimations;
             this.hitRegions = riflemanHitRegions;
-            maxHitPoints = 100;
+            maxHitPoints = 120;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 650;
-            this.attackRange = 430;
+            this.detectionRadius = 900;
+            this.attackRange = 750;
             this.moveSpeed = 165;
             this.maxRiseSpeed = 500;
         }
@@ -291,8 +281,8 @@ public class Enemy{
             this.hitRegions = heavyHitRegions;
             maxHitPoints = 350;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 400;
-            this.attackRange = 400;
+            this.detectionRadius = 1100;
+            this.attackRange = 750;
             this.moveSpeed = 120;
         }
         else if(type == EnemyType.HOVER_DRONE){
@@ -300,7 +290,7 @@ public class Enemy{
             this.hitRegions = droneHitRegions;
             maxHitPoints = 70;
             hitPoints = maxHitPoints;
-            this.detectionRadius = 850;
+            this.detectionRadius = 1100;
             this.attackRange = 550;
             this.moveSpeed = 225;
             this.maxRiseSpeed = 500;
@@ -1074,7 +1064,6 @@ private void heavyCloseRangeAttack(Rectangle playerHurtbox,float dt){
     }
     currentState = EnemyState.ATTACK;
     stateTime = 0;
-    pendingDamage += HEAVY_CLOSE_RANGE_DAMAGE;
     HEAVY_SHOT_READY = true;
     HEAVY_CLOSE_SHOT_ONCE = true;
 

@@ -26,18 +26,18 @@ public class Weapon{
         SMG
     }
 
-    //PISTOL BASE STATS
-    private final int BASE_MAGAZINE_PISTOL = 8;
+    private final int BASE_MAGAZINE_PISTOL = 9;
     private final float BASE_RELOAD_PISTOL = 2.5f;
-    private final float BASE_HEAD_DAMAGE_PISTOL = 80f;
-    private final float BASE_BODY_DAMAGE_PISTOL = 30f;
-    private final float BASE_LIMB_DAMAGE_PISTOL = 20f;
+    private final float BASE_HEAD_DAMAGE_PISTOL = 120f;
+    private final float BASE_BODY_DAMAGE_PISTOL = 28f;
+    private final float BASE_LIMB_DAMAGE_PISTOL = 18f;
     private final float BASE_FIRE_RATE_PISTOL = 2.5f;
     private final float BASE_SCOPE_PISTOL = 1.25f;
     private final boolean BASE_AUTOMATIC_PISTOL = false;
+    private final float PISTOL_OFFSET_X = 3f;
+    private final float PISTOL_OFFSET_Y = -1f;
+    private final float PISTOL_VISUAL_SCALE = 1.25f;
 
-
-    //AR BASE STATS
     private final int BASE_MAGAZINE_AR = 30;
     private final float BASE_RELOAD_AR = 3f;
     private final float BASE_HEAD_DAMAGE_AR = 50f;
@@ -46,9 +46,10 @@ public class Weapon{
     private final float BASE_FIRE_RATE_AR = 4.5f;
     private final float BASE_SCOPE_AR = 1.4f;
     private final boolean BASE_AUTOMATIC_AR = true;
+    private final float AR_OFFSET_X = 0f;
+    private final float AR_OFFSET_Y = 0f;
+    private final float AR_VISUAL_SCALE = 1f;
 
-
-    //SHOTGUN BASE STATS
     private final int BASE_MAGAZINE_SHOTGUN = 6;
     private final float BASE_RELOAD_SHOTGUN = 3.5f;
     private final float BASE_HEAD_DAMAGE_SHOTGUN = 180f;
@@ -57,9 +58,10 @@ public class Weapon{
     private final float BASE_FIRE_RATE_SHOTGUN = 1.15f;
     private final float BASE_SCOPE_SHOTGUN = 1.12f;
     private final boolean BASE_AUTOMATIC_SHOTGUN = false;
+    private final float SHOTGUN_OFFSET_X = 0f;
+    private final float SHOTGUN_OFFSET_Y = 0f;
+    private final float SHOTGUN_VISUAL_SCALE = 1f;
 
-
-    //SMG BASE STATS
     private final int BASE_MAGAZINE_SMG = 30;
     private final float BASE_RELOAD_SMG = 3f;
     private final float BASE_HEAD_DAMAGE_SMG = 18f;
@@ -68,9 +70,10 @@ public class Weapon{
     private final float BASE_FIRE_RATE_SMG = 9f;
     private final float BASE_SCOPE_SMG = 1.35f;
     private final boolean BASE_AUTOMATIC_SMG = true;
+    private final float SMG_OFFSET_X = 2f;
+    private final float SMG_OFFSET_Y = 0f;
+    private final float SMG_VISUAL_SCALE = 1.15f;
 
-
-    //SNIPER BASE STATS
     private final int BASE_MAGAZINE_SNIPER = 6;
     private final float BASE_RELOAD_SNIPER = 4f;
     private final float BASE_HEAD_DAMAGE_SNIPER = 180f;
@@ -79,9 +82,10 @@ public class Weapon{
     private final float BASE_FIRE_RATE_SNIPER = 1f;
     private final float BASE_SCOPE_SNIPER = 2.25f;
     private final boolean BASE_AUTOMATIC_SNIPER = false;
+    private final float SNIPER_OFFSET_X = 0f;
+    private final float SNIPER_OFFSET_Y = 0f;
+    private final float SNIPER_VISUAL_SCALE = 1f;
 
-
-    //ROCKET LAUNCHER BASE STATS
     private final int BASE_MAGAZINE_ROCKET = 8;
     private final float BASE_RELOAD_ROCKET = 2.5f;
     private final float BASE_HEAD_DAMAGE_ROCKET = 60f;
@@ -90,32 +94,9 @@ public class Weapon{
     private final boolean BASE_AUTOMATIC_ROCKET = false;
     private final float BASE_SCOPE_ROCKET = 1.7f;
     private final float BASE_FIRE_RATE_ROCKET_LAUNCHER = 0.75f;
-
-    private final float PISTOL_VISUAL_SCALE = 1.20f;
-    private final float SMG_VISUAL_SCALE = 1.15f;
-
-    private final float AR_VISUAL_SCALE = 1f;
-    private final float SHOTGUN_VISUAL_SCALE = 1f;
-    private final float SNIPER_VISUAL_SCALE = 1f;
-    private final float ROCKET_VISUAL_SCALE = 1f;
-
-    private final float PISTOL_OFFSET_X = 3f;
-    private final float PISTOL_OFFSET_Y = -1f;
-
-    private final float SMG_OFFSET_X = 2f;
-    private final float SMG_OFFSET_Y = 0f;
-
-    private final float AR_OFFSET_X = 0f;
-    private final float AR_OFFSET_Y = 0f;
-
-    private final float SHOTGUN_OFFSET_X = 0f;
-    private final float SHOTGUN_OFFSET_Y = 0f;
-
-    private final float SNIPER_OFFSET_X = 0f;
-    private final float SNIPER_OFFSET_Y = 0f;
-
     private final float ROCKET_OFFSET_X = 0f;
     private final float ROCKET_OFFSET_Y = 0f;
+    private final float ROCKET_VISUAL_SCALE = 1f;
 
     private float reloadSpeed;
     private boolean automatic;
@@ -509,7 +490,7 @@ public class Weapon{
         weaponMagazineAmmo.put(currentWeapon,currentAmmo);
         currentWeapon = type;
         determineWeaponStats();
-        currentAmmo = weaponMagazineAmmo.get(type,0);
+        currentAmmo = weaponMagazineAmmo.get(type,magazineSize);
     }
 
 

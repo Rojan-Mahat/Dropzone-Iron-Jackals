@@ -68,7 +68,6 @@ public class LootCrate{
                 if(roll <= 5 || roll > 9){
                     count = 3;
                 }
-
                 if(roll > 5 && roll < 9){
                     count = 4;
                     addRandomPowerUp();
@@ -80,12 +79,12 @@ public class LootCrate{
                 }
                 gold = MathUtils.random(5,15);
                 score =  MathUtils.random(25,75);
-                ammoRewardPercent = MathUtils.random(25,40);
-                hpBoost = 30;
+                ammoRewardPercent = MathUtils.random(10,15);
+                hpBoost = 15;
             }
             if(type == CrateType.RARE){
                 addRandomPowerUp();
-                hpBoost = 50;
+                hpBoost = 25;
                 int roll = MathUtils.random(1, 15);
                 if(roll <= 5 || roll > 9){
                     count = 4;
@@ -109,10 +108,10 @@ public class LootCrate{
                 }
                 gold = MathUtils.random(20,40);
                 score =  MathUtils.random(120,250);
-                ammoRewardPercent =  MathUtils.random(60,100);
+                ammoRewardPercent =  MathUtils.random(20,30);
             }
             if(type == CrateType.SUPER_RARE){
-                hpBoost = 70;
+                hpBoost = 50;
                 addRandomPowerUp();
                 addRandomSpicy();
                 int roll = MathUtils.random(1, 15);
@@ -138,7 +137,7 @@ public class LootCrate{
                 }
                 gold = MathUtils.random(60,120);
                 score =  MathUtils.random(400,800);
-                ammoRewardPercent =  MathUtils.random(200,250);
+                ammoRewardPercent =  MathUtils.random(40,60);
             }
 
             if(type == CrateType.SPECIAL){

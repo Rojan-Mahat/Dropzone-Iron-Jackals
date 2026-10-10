@@ -4,8 +4,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
-
 import rojan.shooter.Weapon.WeaponType;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 public final class FxAssets{
     private FxAssets(){}
@@ -63,8 +63,6 @@ public final class FxAssets{
     public static Texture reloadIconTexture;
     public static TextureRegion reloadIcon;
 
-    public static Texture emptyMagazineTexture;
-    public static TextureRegion emptyMagazineIcon;
 
     public static Texture scoreDashboard;
     public static Texture goldIcon;
@@ -102,22 +100,18 @@ public final class FxAssets{
     public static Texture pauseResumeNormal;
     public static Texture pauseResumeHover;
     public static Texture pauseResumePressed;
-    public static Texture pauseResumeDisabled;
 
     public static Texture pauseRestartNormal;
     public static Texture pauseRestartHover;
     public static Texture pauseRestartPressed;
-    public static Texture pauseRestartDisabled;
 
     public static Texture pauseSettingsNormal;
     public static Texture pauseSettingsHover;
     public static Texture pauseSettingsPressed;
-    public static Texture pauseSettingsDisabled;
 
     public static Texture pauseMainMenuNormal;
     public static Texture pauseMainMenuHover;
     public static Texture pauseMainMenuPressed;
-    public static Texture pauseMainMenuDisabled;
 
     public static Texture shopWeaponsCatalog;
     public static Texture shopAmmoCatalog;
@@ -126,9 +120,6 @@ public final class FxAssets{
     public static Texture shopWeaponHover;
     public static Texture shopWeaponSelected;
     public static Texture shopWeaponLocked;
-    public static Texture shopWeaponUnavailable;
-    public static Texture shopWeaponOwned;
-    public static Texture shopWeaponEquipped;
 
     public static Texture shopAmmoHover;
     public static Texture shopAmmoSelected;
@@ -138,6 +129,42 @@ public final class FxAssets{
     public static Texture shopSpecialSelected;
     public static Texture shopSpecialLocked;
     public static Texture shopSpecialUnavailable;
+
+    public static TextureAtlas menuShowcaseAtlas;
+
+public static TextureRegion menuSkyline;
+public static TextureRegion menuTerrainHero;
+public static TextureRegion menuTerrainHeavy;
+public static TextureRegion menuTerrainDriller;
+public static TextureRegion menuTerrainBattlefield;
+public static TextureRegion menuContactShadow;
+
+public static TextureRegion[] menuPlayerIdle;
+public static TextureRegion[] menuPlayerHover;
+public static TextureRegion[] menuPlayerFlame;
+public static TextureRegion[] menuHeavyIdle;
+public static TextureRegion[] menuHeavyBarrage;
+public static TextureRegion[] menuDroneIdle;
+public static TextureRegion[] menuDroneAttack;
+public static TextureRegion[] menuDroneFlying;
+public static TextureRegion[] menuDrillerIdle;
+public static TextureRegion[] menuDrillerDrill;
+public static TextureRegion[] menuRiflemanIdle;
+public static TextureRegion[] menuRiflemanAttack;
+public static TextureRegion[] menuReticle;
+public static TextureRegion[] menuBombardmentOpen;
+public static TextureRegion[] menuBombardmentActive;
+public static TextureRegion[] menuBombardmentClose;
+public static Texture menuWordmark;
+public static Texture menuQuoteHousing;
+public static Texture menuWeaponsOwned;
+public static Texture menuStoredPowerups;
+public static Texture menuDeployLeft;
+public static Texture menuDeployRight;
+public static Texture menuReturnLeft;
+public static Texture menuReturnRight;
+
+public static Texture[] menuSceneRails;
 
     public static class PowerAuraAnimation{
         Texture backTexture;
@@ -183,11 +210,9 @@ public final class FxAssets{
     public static TextureRegion[] reloadReceiverEnter;
     public static TextureRegion[] reloadReceiverService;
     public static TextureRegion[] reloadReceiverReady;
-    public static TextureRegion[] reloadReceiverCancel;
     public static TextureRegion[] reloadMuzzleEnter;
     public static TextureRegion[] reloadMuzzleService;
     public static TextureRegion[] reloadMuzzleReady;
-    public static TextureRegion[] reloadMuzzleCancel;
 
     public static Texture runSummaryShell;
     public static Texture runRestartNormal;
@@ -204,19 +229,15 @@ public final class FxAssets{
     public static Texture mainStartNormal;
     public static Texture mainStartHover;
     public static Texture mainStartPressed;
-    public static Texture mainStartDisabled;
     public static Texture mainArmoryNormal;
     public static Texture mainArmoryHover;
     public static Texture mainArmoryPressed;
-    public static Texture mainArmoryDisabled;
     public static Texture mainSettingsNormal;
     public static Texture mainSettingsHover;
     public static Texture mainSettingsPressed;
-    public static Texture mainSettingsDisabled;
     public static Texture mainExitNormal;
     public static Texture mainExitHover;
     public static Texture mainExitPressed;
-    public static Texture mainExitDisabled;
 
     public static Texture armoryShell;
     public static Texture armoryWeaponsGrid;
@@ -235,7 +256,6 @@ public final class FxAssets{
     public static Texture shopActionBuyHover;
     public static Texture shopActionBuyPressed;
     public static Texture shopActionOwned;
-    public static Texture shopActionEquipped;
     public static Texture shopActionNotEnoughGold;
     public static Texture shopCardHover;
     public static Texture shopCardSelected;
@@ -253,12 +273,8 @@ public final class FxAssets{
     public static Texture armoryActionBuyHover;
     public static Texture armoryActionBuyPressed;
 
-    public static Texture armoryActionEquip;
-    public static Texture armoryActionEquipHover;
-    public static Texture armoryActionEquipPressed;
 
     public static Texture armoryActionOwned;
-    public static Texture armoryActionEquipped;
     public static Texture armoryActionInsufficientGold;
 
     public static ObjectMap<WeaponType,Texture> shopAmmoIcons;
@@ -436,30 +452,24 @@ public final class FxAssets{
         reloadReceiverEnter = loadReloadAtlasFrames(reloadReceiverTexture,0,6,384,224,388,228);
         reloadReceiverService = loadReloadAtlasFrames(reloadReceiverTexture,6,37,384,224,388,228);
         reloadReceiverReady = loadReloadAtlasFrames(reloadReceiverTexture,43,8,384,224,388,228);
-        reloadReceiverCancel = loadReloadAtlasFrames(reloadReceiverTexture,51,5,384,224,388,228);
 
         reloadMuzzleEnter = loadReloadAtlasFrames(reloadMuzzleTexture,0,6,64,96,68,100);
         reloadMuzzleService = loadReloadAtlasFrames(reloadMuzzleTexture,6,37,64,96,68,100);
         reloadMuzzleReady = loadReloadAtlasFrames(reloadMuzzleTexture,43,8,64,96,68,100);
-        reloadMuzzleCancel = loadReloadAtlasFrames(reloadMuzzleTexture,51,5,64,96,68,100);
 
         pauseShell = loadUiTexture(AssetPaths.Pause.SHELL);
         pauseResumeNormal = loadUiTexture(AssetPaths.Pause.RESUME_NORMAL);
         pauseResumeHover = loadUiTexture(AssetPaths.Pause.RESUME_HOVER);
         pauseResumePressed = loadUiTexture(AssetPaths.Pause.RESUME_PRESSED);
-        pauseResumeDisabled = loadUiTexture(AssetPaths.Pause.RESUME_DISABLED);
         pauseRestartNormal = loadUiTexture(AssetPaths.Pause.RESTART_NORMAL);
         pauseRestartHover = loadUiTexture(AssetPaths.Pause.RESTART_HOVER);
         pauseRestartPressed = loadUiTexture(AssetPaths.Pause.RESTART_PRESSED);
-        pauseRestartDisabled = loadUiTexture(AssetPaths.Pause.RESTART_DISABLED);
         pauseSettingsNormal = loadUiTexture(AssetPaths.Pause.SETTINGS_NORMAL);
         pauseSettingsHover = loadUiTexture(AssetPaths.Pause.SETTINGS_HOVER);
         pauseSettingsPressed = loadUiTexture(AssetPaths.Pause.SETTINGS_PRESSED);
-        pauseSettingsDisabled = loadUiTexture(AssetPaths.Pause.SETTINGS_DISABLED);
         pauseMainMenuNormal = loadUiTexture(AssetPaths.Pause.MAIN_MENU_NORMAL);
         pauseMainMenuHover = loadUiTexture(AssetPaths.Pause.MAIN_MENU_HOVER);
         pauseMainMenuPressed = loadUiTexture(AssetPaths.Pause.MAIN_MENU_PRESSED);
-        pauseMainMenuDisabled = loadUiTexture(AssetPaths.Pause.MAIN_MENU_DISABLED);
 
 
         runSummaryShell = loadUiTexture(AssetPaths.RunSummary.SHELL);
@@ -477,19 +487,15 @@ public final class FxAssets{
         mainStartNormal = loadUiTexture(AssetPaths.MainMenu.START_NORMAL);
         mainStartHover = loadUiTexture(AssetPaths.MainMenu.START_HOVER);
         mainStartPressed = loadUiTexture(AssetPaths.MainMenu.START_PRESSED);
-        mainStartDisabled = loadUiTexture(AssetPaths.MainMenu.START_DISABLED);
         mainArmoryNormal = loadUiTexture(AssetPaths.MainMenu.ARMORY_NORMAL);
         mainArmoryHover = loadUiTexture(AssetPaths.MainMenu.ARMORY_HOVER);
         mainArmoryPressed = loadUiTexture(AssetPaths.MainMenu.ARMORY_PRESSED);
-        mainArmoryDisabled = loadUiTexture(AssetPaths.MainMenu.ARMORY_DISABLED);
         mainSettingsNormal = loadUiTexture(AssetPaths.MainMenu.SETTINGS_NORMAL);
         mainSettingsHover = loadUiTexture(AssetPaths.MainMenu.SETTINGS_HOVER);
         mainSettingsPressed = loadUiTexture(AssetPaths.MainMenu.SETTINGS_PRESSED);
-        mainSettingsDisabled = loadUiTexture(AssetPaths.MainMenu.SETTINGS_DISABLED);
         mainExitNormal = loadUiTexture(AssetPaths.MainMenu.EXIT_NORMAL);
         mainExitHover = loadUiTexture(AssetPaths.MainMenu.EXIT_HOVER);
         mainExitPressed = loadUiTexture(AssetPaths.MainMenu.EXIT_PRESSED);
-        mainExitDisabled = loadUiTexture(AssetPaths.MainMenu.EXIT_DISABLED);
 
         armoryShell = loadUiTexture(AssetPaths.Armory.SHELL);
         armoryWeaponsGrid = loadUiTexture(AssetPaths.Armory.WEAPONS_GRID);
@@ -507,7 +513,6 @@ public final class FxAssets{
         shopActionBuyHover = loadUiTexture(AssetPaths.Shop.ACTION_BUY_HOVER);
         shopActionBuyPressed = loadUiTexture(AssetPaths.Shop.ACTION_BUY_PRESSED);
         shopActionOwned = loadUiTexture(AssetPaths.Shop.ACTION_OWNED);
-        shopActionEquipped = loadUiTexture(AssetPaths.Shop.ACTION_EQUIPPED);
         shopActionNotEnoughGold = loadUiTexture(AssetPaths.Shop.ACTION_NOT_ENOUGH_GOLD);
         shopCardHover = loadUiTexture(AssetPaths.Shop.CARD_HOVER);
         shopCardSelected = loadUiTexture(AssetPaths.Shop.CARD_SELECTED);
@@ -524,9 +529,6 @@ public final class FxAssets{
         shopWeaponHover = loadUiTexture(AssetPaths.Shop.WEAPON_HOVER);
         shopWeaponSelected = loadUiTexture(AssetPaths.Shop.WEAPON_SELECTED);
         shopWeaponLocked = loadUiTexture(AssetPaths.Shop.WEAPON_LOCKED);
-        shopWeaponUnavailable = loadUiTexture(AssetPaths.Shop.WEAPON_UNAVAILABLE);
-        shopWeaponOwned = loadUiTexture(AssetPaths.Shop.WEAPON_OWNED);
-        shopWeaponEquipped = loadUiTexture(AssetPaths.Shop.WEAPON_EQUIPPED);
 
         shopAmmoHover = loadUiTexture(AssetPaths.Shop.AMMO_HOVER);
         shopAmmoSelected = loadUiTexture(AssetPaths.Shop.AMMO_SELECTED);
@@ -561,12 +563,8 @@ public final class FxAssets{
         armoryActionBuyHover = loadUiTexture(AssetPaths.Armory.ACTION_BUY_HOVER);
         armoryActionBuyPressed = loadUiTexture(AssetPaths.Armory.ACTION_BUY_PRESSED);
 
-        armoryActionEquip = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP);
-        armoryActionEquipHover = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP_HOVER);
-        armoryActionEquipPressed = loadUiTexture(AssetPaths.Armory.ACTION_EQUIP_PRESSED);
 
         armoryActionOwned = loadUiTexture(AssetPaths.Armory.ACTION_OWNED);
-        armoryActionEquipped = loadUiTexture(AssetPaths.Armory.ACTION_EQUIPPED);
         armoryActionInsufficientGold = loadUiTexture(AssetPaths.Armory.ACTION_INSUFFICIENT_GOLD);
 
         settingsPanel = loadUiTexture(AssetPaths.Settings.PANEL);
@@ -604,6 +602,54 @@ public final class FxAssets{
         interactionWeaponUnlocked = loadUiTexture(AssetPaths.Interaction.WEAPON_UNLOCKED);
         interactionItemAcquired = loadUiTexture(AssetPaths.Interaction.ITEM_ACQUIRED);
         interactionGoldGained = loadUiTexture(AssetPaths.Interaction.GOLD_GAINED);
+
+        menuShowcaseAtlas = new TextureAtlas(AssetPaths.MenuShowcase.ATLAS);
+        menuSkyline = menuShowcaseAtlas.findRegion("env_skyline");
+        menuTerrainHero = menuShowcaseAtlas.findRegion("terrain_hero");
+        menuTerrainHeavy = menuShowcaseAtlas.findRegion("terrain_heavy");
+        menuTerrainDriller = menuShowcaseAtlas.findRegion("terrain_driller");
+        menuTerrainBattlefield = menuShowcaseAtlas.findRegion("terrain_battlefield");
+        menuContactShadow = menuShowcaseAtlas.findRegion("contact_shadow");
+        menuPlayerIdle = loadMenuFrames("player_idle",12);
+        menuPlayerHover = loadMenuFrames("player_hover",12);
+        menuPlayerFlame = loadMenuFrames("player_flame",4);
+        menuHeavyIdle = loadMenuFrames("heavy_idle",12);
+        menuHeavyBarrage = loadMenuFrames("heavy_barrage",8);
+        menuDroneIdle = loadMenuFrames("drone_idle",12);
+        menuDroneAttack = loadMenuFrames("drone_attack",8);
+        menuDroneFlying = loadMenuFrames("drone_flying",12);
+        menuDrillerIdle = loadMenuFrames("driller_idle",12);
+        menuDrillerDrill = loadMenuFrames("driller_drill",12);
+        menuRiflemanIdle = loadMenuFrames("rifleman_idle",6);
+        menuRiflemanAttack = loadMenuFrames("rifleman_attack",6);
+        menuReticle = loadMenuFrames("fx_reticle",8);
+        menuBombardmentOpen = loadMenuFrames("fx_bombardment_open",7);
+        menuBombardmentActive = loadMenuFrames("fx_bombardment_active",12);
+        menuBombardmentClose = loadMenuFrames("fx_bombardment_close",8);
+        menuWordmark = loadUiTexture(AssetPaths.MenuShowcase.WORDMARK);
+        menuQuoteHousing = loadUiTexture(AssetPaths.MenuShowcase.QUOTE_HOUSING);
+        menuWeaponsOwned = loadUiTexture(AssetPaths.MenuShowcase.WEAPONS_OWNED);
+        menuStoredPowerups = loadUiTexture(AssetPaths.MenuShowcase.STORED_POWERUPS);
+        menuSceneRails = new Texture[]{loadUiTexture(AssetPaths.MenuShowcase.RAIL_0),
+            loadUiTexture(AssetPaths.MenuShowcase.RAIL_1),
+            loadUiTexture(AssetPaths.MenuShowcase.RAIL_2),
+            loadUiTexture(AssetPaths.MenuShowcase.RAIL_3)
+        };
+        menuDeployLeft = loadUiTexture(AssetPaths.MenuShowcase.DEPLOY_LEFT);
+        menuDeployRight = loadUiTexture(AssetPaths.MenuShowcase.DEPLOY_RIGHT);
+        menuReturnLeft = loadUiTexture(AssetPaths.MenuShowcase.RETURN_LEFT);
+        menuReturnRight = loadUiTexture(AssetPaths.MenuShowcase.RETURN_RIGHT);
+    }
+
+    private static TextureRegion[] loadMenuFrames(String prefix,int count){
+        TextureRegion[] frames = new TextureRegion[count];
+        for(int i=0;i<count;i++){
+            String name = prefix+"_"+String.format("%02d",i);
+            frames[i] = menuShowcaseAtlas.findRegion(name);
+            if(frames[i] == null)
+                throw new IllegalStateException("Missing menu showcase region: "+name);
+        }
+        return frames;
     }
 
     private static TextureRegion[] loadFrames(String prefix,int frameCount){
@@ -665,26 +711,21 @@ public final class FxAssets{
         pauseResumeNormal.dispose();
         pauseResumeHover.dispose();
         pauseResumePressed.dispose();
-        pauseResumeDisabled.dispose();
         pauseRestartNormal.dispose();
         pauseRestartHover.dispose();
         pauseRestartPressed.dispose();
-        pauseRestartDisabled.dispose();
         pauseSettingsNormal.dispose();
         pauseSettingsHover.dispose();
         pauseSettingsPressed.dispose();
-        pauseSettingsDisabled.dispose();
         pauseMainMenuNormal.dispose();
         pauseMainMenuHover.dispose();
         pauseMainMenuPressed.dispose();
-        pauseMainMenuDisabled.dispose();
 
         shopPanel.dispose();
         shopActionBuy.dispose();
         shopActionBuyHover.dispose();
         shopActionBuyPressed.dispose();
         shopActionOwned.dispose();
-        shopActionEquipped.dispose();
         shopActionNotEnoughGold.dispose();
         shopCardHover.dispose();
         shopCardSelected.dispose();
@@ -743,19 +784,15 @@ public final class FxAssets{
         mainStartNormal.dispose();
         mainStartHover.dispose();
         mainStartPressed.dispose();
-        mainStartDisabled.dispose();
         mainArmoryNormal.dispose();
         mainArmoryHover.dispose();
         mainArmoryPressed.dispose();
-        mainArmoryDisabled.dispose();
         mainSettingsNormal.dispose();
         mainSettingsHover.dispose();
         mainSettingsPressed.dispose();
-        mainSettingsDisabled.dispose();
         mainExitNormal.dispose();
         mainExitHover.dispose();
         mainExitPressed.dispose();
-        mainExitDisabled.dispose();
 
         armoryShell.dispose();
         armoryWeaponsGrid.dispose();
@@ -775,9 +812,6 @@ public final class FxAssets{
         shopWeaponHover.dispose();
         shopWeaponSelected.dispose();
         shopWeaponLocked.dispose();
-        shopWeaponUnavailable.dispose();
-        shopWeaponOwned.dispose();
-        shopWeaponEquipped.dispose();
 
         shopAmmoHover.dispose();
         shopAmmoSelected.dispose();
@@ -793,6 +827,18 @@ public final class FxAssets{
         shopAmmoIcons.clear();
 
         for(Texture texture : shopSpecialIcons)
+            texture.dispose();
+        menuShowcaseAtlas.dispose();
+        menuWordmark.dispose();
+        menuQuoteHousing.dispose();
+        menuWeaponsOwned.dispose();
+        menuStoredPowerups.dispose();
+        menuDeployLeft.dispose();
+        menuDeployRight.dispose();
+        menuReturnLeft.dispose();
+        menuReturnRight.dispose();
+
+        for(Texture texture : menuSceneRails)
             texture.dispose();
     }
 

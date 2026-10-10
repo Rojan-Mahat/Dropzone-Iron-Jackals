@@ -2,10 +2,7 @@ package rojan.shooter;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-
-import rojan.shooter.Weapon.WeaponType;
 
 public class Bullet{
     private Vector2 position;

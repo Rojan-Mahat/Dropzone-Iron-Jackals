@@ -1,7 +1,6 @@
 package rojan.shooter;
 
 import com.badlogic.gdx.utils.ObjectIntMap;
-import rojan.shooter.Weapon.WeaponType;
 import com.badlogic.gdx.utils.Array;
 
 public class Inventory{

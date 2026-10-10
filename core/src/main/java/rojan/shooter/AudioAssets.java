@@ -291,7 +291,12 @@ public final class AudioAssets{
         if(currentMusic != null)
             currentMusic.setVolume(0.35f*musicVolume);
     }
-
+    public static void playDifficultyEscalation(){
+        play(AssetPaths.Audio.world("difficulty_escalation"),0.75f);
+    }
+    public static void playKeyPickup(){
+        play(AssetPaths.Audio.world("key_pickup"),0.70f);
+    }
     public static void dispose(){
         if(sounds != null){
             for(Sound sound : sounds.values())
@@ -300,7 +305,6 @@ public final class AudioAssets{
             sounds.clear();
             sounds = null;
         }
-
         if(tacticalMusic != null)
             tacticalMusic.dispose();
 

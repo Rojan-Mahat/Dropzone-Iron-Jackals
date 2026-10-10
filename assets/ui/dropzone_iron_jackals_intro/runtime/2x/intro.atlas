@@ -1,0 +1,356 @@
+intro_00.png
+size: 3848, 4080
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+atmo_base
+  rotate: false
+  xy: 4, 4
+  size: 3840, 2160
+  orig: 3840, 2160
+  offset: 0, 0
+  index: -1
+atmo_haze_far
+  rotate: false
+  xy: 4, 2172
+  size: 3840, 1086
+  orig: 3840, 1086
+  offset: 0, 0
+  index: -1
+atmo_haze_near
+  rotate: false
+  xy: 4, 3266
+  size: 3840, 506
+  orig: 3840, 506
+  offset: 0, 0
+  index: -1
+logo_deployment_mark
+  rotate: false
+  xy: 4, 3948
+  size: 1352, 94
+  orig: 1352, 94
+  offset: 0, 0
+  index: -1
+logo_rail
+  rotate: false
+  xy: 4, 3780
+  size: 1668, 160
+  orig: 1668, 160
+  offset: 0, 0
+  index: -1
+logo_subtitle
+  rotate: false
+  xy: 1364, 3948
+  size: 1284, 128
+  orig: 1284, 128
+  offset: 0, 0
+  index: -1
+
+intro_01.png
+size: 4096, 4044
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+atmo_silhouettes
+  rotate: false
+  xy: 4, 1026
+  size: 3032, 1422
+  orig: 3032, 1422
+  offset: 0, 0
+  index: -1
+atmo_terrain
+  rotate: false
+  xy: 4, 4
+  size: 3840, 1014
+  orig: 3840, 1014
+  offset: 0, 0
+  index: -1
+fx_bead
+  rotate: false
+  xy: 2708, 3448
+  size: 16, 16
+  orig: 16, 16
+  offset: 0, 0
+  index: -1
+fx_black
+  rotate: false
+  xy: 2680, 3656
+  size: 2, 2
+  orig: 2, 2
+  offset: 0, 0
+  index: -1
+fx_cyan
+  rotate: false
+  xy: 2708, 3496
+  size: 16, 4
+  orig: 16, 4
+  offset: 0, 0
+  index: -1
+fx_drop_trail
+  rotate: false
+  xy: 2680, 3448
+  size: 20, 200
+  orig: 20, 200
+  offset: 0, 0
+  index: -1
+fx_ember
+  rotate: false
+  xy: 2708, 3472
+  size: 16, 16
+  orig: 16, 16
+  offset: 0, 0
+  index: -1
+fx_sheen_02
+  rotate: false
+  xy: 3044, 2018
+  size: 118, 316
+  orig: 118, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_03
+  rotate: false
+  xy: 3852, 4
+  size: 232, 316
+  orig: 232, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_04
+  rotate: false
+  xy: 3718, 2018
+  size: 370, 316
+  orig: 370, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_05
+  rotate: false
+  xy: 2286, 3666
+  size: 454, 316
+  orig: 454, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_06
+  rotate: false
+  xy: 2700, 2456
+  size: 504, 488
+  orig: 504, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_07
+  rotate: false
+  xy: 974, 3184
+  size: 454, 488
+  orig: 454, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_08
+  rotate: false
+  xy: 3044, 1522
+  size: 502, 488
+  orig: 502, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_09
+  rotate: false
+  xy: 3554, 1522
+  size: 500, 488
+  orig: 500, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_10
+  rotate: false
+  xy: 3556, 1026
+  size: 500, 488
+  orig: 500, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_11
+  rotate: false
+  xy: 2700, 2952
+  size: 500, 488
+  orig: 500, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_12
+  rotate: false
+  xy: 1436, 3184
+  size: 432, 488
+  orig: 432, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_13
+  rotate: false
+  xy: 3212, 2018
+  size: 498, 488
+  orig: 498, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_14
+  rotate: false
+  xy: 3208, 2952
+  size: 500, 488
+  orig: 500, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_15
+  rotate: false
+  xy: 3044, 1026
+  size: 504, 488
+  orig: 504, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_16
+  rotate: false
+  xy: 4, 3184
+  size: 486, 488
+  orig: 486, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_17
+  rotate: false
+  xy: 1876, 3184
+  size: 402, 488
+  orig: 402, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_18
+  rotate: false
+  xy: 498, 3184
+  size: 468, 488
+  orig: 468, 488
+  offset: 0, 0
+  index: -1
+fx_sheen_19
+  rotate: false
+  xy: 2286, 3184
+  size: 386, 474
+  orig: 386, 474
+  offset: 0, 0
+  index: -1
+fx_sheen_20
+  rotate: false
+  xy: 3212, 2514
+  size: 462, 316
+  orig: 462, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_21
+  rotate: false
+  xy: 3682, 2514
+  size: 410, 316
+  orig: 410, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_22
+  rotate: false
+  xy: 550, 3680
+  size: 318, 316
+  orig: 318, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_23
+  rotate: false
+  xy: 3852, 328
+  size: 192, 316
+  orig: 192, 316
+  offset: 0, 0
+  index: -1
+fx_sheen_24
+  rotate: false
+  xy: 4024, 3206
+  size: 66, 292
+  orig: 66, 292
+  offset: 0, 0
+  index: -1
+logo_colon
+  rotate: false
+  xy: 3644, 3448
+  size: 44, 114
+  orig: 44, 114
+  offset: 0, 0
+  index: -1
+logo_glyph_00_d
+  rotate: false
+  xy: 3056, 3448
+  size: 290, 360
+  orig: 290, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_01_r
+  rotate: false
+  xy: 3354, 3448
+  size: 282, 360
+  orig: 282, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_02_o
+  rotate: false
+  xy: 3716, 3206
+  size: 300, 360
+  orig: 300, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_03_p
+  rotate: false
+  xy: 4, 3680
+  size: 272, 360
+  orig: 272, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_04_z
+  rotate: false
+  xy: 3644, 3574
+  size: 280, 360
+  orig: 280, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_05_o
+  rotate: false
+  xy: 2748, 3448
+  size: 300, 360
+  orig: 300, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_06_n
+  rotate: false
+  xy: 3716, 2838
+  size: 302, 360
+  orig: 302, 360
+  offset: 0, 0
+  index: -1
+logo_glyph_07_e
+  rotate: false
+  xy: 284, 3680
+  size: 258, 360
+  orig: 258, 360
+  offset: 0, 0
+  index: -1
+logo_trace
+  rotate: false
+  xy: 4, 2456
+  size: 2688, 720
+  orig: 2688, 720
+  offset: 0, 0
+  index: -1
+
+intro_02.png
+size: 4016, 2168
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+curtain_left
+  rotate: false
+  xy: 4, 4
+  size: 2000, 2160
+  orig: 2000, 2160
+  offset: 0, 0
+  index: -1
+curtain_right
+  rotate: false
+  xy: 2012, 4
+  size: 2000, 2160
+  orig: 2000, 2160
+  offset: 0, 0
+  index: -1

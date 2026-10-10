@@ -14,8 +14,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import java.util.EnumMap;
 
-
-
 public class Player{
     private Vector2 position;
     private float width;
@@ -45,7 +43,7 @@ public class Player{
     private float maxRiseSpeed = 550;
     private float maxFallSpeed = -800;
 
-    private final float fuelMileage = 12.5f;
+    private final float fuelMileage = 20f;
     private final float fuelPump = 10f;
 
     private enum PlayerState{
@@ -366,8 +364,8 @@ public class Player{
             break;
 
         case DEAD:
-            currentFrameIndex = (int)(stateTime / frameDuration) % deadFrames.length;
-            drawFrame(batch, deadFrames[currentFrameIndex], 1f, 1f);
+            currentFrameIndex = Math.min((int)(stateTime/frameDuration),deadFrames.length-1);
+            drawFrame(batch,deadFrames[currentFrameIndex],1f,1f);
             break;
 
         case CLIMB:
@@ -415,29 +413,38 @@ public class Player{
 
 
     private void updatePlayerState(){
+         if(playerDead){
+            currentState = PlayerState.DEAD;
+            return;
+        }
         if(isCrouching && isShooting)
             currentState = PlayerState.CROUCH_SHOOT;
         else if(isCrouching)
             currentState = PlayerState.CROUCH;
-
         else if(!isGrounded && isShooting)
             currentState = PlayerState.JUMPSHOOT;
-
         else if(!isGrounded && !isJetPackActive)
             currentState = PlayerState.JUMP;
-    
+        else if(isGrounded && velocity.x == 0 && isShooting)
+            currentState = PlayerState.SHOOT;
+        else if(isGrounded && velocity.x == 0)
+            currentState = PlayerState.IDLE;
+        if(isCrouching && isShooting)
+            currentState = PlayerState.CROUCH_SHOOT;
+        else if(isCrouching)
+            currentState = PlayerState.CROUCH;
+        else if(!isGrounded && isShooting)
+            currentState = PlayerState.JUMPSHOOT;
+        else if(!isGrounded && !isJetPackActive)
+            currentState = PlayerState.JUMP;
         else if((!isGrounded && isJetPackActive) || (isGrounded && velocity.x==0))
             currentState = PlayerState.IDLE;
-
         else if(isGrounded && isRunning && isShooting)
             currentState = PlayerState.RUNNING_SHOOT;
-
         else if(isGrounded && isRunning)
             currentState = PlayerState.RUNNING;
-
         else if(isGrounded && !isRunning && isShooting)
             currentState = PlayerState.WALK_SHOOT;
-
         else if(isGrounded && !isRunning)
             currentState = PlayerState.WALK;
     }
@@ -461,10 +468,13 @@ public class Player{
         batch.draw(currentFlame, flameX, flameY,flameWidth,flameHeight);
     }
 
-    public void disposePlayer(){;
+    public void disposePlayer(){
         for(Texture texture : loadedTextures)
             texture.dispose();
+
         jetpackTexture.dispose();
+        jetpackFlameTexture.dispose();
+        jetpackDisabledTexture.dispose();
     }
 
     private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY){

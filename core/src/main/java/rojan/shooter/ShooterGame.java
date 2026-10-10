@@ -14,7 +14,6 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
@@ -65,7 +64,6 @@ public class ShooterGame extends ApplicationAdapter {
     private float mouseHeld = 0f;
 
     private Array<Enemy> enemies;
-    private ShapeRenderer shapeRenderer;
 
     private OrthographicCamera hudCamera;
     private Array<EnemyProjectile> enemyProjectiles = new Array<>();
@@ -91,7 +89,7 @@ public class ShooterGame extends ApplicationAdapter {
 
     private LootCrate activeLootCrate;
 
-    private final int WEAPON_INITIAL_CAPACITY =5;
+    private final int WEAPON_INITIAL_CAPACITY =6;
 
     private static class BombardmentImpactFx{
         Vector2 position;
@@ -379,8 +377,9 @@ public class ShooterGame extends ApplicationAdapter {
                     SETTINGS
                 }
     private GameScreen currentScreen = GameScreen.MAIN_MENU;
-
-
+    private float deathSummaryTimer = 0f;
+    private boolean showRunSummary = false;
+    private final float DEATH_SUMMARY_DELAY = 1.05f;
 
     private Rectangle shopInteractionZone;
     private boolean fieldShopOpen = false;
@@ -422,33 +421,59 @@ public class ShooterGame extends ApplicationAdapter {
                         POWERUPS,
                         SPECIAL
                     }
-private ArmoryCategory selectedArmoryCategory = ArmoryCategory.WEAPONS;
-private int selectedArmoryProduct = -1;
-private Rectangle[] armoryIconBounds = new Rectangle[16];
-private Rectangle armoryActionBounds = new Rectangle();
+    private ArmoryCategory selectedArmoryCategory = ArmoryCategory.WEAPONS;
+    private int selectedArmoryProduct = -1;
+    private Rectangle[] armoryIconBounds = new Rectangle[16];
+    private Rectangle armoryActionBounds = new Rectangle();
 
-private float musicVolume = 1f;
-private float sfxVolume = 1f;
-private boolean draggingMusicSlider = false;
-private boolean draggingSfxSlider = false;
-private Rectangle musicSliderBounds = new Rectangle();
-private Rectangle sfxSliderBounds = new Rectangle();
-private Rectangle settingsFullscreenBounds = new Rectangle();
-private Rectangle settingsResolutionBounds = new Rectangle();
-private Rectangle settingsControlsBounds = new Rectangle();
-private Rectangle settingsResetBounds = new Rectangle();
-private Rectangle settingsBackBounds = new Rectangle();
-private int settingsResolutionIndex = 0;
-private final int[][] SETTINGS_RESOLUTIONS = {{1920,1080},{1600,900},{1280,720}};
+    private float musicVolume = 1f;
+    private float sfxVolume = 1f;
+    private boolean draggingMusicSlider = false;
+    private boolean draggingSfxSlider = false;
+    private Rectangle musicSliderBounds = new Rectangle();
+    private Rectangle sfxSliderBounds = new Rectangle();
+    private Rectangle settingsFullscreenBounds = new Rectangle();
+    private Rectangle settingsResolutionBounds = new Rectangle();
+    private Rectangle settingsControlsBounds = new Rectangle();
+    private Rectangle settingsResetBounds = new Rectangle();
+    private Rectangle settingsBackBounds = new Rectangle();
+    private int settingsResolutionIndex = 0;
+    private final int[][] SETTINGS_RESOLUTIONS = {{1920,1080},{1600,900},{1280,720}};
 
-private boolean controlsOverlayOpen = false;
-private boolean resetConfirmOpen = false;
-private Rectangle controlsOverlayBackBounds = new Rectangle();
-private Rectangle resetConfirmYesBounds = new Rectangle();
-private Rectangle resetConfirmNoBounds = new Rectangle();
+    private boolean controlsOverlayOpen = false;
+    private boolean resetConfirmOpen = false;
+    private Rectangle controlsOverlayBackBounds = new Rectangle();
+    private Rectangle resetConfirmYesBounds = new Rectangle();
+    private Rectangle resetConfirmNoBounds = new Rectangle();
 
-private boolean settingsOpenedFromPause = false;
-    
+    private boolean settingsOpenedFromPause = false;
+    private int menuShowcaseScene = 0;
+    private float menuShowcaseTimer = 0f;
+    private final float MENU_SHOWCASE_DURATION = 8f;
+    private enum ScreenTransition{
+        NONE,
+        START_RUN,
+        RETURN_MENU
+    }
+
+    private ScreenTransition screenTransition = ScreenTransition.NONE;
+    private float screenTransitionTimer = 0f;
+    private boolean screenTransitionSwitched = false;
+
+    private final float START_RUN_TRANSITION_DURATION = 0.80f;
+    private final float START_RUN_COVER_TIME = 0.35f;
+    private final float START_RUN_HOLD_END = 0.44f;
+
+    private final float RETURN_MENU_TRANSITION_DURATION = 0.65f;
+    private final float RETURN_MENU_COVER_TIME = 0.283333f;
+    private final float RETURN_MENU_HOLD_END = 0.37f;
+
+    private DropzoneStartupIntro startupIntro;
+    private boolean startupIntroActive = true;
+    private boolean startupMenuRevealed = false;
+    private boolean assaultMusicStarted = false;
+    private DifficultyMilestone difficultyMilestone;
+        
         
     
 
@@ -457,35 +482,57 @@ private boolean settingsOpenedFromPause = false;
         loadFonts();
         initializeGame();
         loadPlayerProfile();
-
-       // giveTestWeapons();
+        startupIntro = new DropzoneStartupIntro("ui/dropzone_iron_jackals_intro",true);
+        difficultyMilestone = new DifficultyMilestone("ui/iron_jackals_difficulty_milestones",true);
         AudioAssets.playMenuMusic();
     }
     
 
     @Override
     public void render(){
-        float dt = Gdx.graphics.getDeltaTime();
+        float dt = Math.min(Gdx.graphics.getDeltaTime(),1f/30f);
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.graphics.getHeight()-Gdx.input.getY();
-
+        if(startupIntroActive){
+            startupIntro.update(dt);
+            if(!startupMenuRevealed && startupIntro.shouldRevealMenu()){
+                startupMenuRevealed = true;
+                currentScreen = GameScreen.MAIN_MENU;
+                menuShowcaseScene = 0;
+                menuShowcaseTimer = 0f;
+            }
+            if(!startupMenuRevealed){
+                ScreenUtils.clear(0.01f,0.015f,0.025f,1f);
+                drawStartupIntro();
+                return;
+            }
+        }
+        updateScreenTransition(dt);
         switch(currentScreen){
             case MAIN_MENU:
                 renderMainMenu(mouseX,mouseY);
+                if(startupIntroActive){
+                    drawStartupIntro();
+                    if(startupIntro.isFinished())
+                        finishStartupIntro();
+                }
+                drawScreenTransition();
                 return;
 
             case ARMORY:
                 renderArmory(mouseX,mouseY);
+                drawScreenTransition();
                 return;
 
             case SETTINGS:
                 renderSettings();
+                drawScreenTransition();
                 return;
 
             case GAMEPLAY:
                 break;
         }
-        if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)&& !gameOver){
+        if(screenTransition == ScreenTransition.NONE && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !gameOver){
             if(inventoryOpen || inventoryAnimation > 0f){
                 inventoryOpen = false;
                 AudioAssets.playUiPanelClose();
@@ -503,8 +550,7 @@ private boolean settingsOpenedFromPause = false;
 
             }
         }
-
-        if(Gdx.input.justTouched()){
+        if(screenTransition == ScreenTransition.NONE && Gdx.input.justTouched()){
             if(gameOver)
                 handleRunSummaryClick(mouseX,mouseY);
             else if(pauseMenuOpen)
@@ -541,6 +587,12 @@ private boolean settingsOpenedFromPause = false;
         updateInventoryAnimation(dt);
         boolean gamePaused = gameplayBlocked();
         float worldDt = gamePaused ? 0f : dt;
+        if(gameOver && !showRunSummary){
+            deathSummaryTimer += dt;
+            if(deathSummaryTimer >= DEATH_SUMMARY_DELAY)
+                showRunSummary = true;
+        }
+        difficultyMilestone.update(worldDt);
         Vector2 mouseWorldPosition = getMouseWorldPosition();
         if(!gamePaused){
             updatePowerups(dt);
@@ -680,7 +732,8 @@ private boolean settingsOpenedFromPause = false;
         drawDroneBeam();
         drawPowerAura(false);
         drawShop();
-        player.drawPlayer(batch,worldDt);
+        float playerDt = gameOver && !showRunSummary ? dt : worldDt;
+            player.drawPlayer(batch,playerDt);
         for(Enemy enemy: enemies)
             enemy.drawEnemy(batch, worldDt, player.getPlayerPosition(),solidPlatforms,player.getWorldHitbox(),player.getVelocity(),getHeavyPortalBounds());  
 
@@ -765,12 +818,14 @@ private boolean settingsOpenedFromPause = false;
         drawPoweredStateHud();
 
         drawInventoryBag();
+        drawDifficultyMilestone();
         drawInventory();
         drawPauseMenu();
         drawRunSummary();
         HudDrawTheShop(mouseX,mouseY);
 
         batch.end();
+        drawScreenTransition();
         batch.setProjectionMatrix(camera.combined);
     }  
 
@@ -795,12 +850,12 @@ private boolean settingsOpenedFromPause = false;
             }
             bulletTextures.clear();
         }
-        shapeRenderer.dispose();
         FxAssets.dispose();
         riflemanProjectileTexture.dispose();
         heavyProjectileTexture.dispose();
         hudFont.dispose();
         lootFont.dispose();
+        lootCountFont.dispose();
         lootIconRegions.clear();
         inventoryTitleFont.dispose();
         inventoryBodyFont.dispose();
@@ -812,13 +867,16 @@ private boolean settingsOpenedFromPause = false;
         fieldShopTitleFont.dispose();
         fieldShopBodyFont.dispose();
         fieldShopInfoFont.dispose();
+        if(startupIntro != null)
+            startupIntro.dispose();
+        if(difficultyMilestone != null)
+            difficultyMilestone.dispose();
     }
 
     @Override
     public void resize(int width,int height){
         hudCamera.setToOrtho(false,width,height);
     }
-
 
     private TiledMap loadMap(){
         TmxMapLoader loader = new TmxMapLoader();
@@ -965,8 +1023,8 @@ private boolean settingsOpenedFromPause = false;
         float visibleWidth = camera.viewportWidth * camera.zoom;
         float visibleHeight = camera.viewportHeight * camera.zoom;
 
-        float deadZoneHalfWidth = 0.33f * visibleWidth/2;
-        float deadZoneHalfHeight = 0.33f * visibleHeight/2;
+        float deadZoneHalfWidth = 0.22f * visibleWidth/2;
+        float deadZoneHalfHeight = 0.22f * visibleHeight/2;
 
         float rightThreshold = cameraX + deadZoneHalfWidth;
         float leftThreshold = cameraX - deadZoneHalfWidth;
@@ -1800,6 +1858,24 @@ private void drawJetpackDisabledHud(){
     }
 
     private void updateGameTracks(){
+        int kills = runState.getKillCount();
+        if(kills >= 70 && !impossibleMode){
+            difficultyMilestone.play("impossible");
+            AudioAssets.playDifficultyEscalation();
+        }
+        else if(kills >= 40 && !hardMode && !impossibleMode){
+            difficultyMilestone.play("hard");
+            AudioAssets.playDifficultyEscalation();
+        }
+        else if(kills >= 20 && !mediumMode && !hardMode && !impossibleMode){
+            difficultyMilestone.play("medium");
+            AudioAssets.playDifficultyEscalation();
+        }
+        if(runState.getKillCount() >= 40 && !assaultMusicStarted){
+            AudioAssets.playAssaultMusic();
+            assaultMusicStarted = true;
+        }
+        
         if(runState.getKillCount() < 20){
             easyMode = true;
             mediumMode = false;
@@ -2170,7 +2246,7 @@ private void drawJetpackDisabledHud(){
             if(enemy.isHeavyShotReady()){
                 Vector2 spawn = new Vector2(enemy.getHeavyMuzzlePosition());
                 Vector2 target = new Vector2(player.getPlayerCentrePosition());
-                enemyProjectiles.add(new EnemyProjectile(spawn,target,1100f,heavyProjectileTexture,enemy.getHeavyCloseDamage(),40f,300,350));
+                enemyProjectiles.add(new EnemyProjectile(spawn,target,900f,heavyProjectileTexture,enemy.getHeavyCloseDamage(),40f,300,350));
                 enemy.consumeHeavyShot();
             }
         }
@@ -2637,99 +2713,79 @@ private void drawJetpackDisabledHud(){
         float crateX = enemyDeathLocation.x;
         float crateY = spawnPlatform.y + spawnPlatform.height;
         Rectangle crateRect = new Rectangle(crateX,crateY,crateWidth,crateHeight);
-        //int roll = MathUtils.random(1,100);
+        int roll = MathUtils.random(1,100);
+        if(easyMode){
+            if(roll <= 3){
+                LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 12){
+                LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 40){
+                LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+        }
 
+        else if(mediumMode){
+            if(roll <= 5){
+                LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 18){
+                LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 45){
+                LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+        }
 
+        else if(hardMode){
+            if(roll <= 8){
+                LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 28){
+                LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <=50){
+                LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+        }
 
-        int roll = MathUtils.random(1,3);
-        if(roll == 1){
-            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll == 2){
-            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else{
-            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        
-    /*if(easyMode){
-        if(roll <= 3){
-            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 12){
-            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 40){
-            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
+        else if(impossibleMode){
+            if(roll <= 15){
+                LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 38){
+                LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
+            else if(roll <= 60){
+                LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
+                lootCrates.add(crate);
+                AudioAssets.playCrateSpawn(crate.getType());
+            }
         }
     }
-
-    else if(mediumMode){
-        if(roll <= 5){
-            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 18){
-            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 45){
-            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-    }
-
-    else if(hardMode){
-        if(roll <= 8){
-            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 28){
-            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <=50){
-            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-    }
-
-    else if(impossibleMode){
-        if(roll <= 15){
-            LootCrate crate = new LootCrate(CrateType.SUPER_RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 38){
-            LootCrate crate = new LootCrate(CrateType.RARE,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-        else if(roll <= 60){
-            LootCrate crate = new LootCrate(CrateType.COMMON,crateRect);
-            lootCrates.add(crate);
-            AudioAssets.playCrateSpawn(crate.getType());
-        }
-    }*/
-}
 
 private Array<Rectangle> extractSpecialCrateSpawnPoints(){
     Array<Rectangle> spawnPoints = new Array<>();
@@ -2763,8 +2819,7 @@ private void spawnSpecialCrate(float dt){
     lootCrates.add(crate);
     AudioAssets.playCrateSpawn(crate.getType());
     SPECIAL_CRATE_TIMER = 0f;
-    //SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,90f);
-    SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(1f,10f);
+    SPECIAL_CRATE_SPAWN_TIME = MathUtils.random(45f,90f);
 }
 
 
@@ -2777,6 +2832,11 @@ private void openNearbyCrate(){
         Rectangle crateBounds = crate.getCrate();
         Rectangle interactionZone = new Rectangle(crateBounds.x-25f,crateBounds.y-15f,crateBounds.width+50f,crateBounds.height+30f);
         if(playerHitbox.overlaps(interactionZone)){
+            if(crate.getType() == CrateType.SPECIAL){
+                if(!runState.hasKey())
+                    return;
+                runState.useKey();
+            }
             activeLootCrate = crate;
             crate.openCrate();
             AudioAssets.playCrateOpen(crate.getType());
@@ -4088,17 +4148,10 @@ private void drawSelectedPowerupInfo(float panelX, float panelY,float panelWidth
     String duration = getSelectedPowerupDuration();
     int amount = getSelectedPowerupAmount();
 
-    //TITLE BOX
     drawInventoryCenteredText(inventoryTitleFont,name,panelX+835f*sx,panelY+238f*sy, 380f*sx,48f*sy,false);
-
-    //DESCRIPTION BOX
     drawInventoryCenteredText(inventoryBodyFont, description, panelX+850f*sx, panelY+166f*sy, 350f*sx, 72f*sy, true);
-
-    //INFO ROWS
     drawInventoryInfoRow("DURATION",duration,panelX+855f*sx,panelX+1200f*sx, panelY+158f*sy);
     drawInventoryInfoRow( "OWNED","x"+amount,panelX+855f*sx,panelX+1200f*sx, panelY+128f*sy);
-
-    //BUTTON
     String buttonText = amount > 0 ? "CONSUME" : "EMPTY";
     drawInventoryCenteredText(inventoryButtonFont,buttonText,panelX+844f*sx,panelY+54f*sy, 372f*sx,42f*sy, false);
 }
@@ -4523,7 +4576,7 @@ private float getReloadProgress(){
 }
 
 private boolean gameplayBlocked(){
-    return currentScreen != GameScreen.GAMEPLAY || inventoryBlockingGameplay() || pauseMenuOpen || gameOver ||fieldShopOpen;
+    return currentScreen != GameScreen.GAMEPLAY || inventoryBlockingGameplay() || pauseMenuOpen || gameOver || fieldShopOpen || screenTransition != ScreenTransition.NONE;
 }
 
 private void resumeGame(){
@@ -4540,6 +4593,7 @@ private void giveGold(int amount){
 }
 
 private void startNewRun(){
+    assaultMusicStarted = false;
     AudioAssets.playRunStart();
     AudioAssets.playTacticalMusic();
     resetRunSystems();
@@ -4713,7 +4767,6 @@ private void initializeGame(){
 
     solidPlatforms = extractSolidPlatformsFromMap(map);
 
-    shapeRenderer = new ShapeRenderer();
 
     batch = new SpriteBatch();
     batch.setProjectionMatrix(camera.combined);
@@ -4772,16 +4825,22 @@ private void giveTestWeapons(){
 
 private void endCurrentRun(){
     saveManager.saveProfile(playerProfile);
-    if(player != null)
-        player.disposePlayer();
 
-    if(weapon != null)
+    if(player != null){
+        player.disposePlayer();
+        player = null;
+    }
+
+    if(weapon != null){
         weapon.disposeWeapon();
+        weapon = null;
+    }
 }
 
 private void resetRunSystems(){
     gameOver = false;
-
+    deathSummaryTimer = 0f;
+    showRunSummary = false;
     RIFLEMAN_RESPAWN_TIMER = 0f;
     HEAVY_RESPAWN_TIMER = 0f;
     DRILLER_RESPAWN_TIMER = 0f;
@@ -5022,6 +5081,8 @@ private void triggerGameOver(){
     if(gameOver)
         return;
     gameOver = true;
+    deathSummaryTimer = 0f;
+    showRunSummary = false;
     playerProfile.updateBestScore(runState.getCurrentScore());
     saveManager.saveProfile(playerProfile);
     AudioAssets.playRunTerminated();
@@ -5185,6 +5246,11 @@ private void fieldShopMouseClick(float mouseX, float mouseY){
         buySelectedFieldShopPowerup();
         return;
     }
+    if(selectedFieldShopCategory == FieldShopCategory.SPECIAL && fieldShopActionBounds.contains(mouseX,mouseY)){
+        buySelectedFieldShopSpecial();
+        return;
+}
+
 }
 
 private Rectangle[] getCurrentFieldShopProductBounds(){
@@ -5212,7 +5278,7 @@ private void drawRunSummaryRightValue(String text,float rightX,float baseline,fl
 private void drawRunSummary(){
     if(currentScreen != GameScreen.GAMEPLAY)
         return;
-    if(!gameOver)
+    if(!showRunSummary)
         return;
     float screenWidth = Gdx.graphics.getWidth();
     float screenHeight = Gdx.graphics.getHeight();
@@ -5288,10 +5354,7 @@ private void handleRunSummaryClick(float mouseX,float mouseY){
     }
     if(runMainMenuBounds.contains(mouseX,mouseY)){
         AudioAssets.playUiConfirm();
-        endCurrentRun();
-        currentScreen = GameScreen.MAIN_MENU;
-        gameOver = false;
-        AudioAssets.playMenuMusic();
+        beginReturnMenuTransition();
         return;
     }
 }
@@ -5314,6 +5377,9 @@ private void renderMainMenu(float mouseX,float mouseY){
     float y = (screenHeight-height)/2f;
 
     batch.draw(FxAssets.mainMenuShell,x,y,width,height);
+    updateMenuShowcase(Math.min(Gdx.graphics.getDeltaTime(),1f/30f));
+    drawMenuShowcase(x,y,scale);
+    
 
     mainStartBounds.set(x+1212f*scale,y+666f*scale,528f*scale,112f*scale);
     mainArmoryBounds.set(x+1212f*scale,y+490f*scale,528f*scale,144f*scale);
@@ -5354,8 +5420,9 @@ private void renderMainMenu(float mouseX,float mouseY){
 
     batch.end();
 
-    if(Gdx.input.justTouched())
+    if(!startupIntroActive && screenTransition == ScreenTransition.NONE && Gdx.input.justTouched())
         handleMainMenuClick(mouseX,mouseY);
+       
 }
 
 private void drawMainMenuValues(float x,float y,float scale){
@@ -5380,7 +5447,7 @@ private void drawMainMenuValues(float x,float y,float scale){
 private void handleMainMenuClick(float mouseX,float mouseY){
     if(mainStartBounds.contains(mouseX,mouseY)){
         AudioAssets.playUiConfirm();
-        currentScreen = GameScreen.GAMEPLAY;
+        beginStartRunTransition();
         startNewRun();
 
         return;
@@ -5580,7 +5647,6 @@ private void buySelectedArmoryWeapon(){
     if(!inventory.spendGold(price))
         return;
     inventory.addWeapon(type);
-
     saveManager.saveProfile(playerProfile);
     AudioAssets.playUiConfirm();
 }
@@ -6718,17 +6784,17 @@ private String getWeaponDescription(WeaponType type){
 
 private int getWeaponPrice(WeaponType type){
     if(type == WeaponType.PISTOL)
-        return 250;
-    if(type == WeaponType.AR)
-        return 500;
-    if(type == WeaponType.SMG)
-        return 650;
-    if(type == WeaponType.SHOTGUN)
-        return 800;
-    if(type == WeaponType.SNIPER)
         return 1000;
+    if(type == WeaponType.AR)
+        return 2500;
+    if(type == WeaponType.SMG)
+        return 3000;
+    if(type == WeaponType.SHOTGUN)
+        return 4500;
+    if(type == WeaponType.SNIPER)
+        return 6000;
     if(type == WeaponType.ROCKET_LAUNCHER)
-        return 1400;
+        return 8000;
     return 0;
 }
 
@@ -6854,7 +6920,6 @@ private void drawFieldShopAmmoButton(WeaponType type,int price,float mouseX,floa
         batch.draw(FxAssets.shopActionNotEnoughGold,fieldShopActionBounds.x,fieldShopActionBounds.y,fieldShopActionBounds.width,fieldShopActionBounds.height);
         return;
     }
-
     Texture button = FxAssets.shopActionBuy;
 
     if(fieldShopActionBounds.contains(mouseX,mouseY) &&Gdx.input.isButtonPressed(Input.Buttons.LEFT))
@@ -7068,6 +7133,333 @@ private void setArmoryIconBounds(float x,float y,float scale){
 private boolean mouseOverGameplayHud(float mouseX,float mouseY){
     return scopeButtonBounds.contains(mouseX,mouseY) || reloadButtonBounds.contains(mouseX,mouseY);
 }
+
+private void updateMenuShowcase(float dt){
+    menuShowcaseTimer += dt;
+
+    if(menuShowcaseTimer >= MENU_SHOWCASE_DURATION){
+        menuShowcaseTimer -= MENU_SHOWCASE_DURATION;
+        menuShowcaseScene++;
+
+        if(menuShowcaseScene >= 4)
+            menuShowcaseScene = 0;
+    }
+}
+
+private TextureRegion getMenuFrame(TextureRegion[] frames,float time,float frameDuration){
+    int frame = (int)(Math.max(time,0f)/frameDuration)%frames.length;
+    return frames[frame];
+}
+
+private String getMenuShowcaseQuote(){
+    if(menuShowcaseScene == 0)
+        return "GEAR UP. DROP IN. ADAPT.";
+    if(menuShowcaseScene == 1)
+        return "THE DRONE SEES. THE HEAVY ANSWERS.";
+    if(menuShowcaseScene == 2)
+        return "THE GROUND WON'T SAVE YOU.";
+    return "SURVIVE THE JACKALS.";
+}
+
+private int getOwnedWeaponCount(){
+    int count = 0;
+    for(WeaponType type : INVENTORY_WEAPONS){
+        if(inventory.ownsWeapon(type))
+            count++;
+    }
+    return count;
+}
+
+private int getStoredPowerupCount(){
+    int count = 0;
+    for(Powerup.PowerupType type : INVENTORY_NORMAL_POWERUPS)
+        count += inventory.getPowerupAmount(type);
+    for(Powerup.SpicyType type : INVENTORY_SPICY_POWERUPS)
+        count += inventory.getSpicyAmount(type);
+    for(Powerup.MoreSpicyType type : INVENTORY_MORE_SPICY_POWERUPS)
+        count += inventory.getMoreSpicyAmount(type);
+    count += inventory.getGodModeAmount();
+    return count;
+}
+
+private void drawMenuShowcase(float x,float y,float scale){
+    float sceneX = x+164f*scale;
+    float sceneY = y+430f*scale;
+    float sceneWidth = 872f*scale;
+    float sceneHeight = 340f*scale;
+    float alpha = 1f;
+    if(menuShowcaseTimer < 0.5f)
+        alpha = menuShowcaseTimer/0.5f;
+    else if(menuShowcaseTimer > MENU_SHOWCASE_DURATION-0.5f)
+        alpha = (MENU_SHOWCASE_DURATION-menuShowcaseTimer)/0.5f;
+
+    alpha = MathUtils.clamp(alpha,0f,1f);
+    batch.setColor(1f,1f,1f,alpha);
+    batch.draw(FxAssets.menuSkyline,sceneX,sceneY,sceneWidth,sceneHeight);
+
+    if(menuShowcaseScene == 0){
+        batch.draw(FxAssets.menuTerrainHero,sceneX,sceneY,sceneWidth,sceneHeight);
+        batch.draw(FxAssets.menuContactShadow,sceneX+354f*scale,sceneY+33f*scale,128f*scale,15f*scale);
+
+        if(menuShowcaseTimer >= 2.5f && menuShowcaseTimer <= 6.5f){
+            batch.draw(getMenuFrame(FxAssets.menuPlayerFlame,menuShowcaseTimer,0.08f),sceneX+314.58f*scale,sceneY-16.84f*scale,152.25f*scale,202.65f*scale);
+            batch.draw(getMenuFrame(FxAssets.menuPlayerHover,menuShowcaseTimer,0.08f),sceneX+271.82f*scale,sceneY+43.06f*scale,273f*scale,285.6f*scale);
+        }
+        else
+            batch.draw(getMenuFrame(FxAssets.menuPlayerIdle,menuShowcaseTimer,0.08f),sceneX+271.82f*scale,sceneY+3.06f*scale,273f*scale,285.6f*scale);
+    }
+
+    else if(menuShowcaseScene == 1){
+        batch.draw(FxAssets.menuTerrainHeavy,sceneX,sceneY,sceneWidth,sceneHeight);
+        batch.draw(FxAssets.menuContactShadow,sceneX+585f*scale,sceneY+24f*scale,160f*scale,14f*scale);
+
+        boolean attacking = menuShowcaseTimer >= 3.5f && menuShowcaseTimer <= 7.3f;
+        TextureRegion heavy;
+        if(attacking)
+            heavy = getMenuFrame(FxAssets.menuHeavyBarrage,menuShowcaseTimer,0.12f);
+        else
+            heavy = getMenuFrame(FxAssets.menuHeavyIdle,menuShowcaseTimer,0.10f);
+
+        batch.draw(heavy,sceneX+529f*scale,sceneY+31f*scale,257f*scale,300f*scale);
+        TextureRegion drone;
+
+        if(attacking)
+            drone = getMenuFrame(FxAssets.menuDroneAttack,menuShowcaseTimer,0.10f);
+        else
+            drone = getMenuFrame(FxAssets.menuDroneIdle,menuShowcaseTimer,0.10f);
+
+        float droneY = 258f+MathUtils.sin(menuShowcaseTimer*2f)*5f;
+
+        batch.draw(drone,sceneX+764f*scale,sceneY+droneY*scale,100f*scale,68f*scale);
+
+        if(menuShowcaseTimer >= 1.7f && menuShowcaseTimer < 4.2f)
+            batch.draw(getMenuFrame(FxAssets.menuReticle,menuShowcaseTimer,0.10f),sceneX+187f*scale,sceneY+26f*scale,68f*scale,68f*scale);
+
+        if(menuShowcaseTimer >= 3.5f && menuShowcaseTimer < 4.2f)
+            batch.draw(getMenuFrame(FxAssets.menuBombardmentOpen,menuShowcaseTimer-3.5f,0.10f),sceneX+100f*scale,sceneY+146.7f*scale,250f*scale,151f*scale);
+
+        else if(menuShowcaseTimer >= 4.2f && menuShowcaseTimer < 6.8f)
+            batch.draw(getMenuFrame(FxAssets.menuBombardmentActive,menuShowcaseTimer-4.2f,0.08f),sceneX+100f*scale,sceneY+146.7f*scale,250f*scale,151f*scale);
+
+        else if(menuShowcaseTimer >= 6.8f && menuShowcaseTimer < 7.6f)
+            batch.draw(getMenuFrame(FxAssets.menuBombardmentClose,menuShowcaseTimer-6.8f,0.10f),sceneX+100f*scale,sceneY+146.7f*scale,250f*scale,151f*scale);
+    }
+
+    else if(menuShowcaseScene == 2){
+        batch.draw(FxAssets.menuTerrainDriller,sceneX,sceneY,sceneWidth,sceneHeight);
+        batch.draw(FxAssets.menuContactShadow,sceneX+292f*scale,sceneY+46f*scale,268f*scale,12f*scale);
+
+        if(menuShowcaseTimer < 2f || menuShowcaseTimer > 6.2f)
+            batch.draw(getMenuFrame(FxAssets.menuDrillerIdle,menuShowcaseTimer,0.10f),sceneX+235f*scale,sceneY+44.4f*scale,350f*scale,113f*scale);
+
+        else{
+            float progress = MathUtils.clamp((menuShowcaseTimer-2f)/4.2f,0f,1f);
+            float drillX = 235f+170f*progress;
+
+            batch.draw(getMenuFrame(FxAssets.menuDrillerDrill,menuShowcaseTimer,0.07f),sceneX+drillX*scale,sceneY+8f*scale,350f*scale,113f*scale);
+        }
+    }
+
+    else{
+        batch.draw(FxAssets.menuTerrainBattlefield,sceneX,sceneY,sceneWidth,sceneHeight);
+
+        batch.draw(getMenuFrame(FxAssets.menuRiflemanIdle,menuShowcaseTimer,0.10f),sceneX+310f*scale,sceneY+115.1f*scale,119.5f*scale,122.4f*scale);
+        batch.draw(getMenuFrame(FxAssets.menuHeavyIdle,menuShowcaseTimer,0.10f),sceneX+601f*scale,sceneY+34f*scale,236.4f*scale,276f*scale);
+
+        float droneY = 271f+MathUtils.sin(menuShowcaseTimer*2f)*5f;
+        batch.draw(getMenuFrame(FxAssets.menuDroneFlying,menuShowcaseTimer,0.10f),sceneX+778f*scale,sceneY+droneY*scale,88f*scale,59.8f*scale);
+
+        float drillerX = 339f+MathUtils.sin(menuShowcaseTimer*0.8f)*90f;
+        batch.draw(getMenuFrame(FxAssets.menuDrillerDrill,menuShowcaseTimer,0.07f),sceneX+drillerX*scale,sceneY-3.5f*scale,168f*scale,54.2f*scale);
+
+        boolean hovering = menuShowcaseTimer >= 3f && menuShowcaseTimer <= 6f;
+
+        if(hovering){
+            batch.draw(getMenuFrame(FxAssets.menuPlayerFlame,menuShowcaseTimer,0.08f),sceneX+114.3f*scale,sceneY-2.4f*scale,132f*scale,175.6f*scale);
+            batch.draw(getMenuFrame(FxAssets.menuPlayerHover,menuShowcaseTimer,0.08f),sceneX+77.2f*scale,sceneY+49.5f*scale,236.6f*scale,247.5f*scale);
+        }
+        else
+            batch.draw(getMenuFrame(FxAssets.menuPlayerIdle,menuShowcaseTimer,0.08f),sceneX+77.2f*scale,sceneY+7.5f*scale,236.6f*scale,247.5f*scale);
+    }
+
+    batch.setColor(Color.WHITE);
+
+    batch.draw(FxAssets.menuWordmark,x+164f*scale,y+808f*scale,872f*scale,60f*scale);
+    batch.draw(FxAssets.menuSceneRails[menuShowcaseScene],x+824f*scale,y+786f*scale,180f*scale,8f*scale);
+    batch.draw(FxAssets.menuQuoteHousing,x+260f*scale,y+382f*scale,680f*scale,34f*scale);
+
+    runSummaryFont.getData().setScale((24f/96f)*scale);
+    drawFieldShopCenteredText(runSummaryFont,getMenuShowcaseQuote(),x+286f*scale,y+386f*scale,628f*scale,26f*scale);
+
+    batch.draw(FxAssets.menuWeaponsOwned,x+320f*scale,y+272f*scale,296f*scale,64f*scale);
+    batch.draw(FxAssets.menuStoredPowerups,x+688f*scale,y+272f*scale,296f*scale,64f*scale);
+
+    runSummaryFont.getData().setScale((30f/96f)*scale);
+    drawFieldShopCenteredText(runSummaryFont,getOwnedWeaponCount()+"/6",x+338f*scale,y+277f*scale,260f*scale,30f*scale);
+    drawFieldShopCenteredText(runSummaryFont,Integer.toString(getStoredPowerupCount()),x+706f*scale,y+277f*scale,260f*scale,30f*scale);
+}
+
+private void beginStartRunTransition(){
+    if(screenTransition != ScreenTransition.NONE)
+        return;
+    screenTransition = ScreenTransition.START_RUN;
+    screenTransitionTimer = 0f;
+    screenTransitionSwitched = false;
+}
+
+private void beginReturnMenuTransition(){
+    if(screenTransition != ScreenTransition.NONE)
+        return;
+    screenTransition = ScreenTransition.RETURN_MENU;
+    screenTransitionTimer = 0f;
+    screenTransitionSwitched = false;
+}
+
+private void updateScreenTransition(float dt){
+    if(screenTransition == ScreenTransition.NONE)
+        return;
+    screenTransitionTimer += Math.min(dt,1f/30f);
+    float coverTime;
+    float duration;
+    if(screenTransition == ScreenTransition.START_RUN){
+        coverTime = START_RUN_COVER_TIME;
+        duration = START_RUN_TRANSITION_DURATION;
+    }
+    else{
+        coverTime = RETURN_MENU_COVER_TIME;
+        duration = RETURN_MENU_TRANSITION_DURATION;
+    }
+    if(!screenTransitionSwitched && screenTransitionTimer >= coverTime){
+        screenTransitionSwitched = true;
+        if(screenTransition == ScreenTransition.START_RUN){
+            currentScreen = GameScreen.GAMEPLAY;
+            startNewRun();
+        }
+        else{
+            endCurrentRun();
+            currentScreen = GameScreen.MAIN_MENU;
+            gameOver = false;
+            menuShowcaseScene = 0;
+            menuShowcaseTimer = 0f;
+            AudioAssets.playMenuMusic();
+        }
+    }
+
+    if(screenTransitionTimer >= duration){
+        screenTransition = ScreenTransition.NONE;
+        screenTransitionTimer = 0f;
+        screenTransitionSwitched = false;
+    }
+}
+
+private float smoothTransition(float value){
+    value = MathUtils.clamp(value,0f,1f);
+    return value*value*(3f-2f*value);
+}
+
+private void drawScreenTransition(){
+    if(screenTransition == ScreenTransition.NONE)
+        return;
+
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+
+    float coverTime;
+    float holdEnd;
+    float duration;
+    Texture left;
+    Texture right;
+
+    if(screenTransition == ScreenTransition.START_RUN){
+        coverTime = START_RUN_COVER_TIME;
+        holdEnd = START_RUN_HOLD_END;
+        duration = START_RUN_TRANSITION_DURATION;
+        left = FxAssets.menuDeployLeft;
+        right = FxAssets.menuDeployRight;
+    }
+    else{
+        coverTime = RETURN_MENU_COVER_TIME;
+        holdEnd = RETURN_MENU_HOLD_END;
+        duration = RETURN_MENU_TRANSITION_DURATION;
+        left = FxAssets.menuReturnLeft;
+        right = FxAssets.menuReturnRight;
+    }
+    float leftX;
+    float rightX;
+
+    if(screenTransitionTimer < coverTime){
+        float progress = smoothTransition(screenTransitionTimer/coverTime);
+
+        leftX = MathUtils.lerp(-1000f,0f,progress);
+        rightX = MathUtils.lerp(1920f,920f,progress);
+    }
+    else if(screenTransitionTimer < holdEnd){
+        leftX = 0f;
+        rightX = 920f;
+    }
+    else{
+        float progress = smoothTransition((screenTransitionTimer-holdEnd)/(duration-holdEnd));
+
+        leftX = MathUtils.lerp(0f,-1000f,progress);
+        rightX = MathUtils.lerp(920f,1920f,progress);
+    }
+    batch.setProjectionMatrix(hudCamera.combined);
+    batch.begin();
+    batch.draw(left,x+leftX*scale,y,1000f*scale,1080f*scale);
+    batch.draw(right,x+rightX*scale,y,1000f*scale,1080f*scale);
+    batch.end();
+}
+
+private void drawStartupIntro(){
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+    float width = 1920f*scale;
+    float height = 1080f*scale;
+    float x = (screenWidth-width)/2f;
+    float y = (screenHeight-height)/2f;
+    startupIntro.draw(hudCamera.combined,x,y,scale);
+}
+
+private void finishStartupIntro(){
+    startupIntroActive = false;
+    startupIntro.dispose();
+    startupIntro = null;
+}
+
+private void drawDifficultyMilestone(){
+    float screenWidth = Gdx.graphics.getWidth();
+    float screenHeight = Gdx.graphics.getHeight();
+    float scale = Math.min(screenWidth/1920f,screenHeight/1080f);
+    float logicalWidth = 1920f*scale;
+    float logicalHeight = 1080f*scale;
+    float originX = (screenWidth-logicalWidth)/2f;
+    float originY = (screenHeight-logicalHeight)/2f;
+    difficultyMilestone.draw(batch,originX+320f*scale,originY+480f*scale,1280f*scale,360f*scale);
+}
+
+private void buySelectedFieldShopSpecial(){
+    if(selectedFieldShopCategory != FieldShopCategory.SPECIAL)
+        return;
+    if(selectedFieldShopProduct != 0)
+        return;
+    if(runState.hasKey())
+        return;
+    int price = getFieldShopSpecialPrice(0);
+    if(!inventory.spendGold(price))
+        return;
+    runState.receiveKey();
+    AudioAssets.playKeyPickup();
+}
+
+
 
 
 
