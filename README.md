@@ -109,17 +109,17 @@ lwjgl3/build/construo/macM1/
 This project was built as a learning project and expanded far beyond its original scope. A major goal was learning how game systems work underneath the surface rather than relying on a full game engine.
 
 Some of the systems implemented during development include:
-- Tiled / game maps
-- world-space and HUD rendering
-- camera tracking
-- navigations/ enemy movement and their state logics
-- projectile collision and AABB platform collisions
-- vectors,line of sight and angular movements
-- UI scaling, rotations and transformation
-- weapon state management
-- inventory, shop and economy systems 
-- persistent player progression
-- animated UI , sounds and visual effects
+- Tiled map design and world layout
+- World-space and HUD rendering
+- Camera tracking
+- Enemy navigation, movement, and state logic
+- Projectile collision and AABB platform collisions
+- Vectors, line-of-sight checks, and angular movement
+- UI scaling, rotation, and transformations
+- Weapon state management
+- Inventory, shop, and economy systems
+- Persistent player progression
+- Animated UI, audio, and visual effects
 
 ## Release
 
