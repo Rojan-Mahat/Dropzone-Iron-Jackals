@@ -9,13 +9,25 @@ What started as a small game assignment grew into a much larger project with cus
 The current playable build is available from GitHub Releases:
 
 **[Download the latest release](https://github.com/Rojan-Mahat/Dropzone-Iron-Jackals/releases/latest)**
-
 Current public build:
 - macOS
 - Apple Silicon
 - packaged as a `.zip` containing `Dropzone Iron Jackals.app`
 
 > macOS may warn that the developer cannot be verified because the app is not notarized. If that happens, right-click the app and choose **Open**.
+
+
+## Screenshots
+
+### Main Menu
+![Main Menu](docs/screenshots/main_screen.png)
+
+### Gameplay Combat
+![Gameplay Combat](docs/screenshots/gameplay.png)
+
+### Field Requisition Armory
+![Armory](docs/screenshots/gun_armory.png)
+
 
 ## Features
 
@@ -97,17 +109,17 @@ lwjgl3/build/construo/macM1/
 This project was built as a learning project and expanded far beyond its original scope. A major goal was learning how game systems work underneath the surface rather than relying on a full game engine.
 
 Some of the systems implemented during development include:
-
-- AABB collision
+- Tiled / game maps
 - world-space and HUD rendering
 - camera tracking
-- enemy state logic
-- line-of-sight checks
-- projectile collision
+- navigations/ enemy movement and their state logics
+- projectile collision and AABB platform collisions
+- vectors,line of sight and angular movements
+- UI scaling, rotations and transformation
 - weapon state management
-- inventory and economy systems
+- inventory, shop and economy systems 
 - persistent player progression
-- animated UI and visual effects
+- animated UI , sounds and visual effects
 
 ## Release
 
