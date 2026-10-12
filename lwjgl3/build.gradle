@@ -148,7 +148,7 @@ construo {
       // macOS needs an identifier
       identifier.set("rojan.shooter." + appName)
       // Optional: icon for macOS, as an ICNS file
-      macIcon.set(project.file("icons/logo.icns"))
+      macIcon.set(rootProject.file("icon.icns"))
     }
     register("macX64", Target.MacOs) {
       architecture.set(Target.Architecture.X86_64)
@@ -156,7 +156,7 @@ construo {
       // macOS needs an identifier
       identifier.set("rojan.shooter." + appName)
       // Optional: icon for macOS, as an ICNS file
-      macIcon.set(project.file("icons/logo.icns"))
+      macIcon.set(rootProject.file("icon.icns"))
     }
     register("winX64", Target.Windows) {
       architecture.set(Target.Architecture.X86_64)

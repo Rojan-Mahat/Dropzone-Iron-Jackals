@@ -247,6 +247,7 @@ audio/sfx/world/run_terminated.wav
 audio/sfx/world/world_air_loop.wav
 data/player1/soldier1_grips.json
 fonts/Oxanium-SemiBold.ttf
+icon.icns
 loot/common/opening_sheet.png
 loot/dashboard/3slot.png
 loot/dashboard/4slot.png

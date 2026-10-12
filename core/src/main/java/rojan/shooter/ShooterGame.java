@@ -478,13 +478,14 @@ public class ShooterGame extends ApplicationAdapter {
     private Rectangle activeTempMag;
     private WeaponType activeTempMagWeapon;
     private float TEMP_MAG_TIMER = 0f;
-    private float TEMP_MAG_SPAWN_TIME = MathUtils.random(100f,200f);
+    private float TEMP_MAG_SPAWN_TIME = MathUtils.random(50f,100f);
     private WeaponType trialWeapon = null;
     private WeaponType weaponBeforeTrial = null;
     private Texture tempMagTexture;
     private TextureRegion[] weaponTrialAlertFrames;
     private boolean weaponTrialAlertActive = false;
     private float weaponTrialAlertTimer = 0f;
+    private boolean DEV_CHEAT_ACTIVE = false;
         
     
 
@@ -729,6 +730,7 @@ public class ShooterGame extends ApplicationAdapter {
             bulletPlatformCollision();
             updateReload(dt);
             updateReloadFx(dt);
+            handleDevCheatInput();
         }
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         mapRenderer.render();
@@ -860,7 +862,8 @@ public class ShooterGame extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        saveManager.saveProfile(playerProfile);
+        if(!DEV_CHEAT_ACTIVE)
+            saveManager.saveProfile(playerProfile);
         mapRenderer.dispose();
         map.dispose();
         batch.dispose();
@@ -3634,11 +3637,11 @@ private void damagePlayer(float damage){
 }
 
 private boolean infiniteMagazineActive(){
-    return BOTTOMLESS_MAG_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE;
+    return  DEV_CHEAT_ACTIVE || BOTTOMLESS_MAG_ACTIVE || INFINITE_ASSAULT_ACTIVE || GOD_MODE_ACTIVE;
 }
 
 private boolean infiniteJetpackActive(){
-    return HYPERDRIVE_ACTIVE || GOD_MODE_ACTIVE;
+    return DEV_CHEAT_ACTIVE || HYPERDRIVE_ACTIVE || GOD_MODE_ACTIVE;
 }
 
 private boolean playerInvulnerable(){
@@ -4861,8 +4864,10 @@ private void giveTestWeapons(){
 }
 
 private void endCurrentRun(){
-    saveManager.saveProfile(playerProfile);
-
+     if(!DEV_CHEAT_ACTIVE)
+        saveManager.saveProfile(playerProfile);
+    else
+        loadPlayerProfile();
     if(player != null){
         player.disposePlayer();
         player = null;
@@ -4875,6 +4880,9 @@ private void endCurrentRun(){
 }
 
 private void resetRunSystems(){
+    DEV_CHEAT_ACTIVE = false;
+    if(inventory != null)
+        inventory.setDevCheatMode(false);
     gameOver = false;
     deathSummaryTimer = 0f;
     showRunSummary = false;
@@ -4983,7 +4991,7 @@ private void resetRunSystems(){
     fieldShopOpen = false;
 
     TEMP_MAG_TIMER = 0f;
-    TEMP_MAG_SPAWN_TIME = MathUtils.random(100f,200f);
+    TEMP_MAG_SPAWN_TIME = MathUtils.random(50f,100f);
     activeTempMag = null;
     activeTempMagWeapon = null;
     trialWeapon = null;
@@ -5129,8 +5137,10 @@ private void triggerGameOver(){
     gameOver = true;
     deathSummaryTimer = 0f;
     showRunSummary = false;
-    playerProfile.updateBestScore(runState.getCurrentScore());
-    saveManager.saveProfile(playerProfile);
+    if(!DEV_CHEAT_ACTIVE){
+        playerProfile.updateBestScore(runState.getCurrentScore());
+        saveManager.saveProfile(playerProfile);
+    }
     AudioAssets.playRunTerminated();
     AudioAssets.pauseMusic();
 }
@@ -7544,7 +7554,7 @@ private void spawnTempMag(float dt){
     activeTempMagWeapon = lockedWeapons.random();
 
     TEMP_MAG_TIMER = 0f;
-    TEMP_MAG_SPAWN_TIME =  MathUtils.random(100f,200f);
+    TEMP_MAG_SPAWN_TIME =  MathUtils.random(50f,100f);
     weaponTrialAlertActive = true;
     weaponTrialAlertTimer = 0f;
 }
@@ -7552,6 +7562,8 @@ private void spawnTempMag(float dt){
 private void drawTempMag(){
     if(activeTempMag == null)
         return;
+    activeTempMag.width = 100f;
+    activeTempMag.height = 100f;
     batch.draw(tempMagTexture,activeTempMag.x,activeTempMag.y,activeTempMag.width,activeTempMag.height);
 }
 
@@ -7618,6 +7630,20 @@ private void drawWeaponTrialAlert(){
     batch.draw(weaponTrialAlertFrames[frame],originX + 320f*scale,originY + 480f*scale,1280f*scale,360f*scale);
 }
 
+
+private void handleDevCheatInput(){
+    if(DEV_CHEAT_ACTIVE)
+        return;
+
+    boolean ctrl = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+    boolean shift = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+    if(ctrl && shift && Gdx.input.isKeyJustPressed(Input.Keys.J)){
+        DEV_CHEAT_ACTIVE = true;
+        inventory.setDevCheatMode(true);
+        runState.setDevCheatMode(true);
+        player.setJetpackFuel(player.getMaxJetpackFuel());
+    }
+}
 
 
 

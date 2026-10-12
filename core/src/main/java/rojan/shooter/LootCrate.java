@@ -79,7 +79,7 @@ public class LootCrate{
                 }
                 gold = MathUtils.random(5,15);
                 score =  MathUtils.random(25,75);
-                ammoRewardPercent = MathUtils.random(10,15);
+                ammoRewardPercent = MathUtils.random(15,20);
                 hpBoost = 15;
             }
             if(type == CrateType.RARE){

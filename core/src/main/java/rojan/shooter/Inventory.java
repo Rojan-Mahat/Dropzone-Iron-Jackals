@@ -10,6 +10,8 @@ public class Inventory{
     private ObjectIntMap<Powerup.SpicyType> spicy;
     private ObjectIntMap<Powerup.MoreSpicyType> moreSpicy;
     private int godMode = 0;
+    private boolean devCheatMode = false;
+
 
     Inventory(){
         ownedWeapons = new Array<>();
@@ -22,6 +24,8 @@ public class Inventory{
         gold+=amount;
     }
     public int getGold(){
+        if(devCheatMode)
+            return 999999;
         return gold;
     }
 
@@ -31,7 +35,7 @@ public class Inventory{
     }
     
     public boolean ownsWeapon(Weapon.WeaponType type){
-        return ownedWeapons.contains(type,true);
+        return devCheatMode ||ownedWeapons.contains(type,true);
     }
 
     public void addPowerup(Powerup.PowerupType type, int amount){
@@ -47,10 +51,14 @@ public class Inventory{
     }
 
     public int getPowerupAmount(Powerup.PowerupType type){
+        if(devCheatMode)
+            return 999999;
         return powerups.get(type,0);
     }
 
     public boolean usePowerup(Powerup.PowerupType type){
+        if(devCheatMode)
+            return true;
         int current = powerups.get(type,0);
         if(current <= 0)
             return false;
@@ -66,10 +74,14 @@ public class Inventory{
     }
 
     public int getSpicyAmount(Powerup.SpicyType type){
+        if(devCheatMode)
+            return 999999;
         return spicy.get(type,0);
     }
 
     public boolean useSpicy(Powerup.SpicyType type){
+        if(devCheatMode)
+            return true;
         int current = spicy.get(type,0);
         if(current <= 0)
             return false;
@@ -84,10 +96,14 @@ public class Inventory{
     }
 
     public int getMoreSpicyAmount(Powerup.MoreSpicyType type){
+        if(devCheatMode)
+            return 999999;
         return moreSpicy.get(type,0);
     }
 
     public boolean useMoreSpicy(Powerup.MoreSpicyType type){
+        if(devCheatMode)
+            return true;
         int current = moreSpicy.get(type,0);
         if(current <= 0)
             return false;
@@ -100,13 +116,16 @@ public class Inventory{
     }
 
     public int getGodModeAmount(){
+        if(devCheatMode)
+            return 999999;
         return godMode;
     }
 
     public boolean useGodMode(){
+        if(devCheatMode)
+            return true;
         if(godMode <= 0)
             return false;
-
         godMode--;
         return true;
     }
@@ -117,6 +136,10 @@ public class Inventory{
         gold-=amount;
         return true;
     }
+    public void setDevCheatMode(boolean active){
+        devCheatMode = active;
+    }
+
 
 
 

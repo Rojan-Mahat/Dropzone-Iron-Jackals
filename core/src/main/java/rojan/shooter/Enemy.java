@@ -249,12 +249,12 @@ public class Enemy{
     private Vector2 HEAVY_MUZZLE_POSITION = new Vector2();
 
     private final float RIFLEMAN_DAMAGE = 7;
-    private final float HEAVY_CLOSE_RANGE_DAMAGE = 18;
+    private final float HEAVY_CLOSE_RANGE_DAMAGE = 20;
     private final float DRONE_DAMAGE = 3;
     private final float DRILL_DAMAGE = 10;
 
     private float RIFLEMAN_SHOT_TIMER;
-    private final float RIFLEMAN_FIRE_INTERVAL = 0.3f;
+    private final float RIFLEMAN_FIRE_INTERVAL = 0.5f;
     private boolean RIFLEMAN_SHOT_READY;
     private Vector2 enemyDeathLocation;
 
@@ -391,7 +391,8 @@ public class Enemy{
         }
 
         else if(currentState == EnemyState.ATTACK){
-            frameIndex = (int)(stateTime / IDLE_FRAME_DURATION) % animations.attackFrames.length;
+            float attackFrameDuration = RIFLEMAN_FIRE_INTERVAL / animations.attackFrames.length;
+            frameIndex = (int)(stateTime / attackFrameDuration) % animations.attackFrames.length;
             frame = animations.attackFrames[frameIndex];
         }
 
@@ -797,16 +798,18 @@ private void riflemanMoveTowardsPlayer(Rectangle playerHurtbox, float dt){
 }
 
 private void riflemanAttack(float dt){
-    attacking = true;
     scouting = false;
-    if(attacking){
+    if(!attacking){
+        attacking = true;
         currentState = EnemyState.ATTACK;
-        RIFLEMAN_SHOT_TIMER+=dt;
-
-        if(RIFLEMAN_SHOT_TIMER >= RIFLEMAN_FIRE_INTERVAL && !RIFLEMAN_SHOT_READY){
-            RIFLEMAN_SHOT_READY = true;
-            RIFLEMAN_SHOT_TIMER = 0;
-        }
+        stateTime = 0f;
+        RIFLEMAN_SHOT_TIMER = 0f;
+    }
+    RIFLEMAN_SHOT_TIMER += dt;
+    if(RIFLEMAN_SHOT_TIMER >= RIFLEMAN_FIRE_INTERVAL && !RIFLEMAN_SHOT_READY){
+        RIFLEMAN_SHOT_READY = true;
+        RIFLEMAN_SHOT_TIMER = 0f;
+        stateTime = 0f;
     }
 }
 

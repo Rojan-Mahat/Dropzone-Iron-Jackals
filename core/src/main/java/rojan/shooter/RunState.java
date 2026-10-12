@@ -20,6 +20,7 @@ public class RunState{
     private int nextKillReward = 10;
 
     private int goldEarned;
+    private boolean devCheatMode = false;
 
     RunState(){
         ammo = new ObjectIntMap<>();
@@ -30,11 +31,13 @@ public class RunState{
     }
 
     public void useKey(){
+        if(devCheatMode)
+            return;
         keyOwned = false;
     }
 
     public boolean hasKey(){
-        return keyOwned;
+        return  devCheatMode || keyOwned;
     }
 
     public void addScore(int amount){
@@ -83,10 +86,14 @@ public class RunState{
     }
 
     public int getAmmo(WeaponType type){
+        if(devCheatMode)
+            return 999999;
         return ammo.get(type,0);
     }
 
     public int takeAmmo(WeaponType type,int amount){
+        if(devCheatMode)
+            return amount;
         int currentAmmo = ammo.get(type,0);
         int ammoTaken = Math.min(currentAmmo,amount);
 
@@ -145,5 +152,8 @@ public class RunState{
 
     public int getGoldEarned(){
         return goldEarned;
+    }
+    public void setDevCheatMode(boolean active){
+        devCheatMode = active;
     }
 }
